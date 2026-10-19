@@ -2,6 +2,8 @@
 /build/
 /out/
 /switch-build/
+__pycache__/
+*.pyc
 *.o
 *.elf
 *.nro
