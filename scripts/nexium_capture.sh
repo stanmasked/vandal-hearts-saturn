@@ -92,7 +92,14 @@ fi
 # Stage44 uses a distinct ROM-free NRO in a separate Xvfb working folder.
 # Only the actual guest PNG plus a decoded host checksum can pass its gate.
 if [[ "${NEXIUM_ATTACK_PROBE:-0}" == "1" ]]; then
-  if ! python3 -m tools.nexium_attack_action --window "$window" --folder runtime-evidence; then
+  if python3 -m tools.nexium_attack_action --window "$window" --folder runtime-evidence; then
+    # Never run follow-on actions when the first real guest attack failed.
+    if [[ "${NEXIUM_RESELECT_PROBE:-0}" == "1" ]]; then
+      if ! python3 -m tools.nexium_duel_reselect --window "$window" --folder runtime-evidence; then
+        printf '%s\n' 'duel_reselect=unverified' >runtime-evidence/reselect-probe-status.txt
+      fi
+    fi
+  else
     printf '%s\n' 'attack=unverified' >runtime-evidence/attack-probe-status.txt
   fi
 fi
