@@ -128,17 +128,16 @@ class RightProbeTests(unittest.TestCase):
         self.assertEqual(len(images), 3)
 
     def test_hung_xdotool_aborts_after_one_timeout(self):
-        # Any 4-second xdotool timeout must NOT be multiplied eight times:
-        # the caller still has to close the guest and reap the window manager.
+        # The four-second dispatch timeout must not multiply eightfold.
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "bin").mkdir()
             (root / "runtime-evidence").mkdir()
             scene(root / "runtime-evidence/nexium-window.png", 400)
             executable(root / "bin/xdotool",
-                       "#!/usr/bin/env bash\\n"
-                       "if [[ \\"$1\\" == \\"key\\" ]]; then sleep 30; fi\\n"
-                       "exit 0\\n")
+                       "#!/usr/bin/env bash\n"
+                       'if [[ "$1" == "key" ]]; then sleep 30; fi\n'
+                       "exit 0\n")
             env = dict(os.environ,
                        PATH=f"{root / 'bin'}:{os.environ['PATH']}",
                        NEXIUM_PROBE_MAX_ATTEMPTS="8")
@@ -148,7 +147,7 @@ class RightProbeTests(unittest.TestCase):
             self.assertEqual(p.returncode, 0, p.stderr)
             status = (root / "runtime-evidence/input-probe-status.txt").read_text()
             receipt = (root / "runtime-evidence/input-probe-attempts.txt").read_text()
-            self.assertEqual(status, "input_attempted=Right dispatch=failed\\n")
+            self.assertEqual(status, "input_attempted=Right dispatch=failed\n")
             self.assertIn("attempt1=dispatch_failed", receipt)
             self.assertIn("selected_attempt=none", receipt)
             self.assertNotIn("attempt2=", receipt)
