@@ -1,5 +1,6 @@
 #include "vh/battle.hpp"
 #include "vh/smoke.hpp"
+#include "vh/cursor_geometry.hpp"
 #include <SDL.h>
 
 #include <algorithm>
@@ -13,8 +14,6 @@ constexpr int W = 1280;
 constexpr int H = 720;
 constexpr int TILE_HALF_W = 40;
 constexpr int TILE_HALF_H = 20;
-constexpr int BASE_X = 640;
-constexpr int BASE_Y = 136;
 
 struct Ui {
     vh::Battle battle = vh::Battle::training();
@@ -24,8 +23,8 @@ struct Ui {
 };
 
 SDL_Point screen_of(vh::Pos p, int elevation) {
-    return {BASE_X + (p.x - p.y) * TILE_HALF_W,
-            BASE_Y + (p.x + p.y) * TILE_HALF_H - elevation * 18};
+    const auto projected = vh::project_training_tile(p, elevation);
+    return {projected.x, projected.y};
 }
 
 void color(SDL_Renderer* r, int red, int green, int blue, int alpha = 255) {
@@ -147,10 +146,10 @@ void next_turn(Ui& ui) {
 void key(Ui& ui, SDL_Keycode code, bool& running) {
     switch (code) {
         case SDLK_ESCAPE: running = false; break;
-        case SDLK_LEFT: case SDLK_a: ui.cursor.x = std::max(0, ui.cursor.x - 1); break;
-        case SDLK_RIGHT: case SDLK_d: ui.cursor.x = std::min(ui.battle.width() - 1, ui.cursor.x + 1); break;
-        case SDLK_UP: case SDLK_w: ui.cursor.y = std::max(0, ui.cursor.y - 1); break;
-        case SDLK_DOWN: case SDLK_s: ui.cursor.y = std::min(ui.battle.height() - 1, ui.cursor.y + 1); break;
+        case SDLK_LEFT: case SDLK_a: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Left, ui.battle.width(), ui.battle.height()); break;
+        case SDLK_RIGHT: case SDLK_d: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Right, ui.battle.width(), ui.battle.height()); break;
+        case SDLK_UP: case SDLK_w: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Up, ui.battle.width(), ui.battle.height()); break;
+        case SDLK_DOWN: case SDLK_s: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Down, ui.battle.width(), ui.battle.height()); break;
         case SDLK_RETURN: case SDLK_SPACE: confirm(ui); break;
         case SDLK_y: attack(ui); break;
         case SDLK_x: next_turn(ui); break;
@@ -160,10 +159,10 @@ void key(Ui& ui, SDL_Keycode code, bool& running) {
 }
 void controller(Ui& ui, Uint8 button, bool& running) {
     switch (button) {
-        case SDL_CONTROLLER_BUTTON_DPAD_LEFT: ui.cursor.x = std::max(0, ui.cursor.x - 1); break;
-        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: ui.cursor.x = std::min(ui.battle.width() - 1, ui.cursor.x + 1); break;
-        case SDL_CONTROLLER_BUTTON_DPAD_UP: ui.cursor.y = std::max(0, ui.cursor.y - 1); break;
-        case SDL_CONTROLLER_BUTTON_DPAD_DOWN: ui.cursor.y = std::min(ui.battle.height() - 1, ui.cursor.y + 1); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_LEFT: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Left, ui.battle.width(), ui.battle.height()); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Right, ui.battle.width(), ui.battle.height()); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_UP: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Up, ui.battle.width(), ui.battle.height()); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_DOWN: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Down, ui.battle.width(), ui.battle.height()); break;
         case SDL_CONTROLLER_BUTTON_A: confirm(ui); break;
         case SDL_CONTROLLER_BUTTON_B: ui.selected = -1; break;
         case SDL_CONTROLLER_BUTTON_Y: attack(ui); break;

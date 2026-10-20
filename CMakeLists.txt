@@ -40,3 +40,8 @@ add_test(NAME tactical_core COMMAND vh_tests)
 add_executable(vh_smoke_tests tests/smoke_tests.cpp)
 target_link_libraries(vh_smoke_tests PRIVATE vh_core)
 add_test(NAME startup_smoke_contract COMMAND vh_smoke_tests)
+
+# C++17 training-scene cursor math shared by SDL and host tests.
+add_executable(vh_cursor_geometry_tests tests/cursor_geometry_tests.cpp)
+target_link_libraries(vh_cursor_geometry_tests PRIVATE vh_core)
+add_test(NAME cursor_geometry_contract COMMAND vh_cursor_geometry_tests)
