@@ -239,14 +239,16 @@ jobs:
           export NEXIUM_ATTACK_PROBE=1
           export NEXIUM_RESELECT_PROBE=1
           export NEXIUM_SECOND_ROUND_PROBE=1
+          export NEXIUM_VICTORY_PROBE=1
           (
             cd stage44-session
-            timeout --kill-after=5s 215s xvfb-run -a -s '-screen 0 1280x720x24' \
+            timeout --kill-after=5s 320s xvfb-run -a -s '-screen 0 1280x720x24' \
               bash scripts/nexium_xvfb_session.sh
           )
           python3 -m tools.nexium_attack_action --verify-dir stage44-session/runtime-evidence
           python3 -m tools.nexium_duel_reselect --verify-dir stage44-session/runtime-evidence
           python3 -m tools.nexium_second_round --verify-dir stage44-session/runtime-evidence
+          python3 -m tools.nexium_duel_victory --verify-dir stage44-session/runtime-evidence
           python3 -m tools.nexium_log_health stage44-session/runtime-evidence/nexium.log \
             --output stage44-session/runtime-evidence/emulator-log-health.json
           python3 -m tools.nexium_lifecycle_audit \
