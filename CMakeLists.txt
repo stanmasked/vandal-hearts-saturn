@@ -57,3 +57,7 @@ target_link_libraries(vh_replay_cli PRIVATE vh_core)
 add_executable(vh_visual_digest_tests tests/visual_digest_tests.cpp)
 target_link_libraries(vh_visual_digest_tests PRIVATE vh_core)
 add_test(NAME visual_digest_contract COMMAND vh_visual_digest_tests)
+
+# Host-only synthetic C++ image source for cross-language visual digest tests.
+add_executable(vh_visual_fixture src/app/visual_fixture_main.cpp)
+target_link_libraries(vh_visual_fixture PRIVATE vh_core)
