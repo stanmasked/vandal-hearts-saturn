@@ -40,7 +40,8 @@ class LauncherIntegrationTests(unittest.TestCase):
                        ('printf PNG_MOCK > "$3"\n' if capture_ok else 'exit 42\n'))
             env = dict(os.environ, PATH=f'{bin_dir}:{os.environ["PATH"]}',
                        NEXIUM_BIN=str(emu), NEXIUM_WINDOW_ATTEMPTS=str(attempts),
-                       NEXIUM_POLL_DELAY_SECONDS='0', NEXIUM_SETTLE_DELAY_SECONDS=str(settle))
+                       NEXIUM_POLL_DELAY_SECONDS='0', NEXIUM_SETTLE_DELAY_SECONDS=str(settle),
+                       NEXIUM_CLOSE_WAIT_SECONDS='2')
             if bogus_time is not None:
                 env['NEXIUM_WINDOW_ATTEMPTS'] = bogus_time
             result = subprocess.run(['bash', str(CAPTURE)], cwd=root, env=env,
@@ -49,7 +50,7 @@ class LauncherIntegrationTests(unittest.TestCase):
             evidence = root / 'runtime-evidence'
             return result, {
                 file: (evidence / file).read_text() if (evidence / file).exists() else None
-                for file in ('failure-reason.txt', 'capture-status.txt', 'nexium.log',
+                for file in ('failure-reason.txt', 'capture-status.txt', 'x11-close-status.txt', 'nexium.log',
                              'nexium-window.png')
             }
 
@@ -60,6 +61,7 @@ class LauncherIntegrationTests(unittest.TestCase):
         result, files = self.launch()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('captured_window_id=123456', files['capture-status.txt'])
+        self.assertIn('wmctrl_close_request_sent', files['x11-close-status.txt'])
         self.assertEqual(files['nexium-window.png'], 'PNG_MOCK')
         self.assertIsNone(files['failure-reason.txt'])
         self.assertIn('MOCK_START', files['nexium.log'])
