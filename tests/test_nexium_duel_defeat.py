@@ -66,7 +66,7 @@ class DefeatTests(unittest.TestCase):
     def test_wrong_scout_hp_rejected_even_with_correct_hash(self):
         tampered=frame(1,scout_hp=22,effect="TurnEnded")
         io=FakeIO([tampered])
-        with self.assertRaisesRegex(ValueError,"Scout HP pixel mismatch"):
+        with self.assertRaisesRegex(ValueError,"Scout depleted HP pixel mismatch"):
             exercise(self.initial,self.after_right,io)
 
     def test_wrong_raider_hp_rejected(self):
@@ -94,7 +94,7 @@ class DefeatTests(unittest.TestCase):
 
     def test_terminal_endturn_must_not_create_round_nine(self):
         fake=frame(7,effect="Rejected")
-        io=FakeIO([*self.rounds,fake])
+        io=FakeIO([*self.rounds,fake,fake])
         with self.assertRaisesRegex(ValueError,"checksum mismatch"):
             exercise(self.initial,self.after_right,io)
 
