@@ -19,9 +19,6 @@ constexpr int TILE_HALF_W = 40;
 constexpr int TILE_HALF_H = 20;
 
 using Ui = vh::TrainingUi;
-    int selected = -1;
-    std::string status = "Select ally: A / Enter. Move: D-pad. Attack: Y. End round: X";
-};
 
 SDL_Point screen_of(vh::Pos p, int elevation) {
     const auto projected = vh::project_training_tile(p, elevation);
