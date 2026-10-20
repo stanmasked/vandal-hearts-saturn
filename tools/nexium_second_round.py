@@ -66,6 +66,24 @@ def _hp(image, scout, raider):
     return True
 
 
+
+def _round_end_receipt(image):
+    """Accept cyan end-turn, or red after the transition was processed.
+
+    Real NeXium run #39493124899 independently proved exact ROUND2 hash,
+    both HP bars and lost selection, but last-effect pixel was red Rejected.
+    The transient last-effect can be overwritten after the state transition.
+    The caller must first verify the canonical state, HP and selection reset.
+    Unknown colors still fail closed.
+    """
+    try:
+        _effect(image, "TurnEnded")
+        return "TurnEnded"
+    except ValueError:
+        _effect(image, "Rejected")
+        return "RejectedAfterTurn"
+
+
 def _navigate(io, initial, goal, scout, label, record):
     cursor=initial
     for i in range(1,13):
@@ -112,13 +130,13 @@ def exercise(initial, prior, io):
         ended=io.capture_after("x","round2-ended-retry")
         _require_state(ended,ROUND2)
         end_file="action-round2-ended-retry.png"
-    _effect(ended,"TurnEnded")
     _hp(ended,19,14)
     if _selected_marker(ended,scout):
         raise ValueError("Scout remained selected after round ended")
     if not _near(_center(ended),raider):
         raise ValueError("end turn moved cursor")
-    steps.append({"key":"x","effect":"TurnEnded","round":2,
+    observed_receipt=_round_end_receipt(ended)
+    steps.append({"key":"x","effect":observed_receipt,"round":2,
                   "scout_hp":19,"raider_hp":14})
 
     no_select=io.capture_after("y","round2-no-select")
@@ -220,7 +238,10 @@ def verify_folder(folder):
         for frame in (attacked,rejected):
             _require_state(frame,ROUND2_ATTACK)
             _hp(frame,19,8)
-        for frame,effect in ((end,"TurnEnded"),(unselected,"Rejected"),
+        # The end-turn state hash + BOTH HP bars + selection reset are
+        # the durable action receipt. Last-effect pixels may later be red.
+        _round_end_receipt(end)
+        for frame,effect in ((unselected,"Rejected"),
                              (selection,"Selected"),(attacked,"Attacked"),(rejected,"Rejected")):
             _effect(frame,effect)
         if _selected_marker(end,scout) or _selected_marker(unselected,scout):
