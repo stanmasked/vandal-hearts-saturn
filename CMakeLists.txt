@@ -76,3 +76,8 @@ add_test(NAME training_action_fingerprint COMMAND vh_training_action_fingerprint
 add_executable(vh_attack_training_fingerprint_tests tests/attack_training_fingerprint_tests.cpp)
 target_link_libraries(vh_attack_training_fingerprint_tests PRIVATE vh_core)
 add_test(NAME attack_training_fingerprint COMMAND vh_attack_training_fingerprint_tests)
+
+# Stage49: ROM-free complete duel, deterministic victory and irreversible outcome.
+add_executable(vh_duel_victory_tests tests/duel_victory_tests.cpp)
+target_link_libraries(vh_duel_victory_tests PRIVATE vh_core)
+add_test(NAME duel_victory_contract COMMAND vh_duel_victory_tests)
