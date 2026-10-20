@@ -2,6 +2,7 @@
 #include "vh/smoke.hpp"
 #include "vh/cursor_geometry.hpp"
 #include "vh/replay.hpp"
+#include "vh/visual_digest.hpp"
 #include <SDL.h>
 
 #include <algorithm>
@@ -52,6 +53,25 @@ void diamond(SDL_Renderer* r, SDL_Point center, SDL_Color fill) {
 
 bool reachable(const std::vector<vh::Pos>& points, vh::Pos p) {
     return std::find(points.begin(), points.end(), p) != points.end();
+}
+
+void render_visual_state_digest(SDL_Renderer* r, const vh::Battle& battle) {
+    // ROM-free on-screen checksum works even when guest stderr is not
+    // forwarded by the emulator. Never render copyrighted Saturn content.
+    const auto checksum = vh::battle_fingerprint(battle);
+    for (int bit = 0; bit < vh::digest_cells; ++bit) {
+        if (vh::digest_bit(checksum, bit)) color(r, 66, 220, 132);
+        else color(r, 40, 53, 69);
+        const auto cell = vh::digest_cell_rect(bit);
+        SDL_Rect rect{cell.x, cell.y, cell.w, cell.h};
+        SDL_RenderFillRect(r, &rect);
+    }
+    color(r, 234, 40, 190);
+    for (int i = 0; i < 3; ++i) {
+        const auto anchor = vh::digest_anchor(i);
+        SDL_Rect rect{anchor.x, anchor.y, anchor.w, anchor.h};
+        SDL_RenderFillRect(r, &rect);
+    }
 }
 
 void render(SDL_Renderer* r, const Ui& ui) {
@@ -110,6 +130,7 @@ void render(SDL_Renderer* r, const Ui& ui) {
     color(r, 239, 79, 76);
     SDL_Rect enemies{55, H - 43, 30, 20};
     SDL_RenderFillRect(r, &enemies);
+    render_visual_state_digest(r, ui.battle);
     SDL_RenderPresent(r);
 }
 

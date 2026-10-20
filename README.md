@@ -15,6 +15,8 @@ The intended reference is the 1997 Japanese Sega Saturn edition `T-9526G`.
 - Host interactive CLI and optional SDL2 isometric visualization.
 - Real Switch `.nro` compiled using devkitPro/libnx and independently hash-verified.
 - Shared SDL-free cursor geometry and directional movement now under host tests.
+- Temporary ROM-free pixel-encoded state checksum verifies guest tactical state
+  in emulator screenshots, even when guest stderr is unavailable.
 - Disc CUE/BIN metadata-only hash inventory (read-only, strictly local).
 - Host GCC/Clang test workflow, no ROM or game assets in CI.
 

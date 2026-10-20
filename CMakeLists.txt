@@ -52,3 +52,8 @@ target_link_libraries(vh_replay_tests PRIVATE vh_core)
 add_test(NAME deterministic_replay_contract COMMAND vh_replay_tests)
 add_executable(vh_replay_cli src/app/replay_main.cpp)
 target_link_libraries(vh_replay_cli PRIVATE vh_core)
+
+# Verify a framebuffer-readable ROM-free state fingerprint contract without SDL.
+add_executable(vh_visual_digest_tests tests/visual_digest_tests.cpp)
+target_link_libraries(vh_visual_digest_tests PRIVATE vh_core)
+add_test(NAME visual_digest_contract COMMAND vh_visual_digest_tests)
