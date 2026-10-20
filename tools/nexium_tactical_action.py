@@ -47,9 +47,15 @@ class RealX11:
     def capture_after(self, key, label):
         if key not in ("Left", "Right", "Return"):
             raise ValueError("unexpected action key")
-        subprocess.run(["timeout", "--kill-after=1s", "4s", "xdotool",
-                        "key", "--clearmodifiers", "--window", self.window, key],
-                       check=True, timeout=7, stdout=subprocess.DEVNULL)
+        # The nightly guest can sample a default 12 ms X11 arrow pulse
+        # twice, moving two tiles from one xdotool invocation. Shorten only
+        # directional pulses; keep Confirm on the existing reliable timing.
+        command = ["timeout", "--kill-after=1s", "4s", "xdotool",
+                   "key", "--clearmodifiers"]
+        if key in ("Left", "Right"):
+            command.extend(["--delay", "0"])
+        command.extend(["--window", self.window, key])
+        subprocess.run(command, check=True, timeout=7, stdout=subprocess.DEVNULL)
         time.sleep(0.9)
         filename = self.folder / f"action-{label}.png"
         subprocess.run(["timeout", "--kill-after=1s", "8s", "import",
@@ -96,19 +102,26 @@ def exercise(initial_frame, after_right, io):
     selected = io.capture_after("Return", "selected")
     _require_state(selected, INITIAL)  # selection must not move tactical units
     steps.append({"key":"Return", "purpose":"select_scout"})
-    aimed = io.capture_after("Right", "aimed")
-    _require_state(aimed, INITIAL)
-    at = _center(aimed)
+    # Stage40 live evidence showed Right can jump *two* cells: the captured
+    # starting center (490.5,251) became (562.5,285.5). Do not commit from
+    # that cell. Aim from observed pixels, correcting in either direction.
+    at = start
+    for attempt in range(1, 9):
+        if _near(at, target):
+            break
+        if abs(at[1] - target[1]) > 80:
+            raise ValueError("aim cursor left the Scout map row")
+        direction = "Right" if at[0] < target[0] else "Left"
+        previous = at
+        aimed = io.capture_after(direction, f"aim-{attempt}")
+        _require_state(aimed, INITIAL)
+        at = _center(aimed)
+        steps.append({"key":direction, "purpose":"aim_scout_move",
+                      "cursor_x":round(at[0],2), "cursor_y":round(at[1],2)})
+        if _near(at, previous) and not _near(at, target):
+            io.focus()  # only an observed missed pulse authorizes refocus
     if not _near(at, target):
-        if _near(at, start):  # missed input: retry once without claiming success
-            io.focus()
-            aimed = io.capture_after("Right", "aimed-retry")
-            _require_state(aimed, INITIAL)
-            at = _center(aimed)
-            steps.append({"key":"Right", "purpose":"aim_retry"})
-        if not _near(at, target):
-            raise ValueError("aim cursor did not reach exactly one tile right")
-    steps.append({"key":"Right", "purpose":"aim_scout_move"})
+        raise ValueError("aim cursor did not reach exactly one tile right after 8 observations")
     moved = io.capture_after("Return", "moved")
     final = _require_state(moved, AFTER_SCOUT_MOVE)
     steps.append({"key":"Return", "purpose":"commit_move"})
