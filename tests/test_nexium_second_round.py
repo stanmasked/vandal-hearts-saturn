@@ -72,10 +72,25 @@ class RoundTwoTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"HP pixel mismatch for scout_lost"):
             exercise(self.initial,self.prior,io)
 
-    def test_forged_turn_ended_receipt_does_not_count(self):
-        fake=frame(state=ROUND2,scout_hp=19,raider_hp=14,effect="Rejected")
+    def test_red_last_action_after_real_round_transition_is_accepted(self):
+        # An X screenshot can show a later Rejected receipt, but ONLY if
+        # the independent 64-bit round state and two HP bars are correct.
+        overwritten=frame(state=ROUND2,scout_hp=19,raider_hp=14,effect="Rejected")
+        io=FakeIO([overwritten,*self.frames()[1:]])
+        result=exercise(self.initial,self.prior,io)
+        self.assertTrue(result["second_round_passed"])
+        self.assertEqual(result["steps"][0]["effect"],"RejectedAfterTurn")
+
+    def test_unknown_last_action_after_round_transition_fails_closed(self):
+        fake=frame(state=ROUND2,scout_hp=19,raider_hp=14,effect="Selected")
         io=FakeIO([fake])
-        with self.assertRaisesRegex(ValueError,"receipt not TurnEnded"):
+        with self.assertRaisesRegex(ValueError,"receipt not Rejected"):
+            exercise(self.initial,self.prior,io)
+
+    def test_red_receipt_without_expected_round_state_does_not_count(self):
+        fake=frame(state=ATTACKED_DUEL,scout_hp=22,raider_hp=14,effect="Rejected")
+        io=FakeIO([fake,fake])
+        with self.assertRaisesRegex(ValueError,"checksum mismatch"):
             exercise(self.initial,self.prior,io)
 
     def test_new_round_cannot_attack_without_selection(self):
