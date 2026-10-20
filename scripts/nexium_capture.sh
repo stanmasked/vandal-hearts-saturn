@@ -93,7 +93,8 @@ fi
 
 # Check the X11 WM_DELETE_WINDOW protocol first. Do not destroy a live
 # winit-owned window when it lacks this protocol; fail the stability gate.
-if bash scripts/nexium_x11_close.sh "$window"; then
+close_helper="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/nexium_x11_close.sh"
+if bash "$close_helper" "$window"; then
   printf '%s\n' 'windowclose_sent' >>runtime-evidence/lifecycle-status.txt
   printf '%s\n' 'close_method=EWMH' >>runtime-evidence/lifecycle-status.txt
 else
