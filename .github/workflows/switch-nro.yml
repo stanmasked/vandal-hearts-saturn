@@ -112,6 +112,7 @@ jobs:
           bash -n scripts/nexium_x11_close.sh
           export RUST_BACKTRACE=1
           export NEXIUM_ACTION_PROBE=1
+          export NEXIUM_POST_MOVE_PROBE=1
           timeout --kill-after=5s 110s xvfb-run -a -s '-screen 0 1280x720x24' \
             bash scripts/nexium_xvfb_session.sh
 
@@ -166,6 +167,12 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m tools.nexium_tactical_action --verify-dir runtime-evidence
+      - name: Verify rejected second move and cancelled Scout selection on guest pixels
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m tools.nexium_post_move --verify-dir runtime-evidence
       - name: Classify NeXium host runtime failures
         if: always()
         shell: bash
