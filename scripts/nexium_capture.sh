@@ -89,6 +89,14 @@ if [[ "${NEXIUM_ACTION_PROBE:-0}" == "1" ]]; then
   fi
 fi
 
+# Stage44 uses a distinct ROM-free NRO in a separate Xvfb working folder.
+# Only the actual guest PNG plus a decoded host checksum can pass its gate.
+if [[ "${NEXIUM_ATTACK_PROBE:-0}" == "1" ]]; then
+  if ! python3 -m tools.nexium_attack_action --window "$window" --folder runtime-evidence; then
+    printf '%s\n' 'attack=unverified' >runtime-evidence/attack-probe-status.txt
+  fi
+fi
+
 # This snapshot predates the shutdown request. A panic observed here cannot be
 # explained by a subsequent Xvfb/WM_DELETE teardown.
 cp runtime-evidence/nexium.log runtime-evidence/nexium-log-before-close.log
