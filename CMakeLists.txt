@@ -71,3 +71,8 @@ add_test(NAME training_controls_contract COMMAND vh_training_controls_tests)
 add_executable(vh_training_action_fingerprint_tests tests/training_action_fingerprint_tests.cpp)
 target_link_libraries(vh_training_action_fingerprint_tests PRIVATE vh_core)
 add_test(NAME training_action_fingerprint COMMAND vh_training_action_fingerprint_tests)
+
+# Isolated ROM-free combat fixture: authentic attack requires NeXium pixel proof.
+add_executable(vh_attack_training_fingerprint_tests tests/attack_training_fingerprint_tests.cpp)
+target_link_libraries(vh_attack_training_fingerprint_tests PRIVATE vh_core)
+add_test(NAME attack_training_fingerprint COMMAND vh_attack_training_fingerprint_tests)
