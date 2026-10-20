@@ -82,9 +82,28 @@ class ActionEvidenceTests(unittest.TestCase):
         self.assertTrue(io.focused)
         self.assertEqual(io.keys.count("Right"),2)
 
-    def test_wrong_tile_rejected_without_commit(self):
-        io=FakeIO([picture((400,250)),picture((400,250)),picture((480,290))])
-        with self.assertRaisesRegex(ValueError,"exactly one tile"):
+    def test_aim_two_tile_overshoot_corrected_before_move(self):
+        # Live NeXium evidence: an X11 Right can move +72 actual pixels.
+        io=FakeIO([picture((400,250)),picture((400,250)),
+                   picture((480,290)),picture((440,270)),
+                   picture((440,270),AFTER_SCOUT_MOVE)])
+        report=exercise(picture((400,250)),picture((440,270)),io)
+        self.assertTrue(report["action_passed"])
+        self.assertEqual(io.keys,["Left","Return","Right","Left","Return"])
+
+    def test_aim_two_tile_oscillation_is_bounded_no_commit(self):
+        # No action can be certified when input constantly jumps over target.
+        aiming=[picture((480,290)) if i%2 == 0 else picture((400,250))
+                for i in range(8)]
+        io=FakeIO([picture((400,250)),picture((400,250)),*aiming])
+        with self.assertRaisesRegex(ValueError,"after 8 observations"):
+            exercise(picture((400,250)),picture((440,270)),io)
+        self.assertEqual(io.keys.count("Return"),1)
+        self.assertEqual(len(io.keys),10)
+
+    def test_wrong_row_rejected_without_commit(self):
+        io=FakeIO([picture((400,250)),picture((400,250)),picture((480,390))])
+        with self.assertRaisesRegex(ValueError,"left the Scout map row"):
             exercise(picture((400,250)),picture((440,270)),io)
         self.assertEqual(io.keys,["Left","Return","Right"])
 
