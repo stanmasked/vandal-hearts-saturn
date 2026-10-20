@@ -84,6 +84,7 @@ void render_action_receipt(SDL_Renderer* r, vh::TrainingEffect effect) {
         case vh::TrainingEffect::Moved: value = {66, 220, 132, 255}; break;
         case vh::TrainingEffect::Selected: value = {63, 167, 239, 255}; break;
         case vh::TrainingEffect::Attacked: value = {179, 103, 244, 255}; break;
+        case vh::TrainingEffect::TurnEnded: value = {76, 222, 230, 255}; break;
         default: break;
     }
     color(r, value.r, value.g, value.b);
