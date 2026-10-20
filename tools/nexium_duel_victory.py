@@ -60,7 +60,7 @@ def _hp(image, scout_hp, raider_hp):
     colors = _sample(image, {
         "scout_base": (473, 197),
         "scout_13_or_16": (481, 197),
-        "scout_not_19": (489, 197),
+        "scout_not_19": (485, 197),
         "raider_base": (503, 217),
         "raider_8": (509, 217),
         "enemy_body": (520, 245),
