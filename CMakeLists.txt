@@ -45,3 +45,10 @@ add_test(NAME startup_smoke_contract COMMAND vh_smoke_tests)
 add_executable(vh_cursor_geometry_tests tests/cursor_geometry_tests.cpp)
 target_link_libraries(vh_cursor_geometry_tests PRIVATE vh_core)
 add_test(NAME cursor_geometry_contract COMMAND vh_cursor_geometry_tests)
+
+# Deterministic ROM-free tactical replay and host/Switch state fingerprint contract.
+add_executable(vh_replay_tests tests/replay_tests.cpp)
+target_link_libraries(vh_replay_tests PRIVATE vh_core)
+add_test(NAME deterministic_replay_contract COMMAND vh_replay_tests)
+add_executable(vh_replay_cli src/app/replay_main.cpp)
+target_link_libraries(vh_replay_cli PRIVATE vh_core)

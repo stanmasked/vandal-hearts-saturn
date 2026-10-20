@@ -1,6 +1,7 @@
 #include "vh/battle.hpp"
 #include "vh/smoke.hpp"
 #include "vh/cursor_geometry.hpp"
+#include "vh/replay.hpp"
 #include <SDL.h>
 
 #include <algorithm>
@@ -209,14 +210,29 @@ int main(int argc, char** argv) {
     std::fprintf(stderr, "VH_SMOKE scene=ready width=8 height=8 units=%zu\n",
                  ui.battle.units().size());
     std::fflush(stderr);
+    std::fprintf(stderr, "VH_STATE scene=training version=1 state=%016llx\n",
+                 static_cast<unsigned long long>(vh::battle_fingerprint(ui.battle)));
+    std::fflush(stderr);
     unsigned int rendered_frames = 0;
     bool running = true;
     while (running) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
+            const auto before_state = vh::battle_fingerprint(ui.battle);
+            const vh::Pos before_cursor = ui.cursor;
             if (event.type == SDL_QUIT) running = false;
             else if (event.type == SDL_KEYDOWN && !event.key.repeat) key(ui, event.key.keysym.sym, running);
             else if (event.type == SDL_CONTROLLERBUTTONDOWN) controller(ui, event.cbutton.button, running);
+            const auto after_state = vh::battle_fingerprint(ui.battle);
+            if (before_state != after_state) {
+                std::fprintf(stderr, "VH_STATE scene=training version=1 round=%d state=%016llx\n",
+                             ui.battle.round(), static_cast<unsigned long long>(after_state));
+                std::fflush(stderr);
+            }
+            if (before_cursor != ui.cursor) {
+                std::fprintf(stderr, "VH_CURSOR x=%d y=%d\n", ui.cursor.x, ui.cursor.y);
+                std::fflush(stderr);
+            }
         }
         status_title(window, ui);
         render(renderer, ui);
