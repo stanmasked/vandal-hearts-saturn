@@ -73,18 +73,23 @@ def exercise(initial, after_right, io):
               start[1] + 20 * scale["scale_y"])
     steps = []
     # Reset to Scout, observing every frame; no gameplay Confirm yet.
-    for i in range(1, 9):
+    for i in range(1, 13):
         if _near(cursor, start):
             break
         if abs(cursor[1] - start[1]) > 80:
             raise ValueError("return cursor off duel row")
         direction = "Left" if cursor[0] > start[0] else "Right"
+        previous = cursor
         frame = io.capture_after(direction, f"duel-return-{i}")
         _require_state(frame, INITIAL_DUEL)
         cursor = _center(frame)
-        steps.append({"key": direction, "cursor_x": round(cursor[0],2)})
+        stalled = _near(cursor, previous)
+        steps.append({"key": direction, "cursor_x": round(cursor[0],2),
+                      "stalled": stalled})
+        if stalled:
+            io.focus()  # Only refocus after an observed missed X11 pulse
     if not _near(cursor, start):
-        raise ValueError("duel Scout cursor not recovered within eight observations")
+        raise ValueError("duel Scout cursor not recovered within twelve observations")
 
     selected = io.capture_after("Return", "duel-selected")
     _require_state(selected, INITIAL_DUEL)
@@ -99,16 +104,21 @@ def exercise(initial, after_right, io):
     steps.append({"key": "Return", "selected": True})
 
     cursor = start
-    for i in range(1, 9):
+    for i in range(1, 13):
         if _near(cursor, target):
             break
         if abs(cursor[1] - target[1]) > 80:
             raise ValueError("duel aim cursor off row")
         direction = "Right" if cursor[0] < target[0] else "Left"
+        previous = cursor
         frame = io.capture_after(direction, f"duel-aim-{i}")
         _require_state(frame, INITIAL_DUEL)
         cursor = _center(frame)
-        steps.append({"key": direction, "aim_x": round(cursor[0],2)})
+        stalled = _near(cursor, previous)
+        steps.append({"key": direction, "aim_x": round(cursor[0],2),
+                      "stalled": stalled})
+        if stalled:
+            io.focus()
     if not _near(cursor, target):
         raise ValueError("duel aim never reached Raider tile")
 
