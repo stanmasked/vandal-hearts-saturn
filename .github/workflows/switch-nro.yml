@@ -1,0 +1,56 @@
+name: Nintendo Switch NRO build (ROM-free)
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-nro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: devkitpro/devkita64:20260219
+    env:
+      DEVKITPRO: /opt/devkitpro
+      DEVKITA64: /opt/devkitpro/devkitA64
+      LIBNX: /opt/devkitpro/libnx
+      PORTLIBS: /opt/devkitpro/portlibs/switch
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify devkitPro SDK and Switch SDL2
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x "$DEVKITA64/bin/aarch64-none-elf-g++"
+          test -f "$LIBNX/switch_rules"
+          test -f "$PORTLIBS/include/SDL2/SDL.h"
+          if ! command -v sdl2-config && ! test -x "$PORTLIBS/bin/sdl2-config"; then
+            echo 'Cross-target SDL2 sdl2-config was not found' >&2
+            exit 1
+          fi
+      - name: Compile homebrew NRO
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$PORTLIBS/bin:$DEVKITPRO/tools/bin:$PATH"
+          make -j2
+      - name: Inspect NRO structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s vh_saturn_demo.nro
+          python3 -m tools.nro_verify vh_saturn_demo.nro --output switch-build-verification.json
+          cat switch-build-verification.json
+      - name: Store ROM-free homebrew prototype
+        uses: actions/upload-artifact@v4
+        with:
+          name: vh-saturn-prototype-nro
+          path: |
+            vh_saturn_demo.nro
+            vh_saturn_demo.nacp
+            switch-build-verification.json
+          if-no-files-found: error
+          retention-days: 14
