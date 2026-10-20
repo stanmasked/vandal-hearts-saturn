@@ -144,6 +144,22 @@ jobs:
             printf '%s\n' 'Host log absent: NeXium did not reach a confirmed runtime state' >runtime-evidence/emulator-log-unavailable.txt
             exit 1
           fi
+      - name: Distinguish NeXium host errors before versus after window close
+        if: always()
+        shell: bash
+        run: |
+          set -eu
+          if [ -s runtime-evidence/nexium-log-before-close.log ] && [ -s runtime-evidence/nexium.log ] && [ -s runtime-evidence/lifecycle-status.txt ]; then
+            python3 -m tools.nexium_lifecycle_audit \
+              runtime-evidence/nexium-log-before-close.log \
+              runtime-evidence/nexium.log \
+              runtime-evidence/lifecycle-status.txt \
+              --output runtime-evidence/lifecycle-audit.json
+          else
+            mkdir -p runtime-evidence
+            printf '%s\n' 'Host did not reach auditable shutdown; see launcher error' >runtime-evidence/lifecycle-audit-unavailable.txt
+            exit 1
+          fi
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
