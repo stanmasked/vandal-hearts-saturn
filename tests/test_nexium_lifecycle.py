@@ -33,7 +33,7 @@ class LifecycleTests(unittest.TestCase):
                        'if [[ "$1" == "search" ]]; then echo 456; exit 0; fi\n'
                        'if [[ "$1" == "windowclose" ]]; then\n'
                        + ('  exit 1\n' if kind == 'no_windowclose' else '  kill -TERM "$(cat emu.pid)"; exit 0\n')
-                       + 'fi\nexit 0\n')
+                       + 'fi\n' + ('if [[ "$1" == "key" ]]; then sleep 30; fi\n' if kind == 'hung_key' else '') + 'exit 0\n')
             executable(root / 'bin' / 'import',
                        '#!/usr/bin/env bash\n'
                        'printf PNG_MOCK > "$3"\n')
@@ -77,6 +77,13 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(f['failure-reason.txt'], 'forced_termination_after_capture\n')
         self.assertIn('windowclose_unavailable', f['lifecycle-status.txt'])
         self.assertIn('forced_sigterm', f['lifecycle-status.txt'])
+
+    def test_hung_input_probe_does_not_block_cleanup(self):
+        p, f = self.launch(kind='hung_key')
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual(f['input-probe-status.txt'], 'input_attempted=Right dispatch=failed\n')
+        self.assertIn('emulator_exit_code=0', f['lifecycle-status.txt'])
+        self.assertIsNone(f['failure-reason.txt'])
 
     def test_before_close_panic_evidence_persists(self):
         p, f = self.launch(before_panic=True)

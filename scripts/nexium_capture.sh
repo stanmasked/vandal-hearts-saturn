@@ -67,10 +67,12 @@ printf 'captured_window_id=%s\n' "$window" >runtime-evidence/capture-status.txt
 printf '%s\n' 'VH_EMU_CAPTURE screenshot=ready' >&2
 
 # Optional X11 keyboard evidence, not proof of guest controller response.
-if xdotool windowactivate --sync "$window" 2>/dev/null && \
-   xdotool key --clearmodifiers --window "$window" Right 2>/dev/null; then
+# No window manager exists under bare Xvfb: windowactivate --sync can wait
+# indefinitely and block cleanup. Dispatch directly to the visible window and
+# limit this optional probe even if the X11 input helper stalls.
+if timeout --kill-after=1s 4s xdotool key --clearmodifiers --window "$window" Right 2>/dev/null; then
   sleep 1
-  if import -window "$window" runtime-evidence/nexium-after-right.png && \
+  if timeout --kill-after=1s 8s import -window "$window" runtime-evidence/nexium-after-right.png && \
      [[ -s runtime-evidence/nexium-after-right.png ]]; then
     printf '%s\n' 'input_attempted=Right screenshot=ready' >runtime-evidence/input-probe-status.txt
   else
