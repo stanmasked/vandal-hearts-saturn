@@ -66,20 +66,12 @@ fi
 printf 'captured_window_id=%s\n' "$window" >runtime-evidence/capture-status.txt
 printf '%s\n' 'VH_EMU_CAPTURE screenshot=ready' >&2
 
-# Optional X11 keyboard evidence, not proof of guest controller response.
-# No window manager exists under bare Xvfb: windowactivate --sync can wait
-# indefinitely and block cleanup. Dispatch directly to the visible window and
-# limit this optional probe even if the X11 input helper stalls.
-if timeout --kill-after=1s 4s xdotool key --clearmodifiers --window "$window" Right 2>/dev/null; then
-  sleep 1
-  if timeout --kill-after=1s 8s import -window "$window" runtime-evidence/nexium-after-right.png && \
-     [[ -s runtime-evidence/nexium-after-right.png ]]; then
-    printf '%s\n' 'input_attempted=Right screenshot=ready' >runtime-evidence/input-probe-status.txt
-  else
-    printf '%s\n' 'input_attempted=Right screenshot=failed' >runtime-evidence/input-probe-status.txt
-  fi
-else
-  printf '%s\n' 'input_attempted=Right dispatch=failed' >runtime-evidence/input-probe-status.txt
+# Try Right at most twice; a second attempt is permitted only when the first
+# actual screenshot fails to demonstrate cursor movement. The guest visual CI
+# gate remains authoritative and can still reject an unresponsive cursor.
+input_helper="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/nexium_right_probe.sh"
+if ! bash "$input_helper" "$window"; then
+  printf '%s\n' 'input_attempted=Right helper=failed' >runtime-evidence/input-probe-status.txt
 fi
 
 # This snapshot predates the shutdown request. A panic observed here cannot be
