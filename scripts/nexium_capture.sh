@@ -95,7 +95,14 @@ if [[ "${NEXIUM_ATTACK_PROBE:-0}" == "1" ]]; then
   if python3 -m tools.nexium_attack_action --window "$window" --folder runtime-evidence; then
     # Never run follow-on actions when the first real guest attack failed.
     if [[ "${NEXIUM_RESELECT_PROBE:-0}" == "1" ]]; then
-      if ! python3 -m tools.nexium_duel_reselect --window "$window" --folder runtime-evidence; then
+      if python3 -m tools.nexium_duel_reselect --window "$window" --folder runtime-evidence; then
+        # Stage48 only continues from a real validated Stage45 re-selection.
+        if [[ "${NEXIUM_SECOND_ROUND_PROBE:-0}" == "1" ]]; then
+          if ! python3 -m tools.nexium_second_round --window "$window" --folder runtime-evidence; then
+            printf '%s\n' 'round2=unverified' >runtime-evidence/round2-probe-status.txt
+          fi
+        fi
+      else
         printf '%s\n' 'duel_reselect=unverified' >runtime-evidence/reselect-probe-status.txt
       fi
     fi
