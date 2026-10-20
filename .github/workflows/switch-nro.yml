@@ -104,26 +104,9 @@ jobs:
           icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -name 'lvp_icd*.json' -print -quit)"
           test -n "$icd"
           export VK_ICD_FILENAMES="$icd"
-          timeout --kill-after=5s 110s xvfb-run -a -s '-screen 0 1280x720x24' bash -c '
-            set -euo pipefail
-            "$NEXIUM_BIN" nros/vh_saturn_demo.nro >runtime-evidence/nexium.log 2>&1 &
-            pid=$!
-            trap "kill $pid 2>/dev/null || true" EXIT
-            window=""
-            for i in $(seq 1 45); do
-              sleep 1
-              window="$(xdotool search --onlyvisible --name NeXium 2>/dev/null | tail -n 1 || true)"
-              if [ -n "$window" ]; then break; fi
-              if ! kill -0 "$pid" 2>/dev/null; then
-                cat runtime-evidence/nexium.log
-                echo 'Emulator exited before a visible window was created' >&2
-                exit 1
-              fi
-            done
-            test -n "$window"
-            sleep 12
-            import -window "$window" runtime-evidence/nexium-window.png
-          '
+          bash -n scripts/nexium_capture.sh
+          timeout --kill-after=5s 110s xvfb-run -a -s '-screen 0 1280x720x24' \
+            bash scripts/nexium_capture.sh
 
       - name: Check two allied and two opposing game markers
         shell: bash
