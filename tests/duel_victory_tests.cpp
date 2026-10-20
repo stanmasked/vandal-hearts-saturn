@@ -55,22 +55,27 @@ int main() {
     assert(vh::apply_training_action(ui, TrainingAction::EndTurn)
            == TrainingEffect::TurnEnded);
     check_hp(ui, 19, 14, 2);
+    assert(vh::battle_fingerprint(ui.battle) == UINT64_C(0xb633fd92746c41cf));
 
     // Round 2: stage48 guest-verified attack 14 -> 8 and AI response.
     scout_attack(ui, 8);
+    assert(vh::battle_fingerprint(ui.battle) == UINT64_C(0x203a8823191e6018));
     assert(vh::apply_training_action(ui, TrainingAction::EndTurn)
            == TrainingEffect::TurnEnded);
     check_hp(ui, 16, 8, 3);
+    assert(vh::battle_fingerprint(ui.battle) == UINT64_C(0x1b81f3931a165925));
     assert(ui.selected == -1);
 
     // Round 3: enemy survives with exactly two HP.
     scout_attack(ui, 2);
+    assert(vh::battle_fingerprint(ui.battle) == UINT64_C(0x7849484ccfd7a0de));
     assert(vh::apply_training_action(ui, TrainingAction::Attack)
            == TrainingEffect::Rejected);
     check_hp(ui, 16, 2, 3);
     assert(vh::apply_training_action(ui, TrainingAction::EndTurn)
            == TrainingEffect::TurnEnded);
     check_hp(ui, 13, 2, 4);
+    assert(vh::battle_fingerprint(ui.battle) == UINT64_C(0x984023d699c803db));
     assert(ui.selected == -1);
 
     // Round 4: fatal hit clamps remaining HP to zero and freezes victory.
@@ -80,6 +85,7 @@ int main() {
     assert(ui.status == "Victory!");
     assert(ui.battle.unit_at({2, 5}) == nullptr);
     const auto victory_hash = vh::battle_fingerprint(ui.battle);
+    assert(victory_hash == UINT64_C(0x6097117b6c951fb6));
 
     // A completed battle cannot be replayed into another round/attack.
     assert(vh::apply_training_action(ui, TrainingAction::Attack)
