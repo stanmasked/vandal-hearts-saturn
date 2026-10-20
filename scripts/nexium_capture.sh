@@ -118,6 +118,15 @@ if [[ "${NEXIUM_ATTACK_PROBE:-0}" == "1" ]]; then
   fi
 fi
 
+# Stage52: a separate unmodified ROM-free duel NRO instance. This route
+# intentionally skips all player attacks until the Raider defeats Scout.
+# Do not couple its acceptance to the independent Stage50 victory session.
+if [[ "${NEXIUM_DEFEAT_PROBE:-0}" == "1" ]]; then
+  if ! python3 -m tools.nexium_duel_defeat --window "$window" --folder runtime-evidence; then
+    printf '%s\n' 'defeat=unverified' >runtime-evidence/defeat-probe-status.txt
+  fi
+fi
+
 # This snapshot predates the shutdown request. A panic observed here cannot be
 # explained by a subsequent Xvfb/WM_DELETE teardown.
 cp runtime-evidence/nexium.log runtime-evidence/nexium-log-before-close.log
