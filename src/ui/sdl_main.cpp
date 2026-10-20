@@ -70,6 +70,23 @@ void render_visual_state_digest(SDL_Renderer* r, const vh::Battle& battle) {
     }
 }
 
+// Stage43: a tiny ROM-free receipt in the spare top-right of the window.
+// The pixel conveys the LAST processed SDL action, independently of battle
+// hash and yellow cursor. Red=Rejected; amber=Cancelled; green=Moved.
+void render_action_receipt(SDL_Renderer* r, vh::TrainingEffect effect) {
+    SDL_Color value{40, 53, 69, 255};
+    switch (effect) {
+        case vh::TrainingEffect::Rejected: value = {239, 79, 76, 255}; break;
+        case vh::TrainingEffect::Cancelled: value = {251, 220, 90, 255}; break;
+        case vh::TrainingEffect::Moved: value = {66, 220, 132, 255}; break;
+        case vh::TrainingEffect::Selected: value = {63, 167, 239, 255}; break;
+        default: break;
+    }
+    color(r, value.r, value.g, value.b);
+    SDL_Rect receipt{1210, 60, 16, 16};
+    SDL_RenderFillRect(r, &receipt);
+}
+
 void render(SDL_Renderer* r, const Ui& ui) {
     color(r, 14, 19, 32);
     SDL_RenderClear(r);
@@ -127,6 +144,7 @@ void render(SDL_Renderer* r, const Ui& ui) {
     SDL_Rect enemies{55, H - 43, 30, 20};
     SDL_RenderFillRect(r, &enemies);
     render_visual_state_digest(r, ui.battle);
+    render_action_receipt(r, ui.last_effect);
     SDL_RenderPresent(r);
 }
 
@@ -137,7 +155,8 @@ void status_title(SDL_Window* window, const Ui& ui) {
 }
 
 void issue(Ui& ui, vh::TrainingAction action, bool& running) {
-    if (vh::apply_training_action(ui, action) == vh::TrainingEffect::QuitRequested)
+    ui.last_effect = vh::apply_training_action(ui, action);
+    if (ui.last_effect == vh::TrainingEffect::QuitRequested)
         running = false;
 }
 void key(Ui& ui, SDL_Keycode code, bool& running) {
