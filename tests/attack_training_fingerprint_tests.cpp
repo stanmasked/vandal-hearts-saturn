@@ -59,6 +59,7 @@ int main() {
     assert(ui.battle.find_unit(3)->hp == 14);
     assert(!ui.battle.find_unit(1)->acted);
     assert(ui.battle.find_unit(3)->acted);
+    assert(vh::battle_fingerprint(ui.battle) == UINT64_C(0xb633fd92746c41cf));
     assert(vh::apply_training_action(ui, vh::TrainingAction::Attack)
         == vh::TrainingEffect::Rejected); // cannot attack without selection
     assert(vh::apply_training_action(ui, vh::TrainingAction::Left)
@@ -74,6 +75,7 @@ int main() {
     assert(ui.battle.find_unit(1)->acted);
     const auto second_round_fingerprint = vh::battle_fingerprint(ui.battle);
     assert(second_round_fingerprint != moved_hash);
+    assert(second_round_fingerprint == UINT64_C(0x203a8823191e6018));
     assert(vh::apply_training_action(ui, vh::TrainingAction::Attack)
         == vh::TrainingEffect::Rejected);
     assert(vh::battle_fingerprint(ui.battle) == second_round_fingerprint);
