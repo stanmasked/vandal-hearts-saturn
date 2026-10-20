@@ -30,19 +30,41 @@ def inspect_nro(path: Path) -> dict:
             raise ValueError("Invalid executable NRO size in header")
         names = ("text", "rodata", "data")
         segments = {}
+        previous_end = 0
         for index, name in enumerate(names):
             offset, length = struct.unpack_from("<II", header, 0x20 + 8 * index)
-            if length and (offset < HEADER_BYTES or offset + length > executable_size):
-                raise ValueError(f"{name} segment outside NRO body")
+            # NRO segment offsets are measured from the start of the executable.
+            # In real elf2nro output .text commonly starts at offset ZERO and
+            # contains the first 0x80 bytes, including the NRO0 header.
+            # Do not impose an artificial 0x80 minimum on segment offsets.
+            if length:
+                if offset < previous_end:
+                    raise ValueError(f"{name} segment overlaps previous segment")
+                if offset + length > executable_size:
+                    raise ValueError(f"{name} segment outside NRO body")
+                previous_end = offset + length
             segments[name] = {"offset": offset, "bytes": length}
         if not segments["text"]["bytes"]:
             raise ValueError("Empty NRO code segment")
+        if (segments["text"]["offset"] > 0 or
+                segments["text"]["bytes"] <= HEADER_BYTES):
+            raise ValueError("NRO .text must contain the start header and executable code")
         has_assets = False
         if size > executable_size:
             handle.seek(executable_size)
-            has_assets = handle.read(4) == b"ASET"
-            if not has_assets:
-                raise ValueError("Unrecognized trailing data instead of ASET")
+            asset_header = handle.read(0x38)
+            if len(asset_header) < 0x38 or asset_header[:4] != b"ASET":
+                raise ValueError("Invalid or truncated trailing ASET header")
+            asset_version, = struct.unpack_from("<I", asset_header, 4)
+            if asset_version != 0:
+                raise ValueError("Unsupported ASET version")
+            for index, label in enumerate(("icon", "nacp", "romfs")):
+                asset_offset, asset_size = struct.unpack_from("<QQ", asset_header,
+                                                             8 + 16 * index)
+                if asset_size and (asset_offset < 0x38 or
+                                   asset_offset + asset_size > size - executable_size):
+                    raise ValueError(f"{label} ASET payload out of bounds")
+            has_assets = True
         handle.seek(0)
         checksum = hashlib.sha256()
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
