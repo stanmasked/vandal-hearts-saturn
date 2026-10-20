@@ -27,7 +27,12 @@ check_motion() {
 for ((attempt=1; attempt<=NEXIUM_PROBE_MAX_ATTEMPTS; ++attempt)); do
   frame="runtime-evidence/nexium-after-right-attempt-${attempt}.png"
   if ! timeout --kill-after=1s 4s xdotool key --clearmodifiers --window "$window" Right 2>/dev/null; then
-    printf 'attempt%s=dispatch_failed\n' "$attempt" >> "$receipts"
+    # Fail fast on a hung or failed xdotool invocation: repeating timeouts
+    # would delay emulator teardown and risk orphaning the guest process.
+    # This is distinct from a successfully delivered but visually ignored key.
+    printf 'attempt%s=dispatch_failed\nselected_attempt=none\n' "$attempt" >> "$receipts"
+    printf 'input_attempted=Right dispatch=failed\n' >runtime-evidence/input-probe-status.txt
+    exit 0
   else
     sleep 1
     if ! timeout --kill-after=1s 8s import -window "$window" "$frame" 2>/dev/null || [[ ! -s "$frame" ]]; then
