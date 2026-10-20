@@ -65,7 +65,7 @@ class RealX11:
         self.window, self.folder = window, folder
 
     def capture_after(self, key, label):
-        if key not in ("Left", "Right", "Return", "space", "BackSpace", "y"):
+        if key not in ("Left", "Right", "Return", "space", "BackSpace", "y", "x"):
             raise ValueError("unexpected action key")
         # Genuine Stage41 screenshots show short arrows work (one tile), but
         # a default 12 ms Return can be missed by the guest frame sampler.
