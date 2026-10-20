@@ -1,4 +1,7 @@
 name: Host regression tests (ROM-free)
+concurrency:
+  group: host-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 on:
   push:
   pull_request:
