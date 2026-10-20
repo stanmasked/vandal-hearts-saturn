@@ -1,4 +1,5 @@
 #include "vh/battle.hpp"
+#include "vh/smoke.hpp"
 #include <SDL.h>
 
 #include <algorithm>
@@ -173,7 +174,13 @@ void controller(Ui& ui, Uint8 button, bool& running) {
 }
 }
 
-int main(int, char**) {
+int main(int argc, char** argv) {
+    int smoke_frames = 0;
+    try { smoke_frames = vh::smoke_frames_from_args(argc, argv); }
+    catch (const std::invalid_argument& e) {
+        std::fprintf(stderr, "VH_SMOKE argument_error=%s\n", e.what());
+        return 4;
+    }
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) != 0) {
         std::fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
         return 1;
@@ -185,11 +192,25 @@ int main(int, char**) {
     if (!renderer) renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
     if (!renderer) { SDL_DestroyWindow(window); SDL_Quit(); return 3; }
     SDL_RenderSetLogicalSize(renderer, W, H);
+    std::fprintf(stderr, "VH_SMOKE sdl=ready renderer=ready\n");
+    std::fflush(stderr);
     SDL_GameController* pad = nullptr;
     for (int i = 0; i < SDL_NumJoysticks(); ++i) {
         if (SDL_IsGameController(i)) { pad = SDL_GameControllerOpen(i); break; }
     }
     Ui ui;
+    if (!vh::smoke_training_scene_ready(ui.battle)) {
+        std::fprintf(stderr, "VH_SMOKE scene=failed\n");
+        if (pad) SDL_GameControllerClose(pad);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 5;
+    }
+    std::fprintf(stderr, "VH_SMOKE scene=ready width=8 height=8 units=%zu\n",
+                 ui.battle.units().size());
+    std::fflush(stderr);
+    unsigned int rendered_frames = 0;
     bool running = true;
     while (running) {
         SDL_Event event;
@@ -200,7 +221,18 @@ int main(int, char**) {
         }
         status_title(window, ui);
         render(renderer, ui);
-        SDL_Delay(8);
+        ++rendered_frames;
+        if (rendered_frames == 1) {
+            std::fprintf(stderr, "VH_SMOKE first_frame=rendered\n");
+            std::fflush(stderr);
+        }
+        if (smoke_frames > 0 && rendered_frames >= static_cast<unsigned int>(smoke_frames)) {
+            std::fprintf(stderr, "VH_SMOKE completed_frames=%u round=%d phase=%d\n",
+                         rendered_frames, ui.battle.round(), static_cast<int>(ui.battle.phase()));
+            std::fflush(stderr);
+            running = false;
+        }
+        if (running) SDL_Delay(8);
     }
     if (pad) SDL_GameControllerClose(pad);
     SDL_DestroyRenderer(renderer);

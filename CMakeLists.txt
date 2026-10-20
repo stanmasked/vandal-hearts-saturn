@@ -35,3 +35,8 @@ enable_testing()
 add_executable(vh_tests tests/battle_tests.cpp)
 target_link_libraries(vh_tests PRIVATE vh_core)
 add_test(NAME tactical_core COMMAND vh_tests)
+
+# ROM-free startup/smoke invariants tested on host without SDL or Switch SDK.
+add_executable(vh_smoke_tests tests/smoke_tests.cpp)
+target_link_libraries(vh_smoke_tests PRIVATE vh_core)
+add_test(NAME startup_smoke_contract COMMAND vh_smoke_tests)
