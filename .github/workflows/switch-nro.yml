@@ -130,6 +130,20 @@ jobs:
             mkdir -p runtime-evidence
             printf '%s\n' 'Cursor input not evaluated: screenshots missing' >runtime-evidence/cursor-motion-skipped.txt
           fi
+      - name: Classify NeXium host runtime failures
+        if: always()
+        shell: bash
+        run: |
+          set -eu
+          mkdir -p runtime-evidence
+          if [ -s runtime-evidence/nexium.log ]; then
+            python3 -m tools.nexium_log_health \
+              runtime-evidence/nexium.log \
+              --output runtime-evidence/emulator-log-health.json
+          else
+            printf '%s\n' 'Host log absent: NeXium did not reach a confirmed runtime state' >runtime-evidence/emulator-log-unavailable.txt
+            exit 1
+          fi
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
