@@ -21,6 +21,7 @@ struct TrainingUi {
     Battle battle = Battle::training();
     Pos cursor{1, 5};
     int selected = -1;
+    TrainingEffect last_effect = TrainingEffect::NoChange; // SDL guest visual action receipt
     std::string status = "Select ally: A / Enter. Move: D-pad. Attack: Y. End round: X";
 };
 
