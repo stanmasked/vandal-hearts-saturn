@@ -4,6 +4,9 @@
 #include "vh/replay.hpp"
 #include "vh/visual_digest.hpp"
 #include "vh/training_controls.hpp"
+#ifdef VH_STAGE44_DUEL
+#include "vh/attack_training.hpp"
+#endif
 #include <SDL.h>
 
 #include <algorithm>
@@ -80,6 +83,7 @@ void render_action_receipt(SDL_Renderer* r, vh::TrainingEffect effect) {
         case vh::TrainingEffect::Cancelled: value = {251, 220, 90, 255}; break;
         case vh::TrainingEffect::Moved: value = {66, 220, 132, 255}; break;
         case vh::TrainingEffect::Selected: value = {63, 167, 239, 255}; break;
+        case vh::TrainingEffect::Attacked: value = {179, 103, 244, 255}; break;
         default: break;
     }
     color(r, value.r, value.g, value.b);
@@ -214,7 +218,16 @@ int main(int argc, char** argv) {
         if (SDL_IsGameController(i)) { pad = SDL_GameControllerOpen(i); break; }
     }
     Ui ui;
-    if (!vh::smoke_training_scene_ready(ui.battle)) {
+#ifdef VH_STAGE44_DUEL
+    ui.battle = vh::stage44_attack_duel();
+    ui.cursor = {1, 5};
+    const bool scene_ready = ui.battle.units().size() == 2 &&
+                             ui.battle.unit_at({1, 5}) != nullptr &&
+                             ui.battle.unit_at({2, 5}) != nullptr;
+#else
+    const bool scene_ready = vh::smoke_training_scene_ready(ui.battle);
+#endif
+    if (!scene_ready) {
         std::fprintf(stderr, "VH_SMOKE scene=failed\n");
         if (pad) SDL_GameControllerClose(pad);
         SDL_DestroyRenderer(renderer);
