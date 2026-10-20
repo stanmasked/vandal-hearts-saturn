@@ -189,6 +189,18 @@ jobs:
             printf '%s\n' 'Host did not reach auditable shutdown; see launcher error' >runtime-evidence/lifecycle-audit-unavailable.txt
             exit 1
           fi
+      - name: Repeat NeXium in three independent Xvfb sessions
+        shell: bash
+        run: |
+          set -euo pipefail
+          icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -name 'lvp_icd*.json' -print -quit)"
+          test -n "$icd"
+          export VK_ICD_FILENAMES="$icd"
+          export RUST_BACKTRACE=1
+          bash -n scripts/nexium_repeat_trials.sh
+          bash scripts/nexium_repeat_trials.sh
+          python3 -m tools.nexium_repeat_audit runtime-evidence/repeat-trials \
+            --output runtime-evidence/repeat-audit.json
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
