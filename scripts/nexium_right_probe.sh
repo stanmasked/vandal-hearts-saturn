@@ -10,10 +10,11 @@ fi
 mkdir -p runtime-evidence
 source_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 receipts=runtime-evidence/input-probe-attempts.txt
+probe_python="${NEXIUM_PROBE_PYTHON:-python3}"
 printf '%s\n' 'probe=bounded_right_v1' > "$receipts"
 check_motion() {
   local image="$1" attempt="$2"
-  PYTHONPATH="$source_root${PYTHONPATH:+:$PYTHONPATH}" python3 -m tools.nexium_cursor_motion \
+  PYTHONPATH="$source_root${PYTHONPATH:+:$PYTHONPATH}" "$probe_python" -m tools.nexium_cursor_motion \
     runtime-evidence/nexium-window.png "$image" \
     --output "runtime-evidence/input-motion-attempt-${attempt}.json" \
     > /dev/null 2> "runtime-evidence/input-motion-attempt-${attempt}.stderr"

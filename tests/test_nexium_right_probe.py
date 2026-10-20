@@ -1,6 +1,7 @@
 """Real Bash subprocess checks of bounded screenshot-confirmed Right retry."""
 from __future__ import annotations
 import os
+import sys
 from pathlib import Path
 import subprocess
 import tempfile
@@ -39,7 +40,7 @@ class RightProbeTests(unittest.TestCase):
             executable(root / 'bin/import', '#!/usr/bin/env bash\n'
                        'if [[ "$3" == *retry.png ]]; then cp second.png "$3"; else cp first.png "$3"; fi\n')
             env = dict(os.environ, PATH=f'{root / "bin"}:{os.environ["PATH"]}',
-                       PYTHONPATH=str(ROOT))
+                       PYTHONPATH=str(ROOT), NEXIUM_PROBE_PYTHON=sys.executable)
             result = subprocess.run(['bash', str(SCRIPT), '123456'], cwd=root, env=env,
                                     capture_output=True, text=True, timeout=14)
             base = root / 'runtime-evidence'
