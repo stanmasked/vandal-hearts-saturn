@@ -113,6 +113,7 @@ jobs:
             bash scripts/nexium_xvfb_session.sh
 
       - name: Check two allied and two opposing game markers
+        if: always()
         shell: bash
         run: |
           set -euxo pipefail
@@ -121,6 +122,7 @@ jobs:
             --output runtime-evidence/frame-check.json
 
       - name: Verify native guest state via screenshot pixels
+        if: always()
         shell: bash
         run: |
           set -euxo pipefail
@@ -143,6 +145,18 @@ jobs:
             mkdir -p runtime-evidence
             printf '%s\n' 'Cursor input not evaluated: screenshots missing' >runtime-evidence/cursor-motion-skipped.txt
           fi
+      - name: Strict two-frame guest state and cursor evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-evidence
+          python3 -m tools.nexium_guest_evidence \
+            runtime-evidence/nexium-window.png \
+            runtime-evidence/nexium-after-right.png \
+            --receipt runtime-evidence/input-probe-status.txt \
+            --output runtime-evidence/guest-visual-evidence.json
+
       - name: Classify NeXium host runtime failures
         if: always()
         shell: bash
