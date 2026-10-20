@@ -1,44 +1,63 @@
 #!/usr/bin/env bash
-# Stage 22: launch the actual NeXium guest under Xvfb and capture evidence.
-# Use a standalone launcher so Bash syntax is checked in isolation.
+# Real NeXium guest window probe; preserves failure receipts for GitHub Actions.
+# This launcher is exercised with mock executables in CI before emulator use.
 set -euo pipefail
 
 : "${NEXIUM_BIN:?NeXium executable path is required}"
+: "${NEXIUM_WINDOW_ATTEMPTS:=45}"
+: "${NEXIUM_POLL_DELAY_SECONDS:=1}"
+: "${NEXIUM_SETTLE_DELAY_SECONDS:=12}"
+for config_value in "$NEXIUM_WINDOW_ATTEMPTS" "$NEXIUM_POLL_DELAY_SECONDS" "$NEXIUM_SETTLE_DELAY_SECONDS"; do
+  if ! [[ "$config_value" =~ ^[0-9]+$ ]]; then
+    echo 'Invalid runtime timing parameter (integer seconds required)' >&2
+    exit 4
+  fi
+done
+if (( NEXIUM_WINDOW_ATTEMPTS < 1 || NEXIUM_WINDOW_ATTEMPTS > 60 || NEXIUM_POLL_DELAY_SECONDS > 10 || NEXIUM_SETTLE_DELAY_SECONDS > 60 )); then
+  echo 'Runtime timing parameter out of range' >&2
+  exit 4
+fi
+
 test -s nros/vh_saturn_demo.nro
 mkdir -p runtime-evidence
+record_failure() {
+  printf '%s\n' "$1" >runtime-evidence/failure-reason.txt
+  printf 'VH_EMU_FAILURE reason=%s\n' "$1" >&2
+}
 
-"${NEXIUM_BIN}" nros/vh_saturn_demo.nro >runtime-evidence/nexium.log 2>&1 &
+"$NEXIUM_BIN" nros/vh_saturn_demo.nro >runtime-evidence/nexium.log 2>&1 &
 emu_pid=$!
-trap 'kill "$emu_pid" 2>/dev/null || true' EXIT
+trap 'kill "$emu_pid" 2>/dev/null || true; wait "$emu_pid" 2>/dev/null || true' EXIT
 
-window=""
-for attempt in $(seq 1 45); do
-  sleep 1
+window=''
+for ((attempt=1; attempt<=NEXIUM_WINDOW_ATTEMPTS; attempt++)); do
+  sleep "$NEXIUM_POLL_DELAY_SECONDS"
   window="$(xdotool search --onlyvisible --name NeXium 2>/dev/null | tail -n 1 || true)"
-  if [ -n "$window" ]; then
-    break
-  fi
+  if [[ -n "$window" ]]; then break; fi
   if ! kill -0 "$emu_pid" 2>/dev/null; then
-    cat runtime-evidence/nexium.log
-    printf '%s\n' 'Emulator exited before a visible window was created' >&2
-    printf '%s\n' 'emulator_terminated_before_window' >runtime-evidence/failure-reason.txt
+    record_failure 'emulator_terminated_before_window'
+    cat runtime-evidence/nexium.log >&2
     exit 1
   fi
 done
-
-if [ -z "$window" ]; then
-  printf '%s\n' 'NeXium window not found within 45 seconds' >&2
-  printf '%s\n' 'window_not_found' >runtime-evidence/failure-reason.txt
+if [[ -z "$window" ]]; then
+  record_failure 'window_not_found'
   exit 1
 fi
 
-sleep 12
+sleep "$NEXIUM_SETTLE_DELAY_SECONDS"
 if ! kill -0 "$emu_pid" 2>/dev/null; then
-  cat runtime-evidence/nexium.log
-  printf '%s\n' 'NeXium process exited before screenshot capture' >&2
-  printf '%s\n' 'emulator_terminated_before_capture' >runtime-evidence/failure-reason.txt
+  record_failure 'emulator_terminated_before_capture'
+  cat runtime-evidence/nexium.log >&2
   exit 1
 fi
-import -window "$window" runtime-evidence/nexium-window.png
-test -s runtime-evidence/nexium-window.png
+if ! import -window "$window" runtime-evidence/nexium-window.png; then
+  record_failure 'window_capture_command_failed'
+  exit 1
+fi
+if [[ ! -s runtime-evidence/nexium-window.png ]]; then
+  record_failure 'window_capture_empty'
+  exit 1
+fi
 printf 'captured_window_id=%s\n' "$window" >runtime-evidence/capture-status.txt
+printf '%s\n' 'VH_EMU_CAPTURE screenshot=ready' >&2
