@@ -40,13 +40,17 @@ jobs:
           set -euo pipefail
           export PATH="$PORTLIBS/bin:$DEVKITPRO/tools/bin:$PATH"
           make -j2
+          # An isolated build variant: no change to the default Stage43 NRO.
+          make TARGET=vh_saturn_attack BUILD=switch-attack-build DEFINES=-DVH_STAGE44_DUEL -j2
       - name: Inspect NRO structure
         shell: bash
         run: |
           set -euo pipefail
           test -s vh_saturn_demo.nro
           python3 -m tools.nro_verify vh_saturn_demo.nro --output switch-build-verification.json
-          cat switch-build-verification.json
+          test -s vh_saturn_attack.nro
+          python3 -m tools.nro_verify vh_saturn_attack.nro --output attack-build-verification.json
+          cat switch-build-verification.json attack-build-verification.json
       - name: Store ROM-free homebrew prototype
         uses: actions/upload-artifact@v4
         with:
@@ -55,6 +59,9 @@ jobs:
             vh_saturn_demo.nro
             vh_saturn_demo.nacp
             switch-build-verification.json
+            vh_saturn_attack.nro
+            vh_saturn_attack.nacp
+            attack-build-verification.json
           if-no-files-found: error
           retention-days: 14
 
@@ -215,11 +222,41 @@ jobs:
           bash scripts/nexium_repeat_trials.sh
           python3 -m tools.nexium_repeat_audit runtime-evidence/repeat-trials \
             --output runtime-evidence/repeat-audit.json
+      - name: Stage44 independent real NeXium attack duel and HP evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s nros/vh_saturn_attack.nro
+          mkdir -p stage44-session/nros
+          cp nros/vh_saturn_attack.nro stage44-session/nros/vh_saturn_demo.nro
+          ln -s "$GITHUB_WORKSPACE/scripts" stage44-session/scripts
+          ln -s "$GITHUB_WORKSPACE/tools" stage44-session/tools
+          icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -name 'lvp_icd*.json' -print -quit)"
+          test -n "$icd"
+          export VK_ICD_FILENAMES="$icd"
+          export RUST_BACKTRACE=1
+          export NEXIUM_ATTACK_PROBE=1
+          (
+            cd stage44-session
+            timeout --kill-after=5s 110s xvfb-run -a -s '-screen 0 1280x720x24' \
+              bash scripts/nexium_xvfb_session.sh
+          )
+          python3 -m tools.nexium_attack_action --verify-dir stage44-session/runtime-evidence
+          python3 -m tools.nexium_log_health stage44-session/runtime-evidence/nexium.log \
+            --output stage44-session/runtime-evidence/emulator-log-health.json
+          python3 -m tools.nexium_lifecycle_audit \
+            stage44-session/runtime-evidence/nexium-log-before-close.log \
+            stage44-session/runtime-evidence/nexium.log \
+            stage44-session/runtime-evidence/lifecycle-status.txt \
+            --output stage44-session/runtime-evidence/lifecycle-audit.json
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vh-saturn-nexium-runtime-evidence
-          path: runtime-evidence/
+          path: |
+            runtime-evidence/
+            stage44-session/runtime-evidence/
           if-no-files-found: warn
           retention-days: 14
