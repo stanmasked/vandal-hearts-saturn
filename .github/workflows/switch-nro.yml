@@ -54,3 +54,100 @@ jobs:
             switch-build-verification.json
           if-no-files-found: error
           retention-days: 14
+
+  run-in-nexium:
+    name: Experimental NeXium guest framebuffer smoke
+    needs: build-nro
+    runs-on: ubuntu-26.04
+    timeout-minutes: 18
+    steps:
+      - name: Download built NRO
+        uses: actions/download-artifact@v4
+        with:
+          name: vh-saturn-prototype-nro
+          path: nros
+
+      - name: Install headless NeXium graphics dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y curl jq xvfb xauth xdotool imagemagick python3-pil \
+            libgtk-3-0t64 libasound2t64 libudev1 libxkbcommon0 libxkbcommon-x11-0 \
+            libx11-xcb1 libxcb-cursor0 libxcb-xinerama0 libxcb-xfixes0 \
+            libxcb-randr0 libxcb-render0 libxcb-shape0 libxcb-xkb1 \
+            libvulkan1 mesa-vulkan-drivers
+
+      - name: Fetch NeXium nightly build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          release_json="$(curl -fsSL --retry 3 --retry-all-errors -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/nexium-emu/nexium-nightly/releases/tags/nightly)"
+          asset_url="$(printf '%s' "$release_json" | jq -r '.assets[] | select(.name == "nexium-linux-x86_64.tar.gz") | .browser_download_url')"
+          test -n "$asset_url"
+          curl -fL --retry 3 --retry-all-errors "$asset_url" -o /tmp/nexium-linux.tar.gz
+          mkdir -p /tmp/nexium
+          tar -xzf /tmp/nexium-linux.tar.gz -C /tmp/nexium
+          emu_bin="$(find /tmp/nexium -type f -executable \( -name 'nexium-gui' -o -name 'nexium' \) -print -quit)"
+          test -n "$emu_bin"
+          echo "NEXIUM_BIN=$emu_bin" >> "$GITHUB_ENV"
+
+      - name: Launch NRO and capture emulator framebuffer
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p runtime-evidence
+          test -s nros/vh_saturn_demo.nro
+          icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -name 'lvp_icd*.json' -print -quit)"
+          test -n "$icd"
+          export VK_ICD_FILENAMES="$icd"
+          timeout --kill-after=5s 110s xvfb-run -a -s '-screen 0 1280x720x24' bash -c '
+            set -euo pipefail
+            "$NEXIUM_BIN" nros/vh_saturn_demo.nro >runtime-evidence/nexium.log 2>&1 &
+            pid=$!
+            trap "kill $pid 2>/dev/null || true" EXIT
+            window=""
+            for i in $(seq 1 45); do
+              sleep 1
+              window="$(xdotool search --onlyvisible --name NeXium 2>/dev/null | tail -n 1 || true)"
+              if [ -n "$window" ]; then break; fi
+              if ! kill -0 "$pid" 2>/dev/null; then
+                cat runtime-evidence/nexium.log
+                echo 'Emulator exited before a visible window was created' >&2
+                exit 1
+              fi
+            done
+            test -n "$window"
+            sleep 12
+            import -window "$window" runtime-evidence/nexium-window.png
+          '
+
+      - name: Check screenshot for prototype colors
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          p = Path('runtime-evidence/nexium-window.png')
+          im = Image.open(p).convert('RGB')
+          pixels = list(im.getdata())
+          blue = sum(1 for r,g,b in pixels if 35 <= r <= 140 and 120 <= g <= 225 and 160 <= b <= 255 and b > r + 55)
+          red = sum(1 for r,g,b in pixels if 180 <= r <= 255 and 25 <= g <= 145 and 25 <= b <= 145 and r > g + 70)
+          summary = f'window={im.width}x{im.height} ally_like_blue_pixels={blue} enemy_like_red_pixels={red}'
+          Path('runtime-evidence/color-check.txt').write_text(summary + '\n')
+          print(summary)
+          if im.width < 640 or im.height < 360 or blue < 80 or red < 80:
+              raise SystemExit('No convincing blue/red unit rendering in NeXium screenshot')
+          PY
+
+      - name: Upload emulator evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vh-saturn-nexium-runtime-evidence
+          path: runtime-evidence/
+          if-no-files-found: warn
+          retention-days: 14
