@@ -20,6 +20,7 @@ for number in 02 03; do
   mkdir -p "$workspace"
   ln -s "$root/nros" "$workspace/nros"
   ln -s "$root/scripts" "$workspace/scripts"
+  ln -s "$root/tools" "$workspace/tools"
   # Each run has a separate working directory, Openbox and Xvfb display.
   # Keep all failed-run evidence and the exit status, then continue to trial 3.
   code=0

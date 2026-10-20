@@ -19,6 +19,7 @@ class RepeatLaunchTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         (self.root / "scripts").mkdir()
+        (self.root / "tools").mkdir()
         (self.root / "nros").mkdir()
         (self.root / "bin").mkdir()
         (self.root / "runtime-evidence").mkdir()
@@ -34,6 +35,7 @@ class RepeatLaunchTests(unittest.TestCase):
         put(self.root / "scripts" / "nexium_xvfb_session.sh",
             '#!/usr/bin/env bash\n'
             'set -e\n'
+            'test -d tools || exit 11\n'
             'mkdir -p runtime-evidence\n'
             'printf "%s" "$PWD" > runtime-evidence/actual-workspace.txt\n'
             'printf synthetic > runtime-evidence/nexium-window.png\n'
