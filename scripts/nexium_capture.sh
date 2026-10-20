@@ -77,8 +77,15 @@ fi
 # Optional Stage40 real tactical trace; the strict independent workflow gate
 # checks actual screenshot pixels and rejects an unsuccessful action sequence.
 if [[ "${NEXIUM_ACTION_PROBE:-0}" == "1" ]]; then
-  if ! python3 -m tools.nexium_tactical_action --window "$window" --folder runtime-evidence; then
+  if python3 -m tools.nexium_tactical_action --window "$window" --folder runtime-evidence; then
+    if [[ "${NEXIUM_POST_MOVE_PROBE:-0}" == "1" ]]; then
+      if ! python3 -m tools.nexium_post_move --window "$window" --folder runtime-evidence; then
+        printf '%s\n' 'post_move=unverified' >runtime-evidence/post-move-probe-status.txt
+      fi
+    fi
+  else
     printf '%s\n' 'tactical_action=unverified' >runtime-evidence/action-probe-status.txt
+    # Do not attempt follow-on actions without genuine observed Scout movement.
   fi
 fi
 
