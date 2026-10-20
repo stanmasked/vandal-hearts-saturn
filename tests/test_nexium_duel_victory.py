@@ -111,6 +111,7 @@ class VictoryTests(unittest.TestCase):
         forged = earlier_frame(cursor=(520,276), state=VICTORY,
                                scout_hp=13, raider_hp=0, selected=True,
                                effect="Attacked")
+        ImageDraw.Draw(forged).rectangle((503,215,505,219), fill=(117,221,109))
         with self.assertRaisesRegex(ValueError, "registered HP pixel mismatch"):
             _hp(forged, 13, 0)
 
