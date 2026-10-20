@@ -7,8 +7,8 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/libnx/switch_rules
 
-TARGET := vh_saturn_demo
-BUILD := switch-build
+TARGET ?= vh_saturn_demo
+BUILD ?= switch-build
 SOURCES := src/core src/ui
 DATA :=
 INCLUDES := include
