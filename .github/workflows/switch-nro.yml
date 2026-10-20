@@ -116,6 +116,20 @@ jobs:
             runtime-evidence/nexium-window.png \
             --output runtime-evidence/frame-check.json
 
+      - name: Inspect optional Right-key input evidence
+        if: always()
+        shell: bash
+        run: |
+          set -eu
+          if [ -s runtime-evidence/nexium-window.png ] && [ -s runtime-evidence/nexium-after-right.png ]; then
+            python3 -m tools.nexium_cursor_motion \
+              runtime-evidence/nexium-window.png \
+              runtime-evidence/nexium-after-right.png \
+              --output runtime-evidence/cursor-motion.json || echo 'Guest cursor input remains unverified'
+          else
+            mkdir -p runtime-evidence
+            printf '%s\n' 'Cursor input not evaluated: screenshots missing' >runtime-evidence/cursor-motion-skipped.txt
+          fi
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4

@@ -61,3 +61,19 @@ if [[ ! -s runtime-evidence/nexium-window.png ]]; then
 fi
 printf 'captured_window_id=%s\n' "$window" >runtime-evidence/capture-status.txt
 printf '%s\n' 'VH_EMU_CAPTURE screenshot=ready' >&2
+
+# Optional input probe, not part of the boot-success criterion. In some NeXium
+# builds X11 window keys may be handled by emulator UI rather than the guest.
+# Save evidence for independent review instead of claiming control success.
+if xdotool windowactivate --sync "$window" 2>/dev/null && \
+   xdotool key --clearmodifiers --window "$window" Right 2>/dev/null; then
+  sleep 1
+  if import -window "$window" runtime-evidence/nexium-after-right.png && \
+     [[ -s runtime-evidence/nexium-after-right.png ]]; then
+    printf '%s\n' 'input_attempted=Right screenshot=ready' >runtime-evidence/input-probe-status.txt
+  else
+    printf '%s\n' 'input_attempted=Right screenshot=failed' >runtime-evidence/input-probe-status.txt
+  fi
+else
+  printf '%s\n' 'input_attempted=Right dispatch=failed' >runtime-evidence/input-probe-status.txt
+fi
