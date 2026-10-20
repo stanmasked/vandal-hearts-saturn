@@ -36,7 +36,9 @@ for ((attempt=1; attempt<=NEXIUM_PROBE_MAX_ATTEMPTS; ++attempt)); do
       # Promoting ONLY a screenshot which was actually classified as moved.
       cp "$frame" runtime-evidence/nexium-after-right.png
       printf 'attempt%s=visible_movement\nselected_attempt=%s\n' "$attempt" "$attempt" >> "$receipts"
-      printf 'input_attempted=Right screenshot=ready motion=verified\n' >runtime-evidence/input-probe-status.txt
+      # Preserve the exact v1 receipt expected by the independent guest gate;
+      # the v2 attempt/JSON files carry the separate motion proof.
+      printf 'input_attempted=Right screenshot=ready\n' >runtime-evidence/input-probe-status.txt
       exit 0
     else
       printf 'attempt%s=no_verified_movement\n' "$attempt" >> "$receipts"
