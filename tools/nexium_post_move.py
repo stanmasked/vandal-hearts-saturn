@@ -25,6 +25,7 @@ COLORS = {
     "Moved": (66, 220, 132),
     "Rejected": (239, 79, 76),
     "Cancelled": (251, 220, 90),
+    "Attacked": (179, 103, 244),
 }
 
 
