@@ -11,15 +11,15 @@ int main() {
     std::uint64_t rebuilt = 0;
     for (int bit = 0; bit < vh::digest_cells; ++bit) {
         const auto rect = vh::digest_cell_rect(bit);
-        assert(rect.x >= 20 && rect.x + rect.w <= 112);
-        assert(rect.y >= 20 && rect.y + rect.h <= 112);
-        assert(rect.w == 8 && rect.h == 8);
+        assert(rect.x >= 1050 && rect.x + rect.w <= 1168);
+        assert(rect.y >= 38 && rect.y + rect.h <= 146);
+        assert(rect.w == 10 && rect.h == 10);
         if (vh::digest_bit(hash, bit)) rebuilt |= (UINT64_C(1) << bit);
     }
     assert(rebuilt == hash);
-    assert(vh::digest_anchor(0).x == 8 && vh::digest_anchor(0).y == 8);
-    assert(vh::digest_anchor(1).x == 116 && vh::digest_anchor(1).y == 8);
-    assert(vh::digest_anchor(2).x == 8 && vh::digest_anchor(2).y == 116);
+    assert(vh::digest_anchor(0).x == 1028 && vh::digest_anchor(0).y == 16);
+    assert(vh::digest_anchor(1).x == 1180 && vh::digest_anchor(1).y == 16);
+    assert(vh::digest_anchor(2).x == 1028 && vh::digest_anchor(2).y == 168);
     for (const int bad : {-1, 64}) {
         bool threw = false;
         try { (void)vh::digest_cell_rect(bad); }

@@ -14,7 +14,7 @@ import subprocess
 import tempfile
 
 from PIL import Image
-from tools.nexium_visual_digest import decode, INITIAL_TRAINING_FINGERPRINT
+from tools.nexium_visual_digest import decode, INITIAL_TRAINING_FINGERPRINT, X, Y, SIZE
 
 
 def verify(binary: Path) -> dict:
@@ -38,7 +38,7 @@ def verify(binary: Path) -> dict:
             assert not stale["matches_expected_training_state"]
             assert initial["anchors_found"] == 3 and initial["unrecognized_cells"] == 0
             damaged = original.convert("RGB")
-            damaged.putpixel((24, 24), (255, 255, 255))
+            damaged.putpixel((X + SIZE // 2, Y + SIZE // 2), (255, 255, 255))
             assert not decode(damaged, fields["initial"])["matches_expected_training_state"]
         with Image.open(Path(td) / "moved.ppm") as changed:
             moved = decode(changed, fields["moved"])
