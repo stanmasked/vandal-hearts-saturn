@@ -13,7 +13,31 @@ fi
 mkdir -p runtime-evidence
 openbox >runtime-evidence/window-manager.log 2>&1 &
 wm_pid=$!
-trap 'kill "$wm_pid" 2>/dev/null || true' EXIT
+cleanup_wm() {
+  local result=$?
+  trap - EXIT
+  local forced=0
+  if kill -0 "$wm_pid" 2>/dev/null; then
+    kill -TERM "$wm_pid" 2>/dev/null || true
+    for ((n=0; n<20; n++)); do
+      if ! kill -0 "$wm_pid" 2>/dev/null; then break; fi
+      sleep 0.1
+    done
+    if kill -0 "$wm_pid" 2>/dev/null; then
+      forced=1
+      kill -KILL "$wm_pid" 2>/dev/null || true
+    fi
+  fi
+  wait "$wm_pid" 2>/dev/null || true
+  if (( forced == 1 )); then
+    printf '%s\n' 'window_manager_forced_sigkill' >runtime-evidence/window-manager-shutdown.txt
+    if (( result == 0 )); then result=1; fi
+  else
+    printf '%s\n' 'window_manager_reaped' >runtime-evidence/window-manager-shutdown.txt
+  fi
+  exit "$result"
+}
+trap cleanup_wm EXIT
 ready=0
 for ((i=0; i<NEXIUM_WM_WAIT_ATTEMPTS; i++)); do
   wm_description="$(timeout --kill-after=1s 2s wmctrl -m 2>/dev/null || true)"
@@ -36,4 +60,12 @@ fi
 printf '%s\n' 'window_manager=Openbox ready=true' >runtime-evidence/window-manager-status.txt
 # A normal WM allows xdotool windowclose to deliver WM_DELETE_WINDOW rather than
 # destroying a raw X11 window while winit is still managing it.
-bash scripts/nexium_capture.sh
+# Keep the WM alive until the actual emulator capture and graceful close finish.
+# If the WM unexpectedly dies during the guest session, do not call it stable.
+guest_status=0
+bash scripts/nexium_capture.sh || guest_status=$?
+if ! kill -0 "$wm_pid" 2>/dev/null; then
+  printf '%s\n' 'window_manager_died_during_capture' >runtime-evidence/window-manager-failure.txt
+  if (( guest_status == 0 )); then guest_status=1; fi
+fi
+exit "$guest_status"

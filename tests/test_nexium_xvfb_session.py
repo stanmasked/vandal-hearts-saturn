@@ -16,19 +16,22 @@ def put(path: Path, source: str):
 
 class WindowManagerSessionTests(unittest.TestCase):
     def run_session(self, *, ready=True, wm_crashes=False, guest_result=0,
-                    bad_setting=None):
+                    bad_setting=None, wm_ignores_term=False, wm_dies_after_ready=False):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             binpath = root / 'bin'
             binpath.mkdir()
             (root / 'scripts').mkdir()
             put(binpath / 'openbox', '#!/usr/bin/env bash\n' +
-                ('echo CRASH; exit 4\n' if wm_crashes else 'echo MOCK_OPENBOX; sleep 10\n'))
+                ('echo CRASH; exit 4\n' if wm_crashes else
+                 ('echo MOCK_OPENBOX; sleep 0.2; exit 0\n' if wm_dies_after_ready else
+                  ('trap \'\' TERM; echo MOCK_OPENBOX; while :; do sleep 0.1; done\n' if wm_ignores_term else
+                   'echo MOCK_OPENBOX; sleep 10\n'))))
             put(binpath / 'wmctrl', '#!/usr/bin/env bash\n' +
                 ('echo "Name: Openbox"\n' if ready else 'exit 1\n'))
             put(root / 'scripts/nexium_capture.sh',
                 '#!/usr/bin/env bash\necho mock_guest_executed > guest-receipt.txt\n' +
-                f'exit {guest_result}\n')
+                ('sleep 0.5\n' if wm_dies_after_ready else '') + f'exit {guest_result}\n')
             env = os.environ.copy()
             env.update(DISPLAY=':99', PATH=f'{binpath}:{env["PATH"]}',
                        NEXIUM_WM_WAIT_ATTEMPTS='2', NEXIUM_WM_POLL_SECONDS='0')
@@ -43,6 +46,7 @@ class WindowManagerSessionTests(unittest.TestCase):
                 'status': contents('runtime-evidence/window-manager-status.txt'),
                 'error': contents('runtime-evidence/window-manager-failure.txt'),
                 'guest': contents('guest-receipt.txt'),
+                'shutdown': contents('runtime-evidence/window-manager-shutdown.txt'),
             }
 
     def test_valid_bash_syntax(self):
@@ -54,6 +58,7 @@ class WindowManagerSessionTests(unittest.TestCase):
         self.assertIn('window_manager=Openbox', files['status'])
         self.assertIn('mock_guest_executed', files['guest'])
         self.assertIsNone(files['error'])
+        self.assertEqual(files['shutdown'], 'window_manager_reaped\n')
 
     def test_guest_failure_propagates_nonzero(self):
         proc, files = self.run_session(guest_result=19)
@@ -71,6 +76,17 @@ class WindowManagerSessionTests(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         self.assertEqual(files['error'], 'window_manager_terminated\n')
         self.assertIsNone(files['guest'])
+
+    def test_stubborn_window_manager_fails_instead_of_hanging(self):
+        proc, files = self.run_session(wm_ignores_term=True)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertEqual(files['shutdown'], 'window_manager_forced_sigkill\n')
+        self.assertIsNotNone(files['guest'])
+
+    def test_window_manager_dies_during_guest_capture(self):
+        proc, files = self.run_session(wm_dies_after_ready=True)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertEqual(files['error'], 'window_manager_died_during_capture\n')
 
     def test_malformed_attempt_limit_rejected(self):
         proc, files = self.run_session(bad_setting='2; true')
