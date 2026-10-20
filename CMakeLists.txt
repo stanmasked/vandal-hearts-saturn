@@ -81,3 +81,8 @@ add_test(NAME attack_training_fingerprint COMMAND vh_attack_training_fingerprint
 add_executable(vh_duel_victory_tests tests/duel_victory_tests.cpp)
 target_link_libraries(vh_duel_victory_tests PRIVATE vh_core)
 add_test(NAME duel_victory_contract COMMAND vh_duel_victory_tests)
+
+# Stage51: opposite end-state, eight unopposed Raider attacks and terminal Defeat.
+add_executable(vh_duel_defeat_tests tests/duel_defeat_tests.cpp)
+target_link_libraries(vh_duel_defeat_tests PRIVATE vh_core)
+add_test(NAME duel_defeat_contract COMMAND vh_duel_defeat_tests)
