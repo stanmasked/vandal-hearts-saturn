@@ -3,6 +3,7 @@
 #include "vh/cursor_geometry.hpp"
 #include "vh/replay.hpp"
 #include "vh/visual_digest.hpp"
+#include "vh/training_controls.hpp"
 #include <SDL.h>
 
 #include <algorithm>
@@ -17,9 +18,7 @@ constexpr int H = 720;
 constexpr int TILE_HALF_W = 40;
 constexpr int TILE_HALF_H = 20;
 
-struct Ui {
-    vh::Battle battle = vh::Battle::training();
-    vh::Pos cursor{1, 5};
+using Ui = vh::TrainingUi;
     int selected = -1;
     std::string status = "Select ally: A / Enter. Move: D-pad. Attack: Y. End round: X";
 };
@@ -140,56 +139,35 @@ void status_title(SDL_Window* window, const Ui& ui) {
     SDL_SetWindowTitle(window, name.c_str());
 }
 
-void confirm(Ui& ui) {
-    if (ui.battle.phase() != vh::Phase::Player) return;
-    const auto* hovered = ui.battle.unit_at(ui.cursor);
-    if (hovered && hovered->side == vh::Side::Player) {
-        ui.selected = hovered->id;
-        ui.status = "Ally selected. Move to green tile; Y attacks enemy; X ends round.";
-    } else if (ui.selected >= 0 && ui.battle.move(ui.selected, ui.cursor)) {
-        ui.status = "Moved. Aim at enemy then press Y to attack.";
-    } else {
-        ui.status = "No valid allied unit or move at the cursor.";
-    }
-}
-void attack(Ui& ui) {
-    if (ui.battle.phase() != vh::Phase::Player || ui.selected < 0) return;
-    const auto* hovered = ui.battle.unit_at(ui.cursor);
-    if (hovered && ui.battle.attack(ui.selected, hovered->id)) {
-        ui.status = ui.battle.phase() == vh::Phase::Victory ? "Victory!" : "Hit confirmed.";
-    } else ui.status = "Illegal target or attacker already acted.";
-}
-void next_turn(Ui& ui) {
-    if (ui.battle.end_player_turn()) {
-        ui.selected = -1;
-        ui.status = ui.battle.phase() == vh::Phase::Defeat ? "Defeat." : "New player round.";
-    }
+void issue(Ui& ui, vh::TrainingAction action, bool& running) {
+    if (vh::apply_training_action(ui, action) == vh::TrainingEffect::QuitRequested)
+        running = false;
 }
 void key(Ui& ui, SDL_Keycode code, bool& running) {
     switch (code) {
-        case SDLK_ESCAPE: running = false; break;
-        case SDLK_LEFT: case SDLK_a: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Left, ui.battle.width(), ui.battle.height()); break;
-        case SDLK_RIGHT: case SDLK_d: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Right, ui.battle.width(), ui.battle.height()); break;
-        case SDLK_UP: case SDLK_w: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Up, ui.battle.width(), ui.battle.height()); break;
-        case SDLK_DOWN: case SDLK_s: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Down, ui.battle.width(), ui.battle.height()); break;
-        case SDLK_RETURN: case SDLK_SPACE: confirm(ui); break;
-        case SDLK_y: attack(ui); break;
-        case SDLK_x: next_turn(ui); break;
-        case SDLK_BACKSPACE: ui.selected = -1; break;
+        case SDLK_ESCAPE: issue(ui, vh::TrainingAction::Quit, running); break;
+        case SDLK_LEFT: case SDLK_a: issue(ui, vh::TrainingAction::Left, running); break;
+        case SDLK_RIGHT: case SDLK_d: issue(ui, vh::TrainingAction::Right, running); break;
+        case SDLK_UP: case SDLK_w: issue(ui, vh::TrainingAction::Up, running); break;
+        case SDLK_DOWN: case SDLK_s: issue(ui, vh::TrainingAction::Down, running); break;
+        case SDLK_RETURN: case SDLK_SPACE: issue(ui, vh::TrainingAction::Confirm, running); break;
+        case SDLK_y: issue(ui, vh::TrainingAction::Attack, running); break;
+        case SDLK_x: issue(ui, vh::TrainingAction::EndTurn, running); break;
+        case SDLK_BACKSPACE: issue(ui, vh::TrainingAction::Cancel, running); break;
         default: break;
     }
 }
 void controller(Ui& ui, Uint8 button, bool& running) {
     switch (button) {
-        case SDL_CONTROLLER_BUTTON_DPAD_LEFT: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Left, ui.battle.width(), ui.battle.height()); break;
-        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Right, ui.battle.width(), ui.battle.height()); break;
-        case SDL_CONTROLLER_BUTTON_DPAD_UP: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Up, ui.battle.width(), ui.battle.height()); break;
-        case SDL_CONTROLLER_BUTTON_DPAD_DOWN: ui.cursor = vh::advance_cursor(ui.cursor, vh::CursorStep::Down, ui.battle.width(), ui.battle.height()); break;
-        case SDL_CONTROLLER_BUTTON_A: confirm(ui); break;
-        case SDL_CONTROLLER_BUTTON_B: ui.selected = -1; break;
-        case SDL_CONTROLLER_BUTTON_Y: attack(ui); break;
-        case SDL_CONTROLLER_BUTTON_X: next_turn(ui); break;
-        case SDL_CONTROLLER_BUTTON_START: running = false; break;
+        case SDL_CONTROLLER_BUTTON_DPAD_LEFT: issue(ui, vh::TrainingAction::Left, running); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: issue(ui, vh::TrainingAction::Right, running); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_UP: issue(ui, vh::TrainingAction::Up, running); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_DOWN: issue(ui, vh::TrainingAction::Down, running); break;
+        case SDL_CONTROLLER_BUTTON_A: issue(ui, vh::TrainingAction::Confirm, running); break;
+        case SDL_CONTROLLER_BUTTON_B: issue(ui, vh::TrainingAction::Cancel, running); break;
+        case SDL_CONTROLLER_BUTTON_Y: issue(ui, vh::TrainingAction::Attack, running); break;
+        case SDL_CONTROLLER_BUTTON_X: issue(ui, vh::TrainingAction::EndTurn, running); break;
+        case SDL_CONTROLLER_BUTTON_START: issue(ui, vh::TrainingAction::Quit, running); break;
         default: break;
     }
 }
