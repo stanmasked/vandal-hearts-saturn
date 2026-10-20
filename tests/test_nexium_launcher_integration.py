@@ -41,7 +41,11 @@ class LauncherIntegrationTests(unittest.TestCase):
             env = dict(os.environ, PATH=f'{bin_dir}:{os.environ["PATH"]}',
                        NEXIUM_BIN=str(emu), NEXIUM_WINDOW_ATTEMPTS=str(attempts),
                        NEXIUM_POLL_DELAY_SECONDS='0', NEXIUM_SETTLE_DELAY_SECONDS=str(settle),
-                       NEXIUM_CLOSE_WAIT_SECONDS='2')
+                       NEXIUM_CLOSE_WAIT_SECONDS='2',
+                       # This launcher test uses literal PNG_MOCK, not a cursor
+                       # image. Right-key recovery is tested separately with
+                       # real synthetic PNG pixels in test_nexium_right_probe.
+                       NEXIUM_PROBE_MAX_ATTEMPTS='1')
             if bogus_time is not None:
                 env['NEXIUM_WINDOW_ATTEMPTS'] = bogus_time
             result = subprocess.run(['bash', str(CAPTURE)], cwd=root, env=env,
