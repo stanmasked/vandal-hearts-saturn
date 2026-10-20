@@ -110,7 +110,8 @@ def summarize(folder: Path, audit_fn=audit_trial) -> dict:
     trials = [audit_fn(folder / f"trial-{i:02d}") for i in range(1, COUNT + 1)]
     successes = sum(bool(t["passed"]) for t in trials)
     first_attempts = sum(t.get("selected_input_attempt") == 1 and t["passed"] for t in trials)
-    retries = sum(t.get("selected_input_attempt") == 2 and t["passed"] for t in trials)
+    retries = sum(isinstance(t.get("selected_input_attempt"), int)
+                  and t["selected_input_attempt"] >= 2 and t["passed"] for t in trials)
     return {
         "version": 1,
         "sample_size": COUNT,
