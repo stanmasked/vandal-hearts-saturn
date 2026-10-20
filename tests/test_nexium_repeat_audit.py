@@ -60,6 +60,15 @@ class RepeatAuditTests(unittest.TestCase):
         self.assertEqual(r["launcher_exit_code"], 124)
         self.assertFalse(r["passed"])
 
+    def test_sixth_pulse_counts_as_verified_retry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report = summarize(
+                Path(directory),
+                lambda path: fake(path.name, True, 6 if path.name == "trial-02" else 1))
+        self.assertTrue(report["all_independent_trials_passed"])
+        self.assertEqual(report["verified_retry_recoveries"], 1)
+        self.assertEqual(report["first_attempt_successes"], 2)
+
     def test_sixth_observed_pulse_can_win_after_five_misses(self):
         # Exact failure shape observed in NeXium Stage44 and Stage45.
         attempts = "probe=bounded_right_v2\nmax_attempts=8\n"
