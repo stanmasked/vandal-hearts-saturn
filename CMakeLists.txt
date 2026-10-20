@@ -66,3 +66,8 @@ target_link_libraries(vh_visual_fixture PRIVATE vh_core)
 add_executable(vh_training_controls_tests tests/training_controls_tests.cpp)
 target_link_libraries(vh_training_controls_tests PRIVATE vh_core)
 add_test(NAME training_controls_contract COMMAND vh_training_controls_tests)
+
+# Host golden state for actual NeXium Select → Right → Confirm input trace.
+add_executable(vh_training_action_fingerprint_tests tests/training_action_fingerprint_tests.cpp)
+target_link_libraries(vh_training_action_fingerprint_tests PRIVATE vh_core)
+add_test(NAME training_action_fingerprint COMMAND vh_training_action_fingerprint_tests)

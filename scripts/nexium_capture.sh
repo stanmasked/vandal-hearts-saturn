@@ -74,6 +74,14 @@ if ! bash "$input_helper" "$window"; then
   printf '%s\n' 'input_attempted=Right helper=failed' >runtime-evidence/input-probe-status.txt
 fi
 
+# Optional Stage40 real tactical trace; the strict independent workflow gate
+# checks actual screenshot pixels and rejects an unsuccessful action sequence.
+if [[ "${NEXIUM_ACTION_PROBE:-0}" == "1" ]]; then
+  if ! python3 -m tools.nexium_tactical_action --window "$window" --folder runtime-evidence; then
+    printf '%s\n' 'tactical_action=unverified' >runtime-evidence/action-probe-status.txt
+  fi
+fi
+
 # This snapshot predates the shutdown request. A panic observed here cannot be
 # explained by a subsequent Xvfb/WM_DELETE teardown.
 cp runtime-evidence/nexium.log runtime-evidence/nexium-log-before-close.log
