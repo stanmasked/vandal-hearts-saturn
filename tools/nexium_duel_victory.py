@@ -55,13 +55,13 @@ def _hp(image, scout_hp, raider_hp):
     if (scout_hp, raider_hp) not in ((16, 8), (16, 2), (13, 2), (13, 0)):
         raise ValueError("unexpected victory duel HP checkpoint")
     # Real Stage48 guest 1279x700 screenshot supplies calibration; sample
-    # x482 separates Scout HP16 from HP13. Raider x504 is still green
+    # x481 separates Scout HP16 from HP13. Raider x504 is still green
     # with 2HP (two logical pixels), while x509 separates 8HP from 2HP.
     colors = _sample(image, {
         "scout_base": (473, 197),
-        "scout_13_or_16": (482, 197),
+        "scout_13_or_16": (481, 197),
         "scout_not_19": (489, 197),
-        "raider_base": (504, 217),
+        "raider_base": (503, 217),
         "raider_8": (509, 217),
         "enemy_body": (520, 245),
     })
