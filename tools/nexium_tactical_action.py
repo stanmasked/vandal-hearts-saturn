@@ -31,6 +31,26 @@ def _near(a, b, tx=12, ty=12):
     return abs(a[0]-b[0]) <= tx and abs(a[1]-b[1]) <= ty
 
 
+def _selected_marker(image, cursor):
+    """Detect the SDL-selected Scout outline, distinct from yellow terrain.
+
+    The training app draws this 251/220/90 border above the unit; mere
+    cursor navigation does not. Only a local region around Scout is used.
+    """
+    rgb = image.convert("RGB")
+    w, h = rgb.size
+    cx, cy = cursor
+    count = 0
+    for y in range(max(0, round(cy-90)), min(h, round(cy+15))):
+        for x in range(max(0, round(cx-45)), min(w, round(cx+46))):
+            r, g, b = rgb.getpixel((x, y))
+            if r >= 235 and 195 <= g <= 245 and 55 <= b <= 135 and r > g + 14:
+                count += 1
+                if count >= 12:
+                    return True
+    return False
+
+
 def _require_state(image, expected):
     record = decode(image, expected)
     if not record["matches_expected_training_state"]:
@@ -45,16 +65,15 @@ class RealX11:
         self.window, self.folder = window, folder
 
     def capture_after(self, key, label):
-        if key not in ("Left", "Right", "Return"):
+        if key not in ("Left", "Right", "Return", "space"):
             raise ValueError("unexpected action key")
-        # The nightly guest can sample a default 12 ms X11 arrow pulse
-        # twice, moving two tiles from one xdotool invocation. Shorten only
-        # directional pulses; keep Confirm on the existing reliable timing.
+        # Genuine Stage41 screenshots show short arrows work (one tile), but
+        # a default 12 ms Return can be missed by the guest frame sampler.
+        # Use a 180 ms pulse for Confirm/Space, below SDL's key-repeat delay.
         command = ["timeout", "--kill-after=1s", "4s", "xdotool",
-                   "key", "--clearmodifiers"]
-        if key in ("Left", "Right"):
-            command.extend(["--delay", "0"])
-        command.extend(["--window", self.window, key])
+                   "key", "--clearmodifiers", "--delay",
+                   "0" if key in ("Left", "Right") else "180",
+                   "--window", self.window, key]
         subprocess.run(command, check=True, timeout=7, stdout=subprocess.DEVNULL)
         time.sleep(0.9)
         filename = self.folder / f"action-{label}.png"
@@ -101,7 +120,20 @@ def exercise(initial_frame, after_right, io):
         raise ValueError("could not return cursor to initial Scout tile after 8 observations")
     selected = io.capture_after("Return", "selected")
     _require_state(selected, INITIAL)  # selection must not move tactical units
-    steps.append({"key":"Return", "purpose":"select_scout"})
+    selected_proof = "action-selected.png"
+    steps.append({"key":"Return", "purpose":"select_scout",
+                  "selected_outline_seen":_selected_marker(selected,start)})
+    if not _selected_marker(selected, start):
+        # An X11 Return dispatch alone is not proof SDL selected Scout.
+        # One bounded Space fallback (same SDL Confirm action) is permitted.
+        io.focus()
+        selected = io.capture_after("space", "selected-retry")
+        _require_state(selected, INITIAL)
+        selected_proof = "action-selected-retry.png"
+        steps.append({"key":"space", "purpose":"select_scout_retry",
+                      "selected_outline_seen":_selected_marker(selected,start)})
+    if not _selected_marker(selected,start):
+        raise ValueError("Scout selection outline not visible after two confirmations")
     # Stage40 live evidence showed Right can jump *two* cells: the captured
     # starting center (490.5,251) became (562.5,285.5). Do not commit from
     # that cell. Aim from observed pixels, correcting in either direction.
@@ -123,13 +155,25 @@ def exercise(initial_frame, after_right, io):
     if not _near(at, target):
         raise ValueError("aim cursor did not reach exactly one tile right after 8 observations")
     moved = io.capture_after("Return", "moved")
+    final_proof = "action-moved.png"
+    last = decode(moved, AFTER_SCOUT_MOVE)
+    steps.append({"key":"Return", "purpose":"commit_move",
+                  "observed_fingerprint":last["decoded_fingerprint"]})
+    if not last["matches_expected_training_state"]:
+        # Retry only if no battle-state change occurred at all; never try to
+        # force a success after a different or unrecognized guest state.
+        _require_state(moved, INITIAL)
+        io.focus()
+        moved = io.capture_after("space", "moved-retry")
+        final_proof = "action-moved-retry.png"
+        steps.append({"key":"space", "purpose":"commit_move_retry"})
     final = _require_state(moved, AFTER_SCOUT_MOVE)
-    steps.append({"key":"Return", "purpose":"commit_move"})
     return {
-        "format":"VHS40-ROM-free-action-observation",
+        "format":"VHS42-ROM-free-action-observation",
         "action_passed":True, "initial_fingerprint":first,
         "after_move_fingerprint":final, "cursor_returned_to_scout":True,
         "aimed_exactly_one_tile":True, "steps":steps,
+        "selected_proof":selected_proof, "moved_proof":final_proof,
         "scope":"X11 keyboard into ROM-free guest; NOT physical Switch controller or original Saturn scene"
     }
 
@@ -140,8 +184,19 @@ def verify_folder(folder):
         raise ValueError("tactical action did not pass")
     if report.get("initial_fingerprint") != INITIAL or report.get("after_move_fingerprint") != AFTER_SCOUT_MOVE:
         raise ValueError("wrong action receipt fingerprint")
-    with Image.open(folder/"nexium-window.png") as first, Image.open(folder/"action-moved.png") as moved:
+    selected_name = report.get("selected_proof")
+    moved_name = report.get("moved_proof")
+    if selected_name not in ("action-selected.png", "action-selected-retry.png"):
+        raise ValueError("missing valid selection evidence filename")
+    if moved_name not in ("action-moved.png", "action-moved-retry.png"):
+        raise ValueError("missing valid moved evidence filename")
+    with Image.open(folder/"nexium-window.png") as first, \
+         Image.open(folder/selected_name) as selected, \
+         Image.open(folder/moved_name) as moved:
         _require_state(first, INITIAL)
+        _require_state(selected, INITIAL)
+        if not _selected_marker(selected,_center(first)):
+            raise ValueError("Scout selection not observed in actual screenshot")
         _require_state(moved, AFTER_SCOUT_MOVE)
     return True
 
@@ -164,7 +219,7 @@ def main():
         with Image.open(folder/"nexium-window.png") as before, Image.open(folder/"nexium-after-right.png") as after:
             report = exercise(before.convert("RGB"), after.convert("RGB"), RealX11(args.window,folder))
     except (ValueError, OSError, subprocess.SubprocessError) as error:
-        report = {"format":"VHS40-ROM-free-action-observation",
+        report = {"format":"VHS42-ROM-free-action-observation",
                   "action_passed":False, "error_type":type(error).__name__, "error":str(error)}
     (folder/"action-evidence.json").write_text(json.dumps(report,indent=2)+"\n",encoding="utf-8")
     print(json.dumps(report,indent=2))
