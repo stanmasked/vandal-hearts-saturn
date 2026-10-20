@@ -27,6 +27,7 @@ COLORS = {
     "Cancelled": (251, 220, 90),
     "Attacked": (179, 103, 244),
     "Selected": (63, 167, 239),
+    "TurnEnded": (76, 222, 230),
 }
 
 
