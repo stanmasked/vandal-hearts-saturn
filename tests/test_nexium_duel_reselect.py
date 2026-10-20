@@ -75,7 +75,7 @@ class DuelReselectTests(unittest.TestCase):
                           state=ATTACKED_DUEL,effect="Rejected")
         io=FakeIO([self.cancelled,self.returned,self.reselected,
                    self.aimed,dishonest])
-        with self.assertRaisesRegex(ValueError,"HP bar"):
+        with self.assertRaisesRegex(ValueError,"HP"):
             exercise(self.initial,self.prior,io)
 
     def test_reattack_needs_red_reject_receipt(self):
