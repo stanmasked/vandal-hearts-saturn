@@ -256,6 +256,34 @@ jobs:
             stage44-session/runtime-evidence/nexium.log \
             stage44-session/runtime-evidence/lifecycle-status.txt \
             --output stage44-session/runtime-evidence/lifecycle-audit.json
+      - name: Stage52 independent real NeXium Defeat duel and terminal evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s nros/vh_saturn_attack.nro
+          mkdir -p stage52-session/nros
+          cp nros/vh_saturn_attack.nro stage52-session/nros/vh_saturn_demo.nro
+          ln -s "$GITHUB_WORKSPACE/scripts" stage52-session/scripts
+          ln -s "$GITHUB_WORKSPACE/tools" stage52-session/tools
+          icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -name 'lvp_icd*.json' -print -quit)"
+          test -n "$icd"
+          export VK_ICD_FILENAMES="$icd"
+          export RUST_BACKTRACE=1
+          export NEXIUM_DEFEAT_PROBE=1
+          (
+            cd stage52-session
+            timeout --kill-after=5s 200s xvfb-run -a -s '-screen 0 1280x720x24' \
+              bash scripts/nexium_xvfb_session.sh
+          )
+          python3 -m tools.nexium_duel_defeat --verify-dir stage52-session/runtime-evidence
+          python3 -m tools.nexium_log_health stage52-session/runtime-evidence/nexium.log \
+            --output stage52-session/runtime-evidence/emulator-log-health.json
+          python3 -m tools.nexium_lifecycle_audit \
+            stage52-session/runtime-evidence/nexium-log-before-close.log \
+            stage52-session/runtime-evidence/nexium.log \
+            stage52-session/runtime-evidence/lifecycle-status.txt \
+            --output stage52-session/runtime-evidence/lifecycle-audit.json
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
@@ -264,5 +292,6 @@ jobs:
           path: |
             runtime-evidence/
             stage44-session/runtime-evidence/
+            stage52-session/runtime-evidence/
           if-no-files-found: warn
           retention-days: 14
