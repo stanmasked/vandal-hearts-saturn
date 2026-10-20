@@ -61,6 +61,7 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 18
     steps:
+      - uses: actions/checkout@v4
       - name: Download built NRO
         uses: actions/download-artifact@v4
         with:
@@ -124,24 +125,13 @@ jobs:
             import -window "$window" runtime-evidence/nexium-window.png
           '
 
-      - name: Check screenshot for prototype colors
+      - name: Check two allied and two opposing game markers
         shell: bash
         run: |
           set -euxo pipefail
-          python3 - <<'PY'
-          from PIL import Image
-          from pathlib import Path
-          p = Path('runtime-evidence/nexium-window.png')
-          im = Image.open(p).convert('RGB')
-          pixels = list(im.getdata())
-          blue = sum(1 for r,g,b in pixels if 35 <= r <= 140 and 120 <= g <= 225 and 160 <= b <= 255 and b > r + 55)
-          red = sum(1 for r,g,b in pixels if 180 <= r <= 255 and 25 <= g <= 145 and 25 <= b <= 145 and r > g + 70)
-          summary = f'window={im.width}x{im.height} ally_like_blue_pixels={blue} enemy_like_red_pixels={red}'
-          Path('runtime-evidence/color-check.txt').write_text(summary + '\n')
-          print(summary)
-          if im.width < 640 or im.height < 360 or blue < 80 or red < 80:
-              raise SystemExit('No convincing blue/red unit rendering in NeXium screenshot')
-          PY
+          python3 -m tools.nexium_frame_verify \
+            runtime-evidence/nexium-window.png \
+            --output runtime-evidence/frame-check.json
 
       - name: Upload emulator evidence even on failure
         if: always()

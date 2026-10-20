@@ -16,5 +16,9 @@ jobs:
         run: cmake --build out --parallel 2
       - name: Test C++
         run: ctest --test-dir out --output-on-failure
-      - name: Test disc metadata parser (synthetic only)
-        run: python3 -m unittest discover -s tests -p "test_*.py" -v
+      - name: Prepare Python image-test environment
+        run: |
+          python3 -m venv .ci-python
+          .ci-python/bin/python -m pip install --disable-pip-version-check Pillow
+      - name: Test disc metadata and framebuffer parsers (synthetic only)
+        run: .ci-python/bin/python -m unittest discover -s tests -p "test_*.py" -v
