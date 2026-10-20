@@ -28,6 +28,25 @@ int main() {
         == vh::TrainingEffect::Rejected);
     assert(ui.battle.find_unit(3)->hp == 14);
     assert(vh::battle_fingerprint(ui.battle) == moved_hash);
+    // Stage45: cancellation may clear the UI selection, but cannot clear
+    // the durable per-round 'acted' bit of the native Scout.
+    assert(vh::apply_training_action(ui, vh::TrainingAction::Cancel)
+        == vh::TrainingEffect::Cancelled);
+    assert(ui.selected == -1);
+    assert(vh::battle_fingerprint(ui.battle) == moved_hash);
+    assert(vh::apply_training_action(ui, vh::TrainingAction::Left)
+        == vh::TrainingEffect::CursorMoved);
+    assert((ui.cursor == vh::Pos{1,5}));
+    assert(vh::apply_training_action(ui, vh::TrainingAction::Confirm)
+        == vh::TrainingEffect::Selected);
+    assert(ui.selected == 1);
+    assert(vh::apply_training_action(ui, vh::TrainingAction::Right)
+        == vh::TrainingEffect::CursorMoved);
+    assert(vh::apply_training_action(ui, vh::TrainingAction::Attack)
+        == vh::TrainingEffect::Rejected);
+    assert(ui.battle.find_unit(3)->hp == 14);
+    assert(ui.battle.find_unit(1)->acted);
+    assert(vh::battle_fingerprint(ui.battle) == moved_hash);
     std::printf("Stage44 duel initial=%016llx attacked=%016llx HP=20->14 second_rejected=true\n",
         static_cast<unsigned long long>(UINT64_C(0x9376e23745926630)),
         static_cast<unsigned long long>(moved_hash));
