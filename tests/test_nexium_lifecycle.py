@@ -34,6 +34,12 @@ class LifecycleTests(unittest.TestCase):
                        'if [[ "$1" == "windowclose" ]]; then\n'
                        + ('  exit 1\n' if kind == 'no_windowclose' else '  kill -TERM "$(cat emu.pid)"; exit 0\n')
                        + 'fi\n' + ('if [[ "$1" == "key" ]]; then sleep 30; fi\n' if kind == 'hung_key' else '') + 'exit 0\n')
+            executable(root / 'bin' / 'xprop',
+                       '#!/usr/bin/env bash\nprintf "WM_PROTOCOLS(ATOM): WM_DELETE_WINDOW\\n"\n')
+            executable(root / 'bin' / 'wmctrl',
+                       '#!/usr/bin/env bash\n' +
+                       ('exit 1\n' if kind == 'no_windowclose' else
+                        'kill -TERM "$(cat emu.pid)"; exit 0\n'))
             executable(root / 'bin' / 'import',
                        '#!/usr/bin/env bash\n'
                        'printf PNG_MOCK > "$3"\n')

@@ -76,7 +76,7 @@ jobs:
         run: |
           set -euxo pipefail
           sudo apt-get update
-          sudo apt-get install -y curl jq xvfb xauth xdotool openbox wmctrl imagemagick python3-pil \
+          sudo apt-get install -y curl jq xvfb xauth xdotool openbox wmctrl x11-utils imagemagick python3-pil \
             libgtk-3-0t64 libasound2t64 libudev1 libxkbcommon0 libxkbcommon-x11-0 \
             libx11-xcb1 libxcb-cursor0 libxcb-xinerama0 libxcb-xfixes0 \
             libxcb-randr0 libxcb-render0 libxcb-shape0 libxcb-xkb1 \
@@ -109,6 +109,8 @@ jobs:
           export VK_ICD_FILENAMES="$icd"
           bash -n scripts/nexium_capture.sh
           bash -n scripts/nexium_xvfb_session.sh
+          bash -n scripts/nexium_x11_close.sh
+          export RUST_BACKTRACE=1
           timeout --kill-after=5s 110s xvfb-run -a -s '-screen 0 1280x720x24' \
             bash scripts/nexium_xvfb_session.sh
 

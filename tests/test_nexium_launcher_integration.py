@@ -30,9 +30,12 @@ class LauncherIntegrationTests(unittest.TestCase):
             (nro / 'vh_saturn_demo.nro').write_bytes(b'ROM-FREE-MOCK')
             emu = executable(bin_dir, 'mock-emu',
                              '#!/usr/bin/env bash\n' +
-                             ('echo MOCK_FAIL; exit 9\n' if crash else 'echo MOCK_START; sleep 5\n'))
+                             ('echo MOCK_FAIL; exit 9\n' if crash else
+                              'echo "$" > emu.pid; trap "exit 0" TERM; echo MOCK_START; while :; do sleep 0.1; done\n'))
             executable(bin_dir, 'xdotool', '#!/usr/bin/env bash\n' +
                        ('echo 123456\n' if window else 'exit 1\n'))
+            executable(bin_dir, 'xprop', '#!/usr/bin/env bash\nprintf "WM_PROTOCOLS(ATOM): WM_DELETE_WINDOW\\n"\n')
+            executable(bin_dir, 'wmctrl', '#!/usr/bin/env bash\nkill -TERM "$(cat emu.pid)"; exit 0\n')
             executable(bin_dir, 'import', '#!/usr/bin/env bash\n' +
                        ('printf PNG_MOCK > "$3"\n' if capture_ok else 'exit 42\n'))
             env = dict(os.environ, PATH=f'{bin_dir}:{os.environ["PATH"]}',

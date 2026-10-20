@@ -91,8 +91,11 @@ if ! kill -0 "$emu_pid" 2>/dev/null; then
   exit 1
 fi
 
-if xdotool windowclose "$window" 2>/dev/null; then
+# Check the X11 WM_DELETE_WINDOW protocol first. Do not destroy a live
+# winit-owned window when it lacks this protocol; fail the stability gate.
+if bash scripts/nexium_x11_close.sh "$window"; then
   printf '%s\n' 'windowclose_sent' >>runtime-evidence/lifecycle-status.txt
+  printf '%s\n' 'close_method=EWMH' >>runtime-evidence/lifecycle-status.txt
 else
   printf '%s\n' 'windowclose_unavailable' >>runtime-evidence/lifecycle-status.txt
 fi
