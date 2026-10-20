@@ -76,20 +76,23 @@ def exercise(initial_frame, after_right, io):
     steps = []
     if current[0] <= start[0] + 12:
         raise ValueError("precondition failed: earlier Right cursor did not move")
-    # Right may move two tiles on some hosts. Do not guess how many Left keys
-    # to send: inspect the actual cursor after every press.
-    for index in range(1, 5):
+    # Real NeXium run #39469307751 proved a *single* Left can jump two
+    # tiles: cursor x=524.5 -> 442.0, overshooting Scout x=490.5.
+    # Correct the direction after EVERY captured frame, never blindly
+    # dispatch more Left presses when already left of the target.
+    for index in range(1, 9):
         if _near(current, start):
             break
-        if current[0] < start[0] - 12:
-            raise ValueError("return cursor overshot starting tile")
-        frame = io.capture_after("Left", f"return-{index}")
+        if abs(current[1] - start[1]) > 80:
+            raise ValueError("return cursor left the Scout map row")
+        direction = "Left" if current[0] > start[0] else "Right"
+        frame = io.capture_after(direction, f"return-{index}")
         _require_state(frame, INITIAL)
         current = _center(frame)
-        steps.append({"key":"Left", "cursor_x":round(current[0],2),
+        steps.append({"key":direction, "cursor_x":round(current[0],2),
                       "cursor_y":round(current[1],2)})
     if not _near(current, start):
-        raise ValueError("could not return cursor to initial Scout tile")
+        raise ValueError("could not return cursor to initial Scout tile after 8 observations")
     selected = io.capture_after("Return", "selected")
     _require_state(selected, INITIAL)  # selection must not move tactical units
     steps.append({"key":"Return", "purpose":"select_scout"})

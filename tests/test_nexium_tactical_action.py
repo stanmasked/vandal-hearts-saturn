@@ -54,6 +54,25 @@ class ActionEvidenceTests(unittest.TestCase):
         self.assertTrue(report["action_passed"])
         self.assertEqual(io.keys.count("Left"),2)
 
+    def test_real_neXium_left_overshoot_corrected_by_right(self):
+        # Based on the real Stage40 NeXium frame: Right moved one tile,
+        # Left unexpectedly crossed two tiles. Recover by looking at pixels.
+        io=FakeIO([picture((360,230)),picture((400,250)),picture((400,250)),
+                   picture((440,270)),picture((440,270),AFTER_SCOUT_MOVE)])
+        report=exercise(picture((400,250)),picture((440,270)),io)
+        self.assertTrue(report["action_passed"])
+        self.assertEqual(io.keys,["Left","Right","Return","Right","Return"])
+
+    def test_repeated_two_tile_oscillation_fails_bounded(self):
+        # Every key jumps across the target and never lands on the Scout.
+        frames=[picture((360,230)) if i%2 == 0 else picture((440,270))
+                for i in range(8)]
+        io=FakeIO(frames)
+        with self.assertRaisesRegex(ValueError,"after 8 observations"):
+            exercise(picture((400,250)),picture((440,270)),io)
+        self.assertEqual(len(io.keys),8)
+        self.assertNotIn("Return",io.keys)
+
     def test_missed_aim_triggers_one_focus_retry(self):
         io=FakeIO([picture((400,250)),picture((400,250)),
                    picture((400,250)),picture((440,270)),
