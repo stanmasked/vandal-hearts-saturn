@@ -18,6 +18,34 @@ from tools.nexium_lifecycle_audit import assess, read_log
 COUNT = 3
 
 
+def parse_attempt_receipt(value: str) -> tuple[int, int, bool]:
+    """Require exactly one winning screenshot attempt, never 'sent key' alone."""
+    lines = value.splitlines()
+    labels = [v.partition("=") for v in lines if "=" in v]
+    names = [(k, v) for k, sep, v in labels if sep]
+    selected = [v for k, v in names if k == "selected_attempt"]
+    if len(selected) != 1 or not selected[0].isdecimal():
+        raise ValueError("missing or unverified selected input attempt")
+    index = int(selected[0])
+    if (("probe", "bounded_right_v2") in names):
+        limits = [v for k, v in names if k == "max_attempts"]
+        if len(limits) != 1 or not limits[0].isdecimal():
+            raise ValueError("invalid max-attempt receipt")
+        limit = int(limits[0])
+        if not 1 <= limit <= 8 or not 1 <= index <= limit:
+            raise ValueError("selected attempt outside bounded range")
+        wins = [k for k, v in names if v == "visible_movement" and
+                k.startswith("attempt") and k[7:].isdecimal()]
+        if wins != [f"attempt{index}"]:
+            raise ValueError("selected attempt has no unique verified motion receipt")
+        return index, limit, True
+    if (("probe", "bounded_right_v1") in names):
+        if index not in (1, 2):
+            raise ValueError("legacy input attempt must be 1 or 2")
+        return index, 2, False
+    raise ValueError("unknown input probe receipt version")
+
+
 def audit_trial(folder: Path) -> dict:
     result = {
         "trial": folder.name, "launcher_exit_code": None,
@@ -50,11 +78,21 @@ def audit_trial(folder: Path) -> dict:
             (folder / "window-manager-shutdown.txt").read_text(encoding="utf-8").strip()
             == "window_manager_reaped")
         attempts = (folder / "input-probe-attempts.txt").read_text(encoding="utf-8")
-        selected = [line.split("=", 1)[1] for line in attempts.splitlines()
-                    if line.startswith("selected_attempt=")]
-        if len(selected) != 1 or selected[0] not in ("1", "2"):
-            raise ValueError("Invalid or missing input-attempt selection receipt")
-        result["selected_input_attempt"] = int(selected[0])
+        selected, limit, updated = parse_attempt_receipt(attempts)
+        result["selected_input_attempt"] = selected
+        result["max_input_attempts"] = limit
+        if updated:
+            import json
+            # A selected-attempt receipt is not proof on its own: the same
+            # genuinely observed PNG must be the image used by guest audit.
+            winning = folder / f"nexium-after-right-attempt-{selected}.png"
+            promoted = folder / "nexium-after-right.png"
+            if winning.read_bytes() != promoted.read_bytes():
+                raise ValueError("promoted cursor frame differs from winning screenshot")
+            status = json.loads(
+                (folder / f"input-motion-attempt-{selected}.json").read_text("utf-8"))
+            if status.get("plausible_right_cursor_movement") is not True:
+                raise ValueError("selected attempt did not prove visible cursor motion")
         result["passed"] = bool(
             result["launcher_exit_code"] == 0
             and result["frame_passed"]
