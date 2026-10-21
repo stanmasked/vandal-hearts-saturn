@@ -34,3 +34,6 @@ __pycache__/
 # Stage76: private numeric Saturn CD traces must not be checked in
 *.vhcdlog
 *.vhcdtrace.json
+
+# Stage77: private, manually controlled CD capture window marker
+*.vhgate
