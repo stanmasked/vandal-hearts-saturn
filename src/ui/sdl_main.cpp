@@ -11,6 +11,7 @@
 #include "vh/target_damage_hud.hpp"
 #include "vh/target_remaining_hud.hpp"
 #include "vh/target_health_bar.hpp"
+#include "vh/turn_round_hud.hpp"
 #include <array>
 #include <cctype>
 #ifdef VH_STAGE44_DUEL
@@ -301,6 +302,21 @@ void render_target_health_bar(SDL_Renderer* r, const Ui& ui) {
     }
 }
 
+// Stage61: current round, read directly from the same tactical battle.
+// The tiny x93..135 badge fits between the ally/enemy legend and
+// Stage54's x145..321 forecast; hidden when combat becomes terminal.
+void render_turn_round(SDL_Renderer* r, const Ui& ui) {
+    const auto info = vh::turn_round_hud(ui.battle);
+    if (!info.visible) return;
+    color(r, 23, 30, 41);
+    SDL_Rect bg{vh::kRoundHudX, vh::kRoundHudY,
+                vh::kRoundHudWidth, vh::kRoundHudHeight};
+    SDL_RenderFillRect(r, &bg);
+    color(r, 220, 233, 238);
+    unit_stat_text(r, "R " + std::to_string(info.round),
+                   vh::kRoundTextX, vh::kRoundTextY);
+}
+
 void render(SDL_Renderer* r, const Ui& ui) {
     color(r, 14, 19, 32);
     SDL_RenderClear(r);
@@ -364,6 +380,7 @@ void render(SDL_Renderer* r, const Ui& ui) {
     render_target_damage(r, ui);
     render_target_remaining(r, ui);
     render_target_health_bar(r, ui);
+    render_turn_round(r, ui);
     render_visual_state_digest(r, ui.battle);
     render_action_receipt(r, ui.last_effect);
     SDL_RenderPresent(r);

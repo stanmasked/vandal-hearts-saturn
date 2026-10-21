@@ -127,3 +127,8 @@ add_test(NAME target_remaining_hud_contract COMMAND vh_target_remaining_hud_test
 add_executable(vh_target_health_bar_tests tests/target_health_bar_tests.cpp)
 target_link_libraries(vh_target_health_bar_tests PRIVATE vh_core)
 add_test(NAME target_health_bar_contract COMMAND vh_target_health_bar_tests)
+
+# Stage61: tiny round badge uses only current Battle phase and round.
+add_executable(vh_turn_round_hud_tests tests/turn_round_hud_tests.cpp)
+target_link_libraries(vh_turn_round_hud_tests PRIVATE vh_core)
+add_test(NAME turn_round_hud_contract COMMAND vh_turn_round_hud_tests)
