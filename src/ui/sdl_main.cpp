@@ -6,6 +6,7 @@
 #include "vh/training_controls.hpp"
 #include "vh/attack_preview_hud.hpp"
 #include "vh/selected_unit_hud.hpp"
+#include "vh/enemy_hover_hud.hpp"
 #include <array>
 #include <cctype>
 #ifdef VH_STAGE44_DUEL
@@ -217,6 +218,26 @@ void render_selected_unit_info(SDL_Renderer* r, const Ui& ui) {
     SDL_RenderFillRect(r, &moved);
 }
 
+// Stage56: independent enemy-hover information card. Its x1002..1273 region
+// does not touch Stage55 x350..993 or Stage54 x141..324.
+// Read-only: does not affect tactical state, replay or action receipts.
+void render_enemy_hover_info(SDL_Renderer* r, const Ui& ui) {
+    const vh::EnemyHoverHud info = vh::enemy_hover_hud(ui.battle, ui.cursor);
+    if (!info.visible) return;
+    color(r, 23, 30, 41);
+    SDL_Rect bg{vh::kEnemyHudX, vh::kEnemyHudY, vh::kEnemyHudWidth, vh::kEnemyHudHeight};
+    SDL_RenderFillRect(r, &bg);
+    color(r, 239, 79, 76);
+    SDL_Rect marker{1008, 674, 6, 33};
+    SDL_RenderFillRect(r, &marker);
+    color(r, 220, 233, 238);
+    unit_stat_text(r, info.name.substr(0, 18), 1020, 675);
+    unit_stat_text(r, "HP " + std::to_string(info.hp), 1022, 690);
+    unit_stat_text(r, "ATK " + std::to_string(info.attack), 1077, 690);
+    unit_stat_text(r, "DEF " + std::to_string(info.defense), 1140, 690);
+    unit_stat_text(r, "RNG " + std::to_string(info.range), 1204, 690);
+}
+
 void render(SDL_Renderer* r, const Ui& ui) {
     color(r, 14, 19, 32);
     SDL_RenderClear(r);
@@ -275,6 +296,7 @@ void render(SDL_Renderer* r, const Ui& ui) {
     SDL_RenderFillRect(r, &enemies);
     render_attack_preview(r, ui);
     render_selected_unit_info(r, ui);
+    render_enemy_hover_info(r, ui);
     render_visual_state_digest(r, ui.battle);
     render_action_receipt(r, ui.last_effect);
     SDL_RenderPresent(r);
