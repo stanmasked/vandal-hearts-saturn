@@ -12,6 +12,7 @@
 #include "vh/target_remaining_hud.hpp"
 #include "vh/target_health_bar.hpp"
 #include "vh/turn_round_hud.hpp"
+#include "vh/movement_preview_hud.hpp"
 #include <array>
 #include <cctype>
 #ifdef VH_STAGE44_DUEL
@@ -318,6 +319,23 @@ void render_turn_round(SDL_Renderer* r, const Ui& ui) {
                    vh::kRoundTextX, vh::kRoundTextY);
 }
 
+// Stage64: show route cost only for a legal hovered destination.
+void render_movement_preview(SDL_Renderer* r, const Ui& ui) {
+    const auto preview = vh::movement_preview_hud(ui.battle, ui.selected, ui.cursor);
+    if (!preview.visible) return;
+    color(r, 23, 30, 41);
+    SDL_Rect bg{vh::kMovementPreviewX, vh::kMovementPreviewY,
+                vh::kMovementPreviewWidth, vh::kMovementPreviewHeight};
+    SDL_RenderFillRect(r, &bg);
+    color(r, 117, 221, 109);
+    SDL_Rect marker{vh::kMovementPreviewX + 6, vh::kMovementPreviewY + 4, 6, 34};
+    SDL_RenderFillRect(r, &marker);
+    color(r, 220, 233, 238);
+    unit_stat_text(r, "COST " + std::to_string(preview.path_cost) +
+                      " LEFT " + std::to_string(preview.remaining_points),
+                   vh::kMovementPreviewTextX, vh::kMovementPreviewTextY);
+}
+
 void render(SDL_Renderer* r, const Ui& ui) {
     color(r, 14, 19, 32);
     SDL_RenderClear(r);
@@ -382,6 +400,7 @@ void render(SDL_Renderer* r, const Ui& ui) {
     render_target_remaining(r, ui);
     render_target_health_bar(r, ui);
     render_turn_round(r, ui);
+    render_movement_preview(r, ui);
     render_visual_state_digest(r, ui.battle);
     render_action_receipt(r, ui.last_effect);
     SDL_RenderPresent(r);
