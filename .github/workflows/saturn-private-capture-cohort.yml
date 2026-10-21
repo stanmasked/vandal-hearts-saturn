@@ -1,0 +1,42 @@
+name: Stage95 private four-capture cohort (fabricated only)
+on:
+  push:
+    branches:
+      - "stage95/**"
+  pull_request:
+    branches:
+      - "stage94/**"
+permissions:
+  contents: read
+jobs:
+  capture-cohort:
+    name: Four independent fake process captures (${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Synthetic quartet Stage94-95 private cohort and receipt-bound FAD conversion
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_saturn_private_capture_cohort.py -v
+          python -m unittest discover -s tests -p test_saturn_private_boot_handoff.py -v
+          python -m unittest discover -s tests -p test_saturn_yabause_fad_log.py -v
+          echo "STAGE95_PRIVATE_FAKE_QUARTET_COHORT_PASS"
+      - name: Reject raw Saturn media and archives in repo
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          tracked=subprocess.check_output(["git","ls-files","-z"]).decode().split("\0")
+          blocked={".bin",".cue",".iso",".chd",".rom",".zip",".7z"}
+          assert not any(Path(p).suffix.lower() in blocked for p in tracked if p)
+          print("STAGE95_NO_PRIVATE_MEDIA_TRACKED_PASS")
+          PY
