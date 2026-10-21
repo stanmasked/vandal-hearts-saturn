@@ -126,6 +126,16 @@ class SaturnBattleEvidenceTests(unittest.TestCase):
         self.assertTrue(any("scene.width" in e for e in report["errors"]))
         self.assertTrue(any("confidence" in e for e in report["errors"]))
 
+    def test_unhashable_enum_values_and_boolean_schema_version_are_rejected(self):
+        data = manifest()
+        data["scene"]["status"] = ["partial"]
+        report = validate_document(data)
+        self.assertFalse(report["valid"])
+        self.assertTrue(any("scene.status" in e for e in report["errors"]))
+        data = manifest()
+        data["schema_version"] = True
+        self.assertFalse(validate_document(data)["valid"])
+
     def test_non_object_input_is_rejected(self):
         report = validate_document(["not", "a", "manifest"])
         self.assertFalse(report["valid"])

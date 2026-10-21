@@ -56,7 +56,7 @@ def _integer(value, path, errors, *, minimum=0, optional=False):
 
 
 def _enum(value, choices, path, errors):
-    if value not in choices:
+    if not isinstance(value, str) or value not in choices:
         errors.append(path + ": unsupported value")
         return None
     return value
@@ -90,8 +90,9 @@ def validate_document(document):
         return {"valid": False, "errors": ["$: expected object"], "warnings": [],
                 "summary": {}}
 
-    if document.get("schema_version") != 1:
-        errors.append("$.schema_version: expected 1")
+    version = document.get("schema_version")
+    if not isinstance(version, int) or isinstance(version, bool) or version != 1:
+        errors.append("$.schema_version: expected integer 1")
     source = _object(document.get("source"), "$.source", errors)
     platform = _string(source.get("platform"), "$.source.platform", errors)
     if platform is not None and platform != "Sega Saturn":
