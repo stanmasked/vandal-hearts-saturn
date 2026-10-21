@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage 17: metadata-only crosswalk of candidate Saturn resource bundles.
+"""Stage65: metadata-only crosswalk of candidate Saturn resource bundles.
 
 This reads only ISO9660 directory metadata. Matching names and contiguous
 extents are leads for private investigation, not proof of runtime relationships.

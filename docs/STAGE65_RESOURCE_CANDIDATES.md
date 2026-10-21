@@ -1,4 +1,4 @@
-# Stage 17 — Saturn resource candidate crosswalk (metadata only)
+# Stage65 — Saturn resource candidate crosswalk (metadata only)
 
 ## Source status
 The user supplied the English v1.1 translation-patched Saturn source set
@@ -20,7 +20,7 @@ because the track binaries are not materializable in the current workspace.
 - The 74 MAP files are 34 `M_MAP`, 22 `M_IVE`, 17 `M_KEY`, and one
   `M_SHOW`; all are 170,624 bytes.
 
-## What Stage 17 adds
+## What Stage65 adds
 `tools/saturn_resource_candidates.py` reproduces this metadata inventory from
 a private Track 1 BIN and groups likely related names. It emits names, sizes,
 ISO extents, sector adjacency, map-family counts and explicit unverified status

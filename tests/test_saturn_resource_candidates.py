@@ -1,4 +1,4 @@
-"""Stage17 tests for the metadata-only Saturn resource crosswalk."""
+"""Stage65 tests for the metadata-only Saturn resource crosswalk."""
 import unittest
 from tools.saturn_resource_candidates import analyze_entries
 
