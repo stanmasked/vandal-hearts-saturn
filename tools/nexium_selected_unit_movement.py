@@ -17,9 +17,9 @@ GLYPHS = {
     "6": (7,4,7,5,7), "7": (7,1,1,1,1), "8": (7,5,7,5,7),
     "9": (7,5,7,1,7),
 }
-# The glyph begins at logical x=540; sampling uses +1 for the cell's
-# registered point, so the probe origin is x=539 (as with the HP digit gate).
-X,Y=539,683
+# Probe the left pixel of each 2x2 glyph cell. A +1 horizontal shift
+# crosses cell boundaries after NeXium's fractional 1279x700 registration.
+X,Y=540,683
 
 def _expected(text):
     bits={}
@@ -36,7 +36,7 @@ def expect_movement(image,points):
     bits=_expected("MOV "+str(points))
     for offset_y in (-3,-2,-1,0):
         positions={
-            key:(X+8*int(key.split("-")[0])+2*int(key.split("-")[1])+1,
+            key:(X+8*int(key.split("-")[0])+2*int(key.split("-")[1]),
                  Y+2*int(key.split("-")[2])+1+offset_y)
             for key in bits
         }
@@ -47,7 +47,7 @@ def expect_movement(image,points):
 
 def expect_hidden(image):
     points={
-        f"{i}-{x}-{y}":(X+8*i+2*x+1,Y+2*y+1)
+        f"{i}-{x}-{y}":(X+8*i+2*x,Y+2*y+1)
         for i in range(5) for x in range(3) for y in range(5)
     }
     observed=_sample(image,points)
