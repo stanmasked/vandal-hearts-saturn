@@ -103,6 +103,27 @@ def exercise(initial, after_right, io):
         raise ValueError("Scout not visibly selected in duel")
     steps.append({"key": "Return", "selected": True})
 
+    # Stage64: capture a genuine frame on the legal tile directly above Scout,
+    # then return to Scout before continuing the original attack sequence.
+    scale = decode(initial_frame, INITIAL_DUEL)
+    preview_frame = io.capture_after("Up", "duel-move-preview")
+    _require_state(preview_frame, INITIAL_DUEL)
+    preview_cursor = _center(preview_frame)
+    expected_preview = (start[0], start[1] - 20 * scale["scale_y"])
+    if not _near(preview_cursor, expected_preview, tx=12, ty=12):
+        raise ValueError("movement preview cursor did not reach the legal tile above Scout")
+    if not _selected_marker(preview_frame, start):
+        raise ValueError("Scout selection lost during movement preview")
+    returned_preview = io.capture_after("Down", "duel-move-preview-return")
+    _require_state(returned_preview, INITIAL_DUEL)
+    if not _near(_center(returned_preview), start):
+        raise ValueError("cursor did not return to Scout after movement preview")
+    if not _selected_marker(returned_preview, start):
+        raise ValueError("Scout selection lost after returning from movement preview")
+    steps.append({"key": "Up", "movement_preview": True, "path_cost": 1,
+                  "remaining_points": 3})
+    steps.append({"key": "Down", "movement_preview_return": True})
+
     cursor = start
     for i in range(1, 13):
         if _near(cursor, target):
@@ -145,6 +166,8 @@ def exercise(initial, after_right, io):
         "hp_before": 20, "hp_after": 14,
         "second_attack_rejected": True,
         "selected_proof": chosen_proof,
+        "movement_preview_proof": "action-duel-move-preview.png",
+        "movement_preview_return_proof": "action-duel-move-preview-return.png",
         "attack_proof": "action-duel-attacked.png",
         "reject_proof": "action-duel-rejected.png",
         "steps": steps,

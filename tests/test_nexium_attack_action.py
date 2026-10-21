@@ -59,6 +59,8 @@ class DuelTests(unittest.TestCase):
         self.after_right=picture(cursor=(520,276))
         self.returned=picture()
         self.selected=picture(selected=True)
+        self.preview=picture(cursor=(480,236), selected=True)
+        self.returned_selected=picture(selected=True)
         self.aimed=picture(cursor=(520,276), selected=True)
         self.attacked=picture(cursor=(520,276),selected=True,hp=14,
                               state=ATTACKED_DUEL,effect="Attacked")
@@ -66,33 +68,37 @@ class DuelTests(unittest.TestCase):
                               state=ATTACKED_DUEL,effect="Rejected")
 
     def test_successful_attack_and_rejected_duplicate(self):
-        io=FakeIO([self.returned,self.selected,self.aimed,
-                   self.attacked,self.rejected])
+        io=FakeIO([self.returned,self.selected,self.preview,self.returned_selected,
+                   self.aimed,self.attacked,self.rejected])
         report=exercise(self.initial,self.after_right,io)
         self.assertTrue(report["attack_passed"])
         self.assertEqual(report["hp_after"],14)
         self.assertEqual([k for k,_ in io.keys],
-                         ["Left","Return","Right","y","y"])
+                         ["Left","Return","Up","Down","Right","y","y"])
+        self.assertEqual(report["movement_preview_proof"],
+                         "action-duel-move-preview.png")
 
     def test_hp_bar_only_is_not_enough_without_digest(self):
         fake=picture(cursor=(520,276),selected=True,hp=14,
                      state=INITIAL_DUEL,effect="Attacked")
-        io=FakeIO([self.returned,self.selected,self.aimed,fake])
+        io=FakeIO([self.returned,self.selected,self.preview,self.returned_selected,
+                   self.aimed,fake])
         with self.assertRaisesRegex(ValueError,"checksum mismatch"):
             exercise(self.initial,self.after_right,io)
 
     def test_digest_only_is_not_enough_without_hp_loss(self):
         fake=picture(cursor=(520,276),selected=True,hp=20,
                      state=ATTACKED_DUEL,effect="Attacked")
-        io=FakeIO([self.returned,self.selected,self.aimed,fake])
+        io=FakeIO([self.returned,self.selected,self.preview,self.returned_selected,
+                   self.aimed,fake])
         with self.assertRaisesRegex(ValueError,"HP bar"):
             exercise(self.initial,self.after_right,io)
 
     def test_second_attack_cannot_change_battle(self):
         again=picture(cursor=(520,276),selected=True,hp=14,
                       state=ATTACKED_DUEL,effect="Attacked")
-        io=FakeIO([self.returned,self.selected,self.aimed,
-                   self.attacked,again])
+        io=FakeIO([self.returned,self.selected,self.preview,self.returned_selected,
+                   self.aimed,self.attacked,again])
         with self.assertRaisesRegex(ValueError,"receipt not Rejected"):
             exercise(self.initial,self.after_right,io)
 
@@ -104,8 +110,8 @@ class DuelTests(unittest.TestCase):
 
     def test_aim_overshoot_corrects_before_attack(self):
         overshot=picture(cursor=(560,296),selected=True)
-        io=FakeIO([self.returned,self.selected,overshot,self.aimed,
-                   self.attacked,self.rejected])
+        io=FakeIO([self.returned,self.selected,self.preview,self.returned_selected,
+                   overshot,self.aimed,self.attacked,self.rejected])
         result=exercise(self.initial,self.after_right,io)
         self.assertTrue(result["attack_passed"])
         self.assertEqual([k for k,_ in io.keys],
