@@ -65,7 +65,7 @@ class PreviewHudTests(unittest.TestCase):
     def test_missing_lethal_outline_is_rejected(self):
         false=screenshot(state=ROUND4,selected=True,aiming=True,
                          preview=True,lethal=True)
-        ImageDraw.Draw(false).point((150,676),fill=DARK)
+        ImageDraw.Draw(false).point((141,686),fill=DARK)
         with self.assertRaisesRegex(ValueError,"border"):
             _expect_forecast(false,lethal=True)
 
