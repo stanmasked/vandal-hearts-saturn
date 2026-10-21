@@ -25,6 +25,8 @@ jobs:
           .ci-python/bin/python -m pip install --disable-pip-version-check Pillow
       - name: Test disc metadata and framebuffer parsers (synthetic only)
         run: .ci-python/bin/python -m unittest discover -s tests -p "test_*.py" -v
+      - name: Stage78 compile pinned public Yabause callback (fabricated sectors only)
+        run: .ci-python/bin/python -m tools.check_yabause_upstream_callback --cc ${{ matrix.compiler == 'g++' && 'gcc' || 'clang' }} --output out/yabause-pinned-callback-check.json
       - name: Verify native-to-Python framebuffer checksum contract
         run: .ci-python/bin/python -m tools.check_visual_bridge --binary out/vh_visual_fixture --output out/visual-bridge-report.json
       - name: Stage69 Python export to C++ terrain parser round-trip (synthetic only)

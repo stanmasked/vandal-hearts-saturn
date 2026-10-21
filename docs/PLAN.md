@@ -18,7 +18,8 @@ This is an independent project, not the PS1/PlayStation remaster.
 - Stage74 passed numeric multi-run sector read repeatability (GCC/Clang 25/25 CTest and 548/548 Python, Switch NRO and NeXium green); independent capture authenticity remains unproven.
 - Stage75 passed private metadata preflight: GCC/Clang 25/25 CTest, 564/564 Python per compiler, Switch NRO and NeXium green. No source authenticity claim.
 - Stage76 passed GCC/Clang 25/25 CTest and 575/575 Python per compiler, NRO and real NeXium, for a synthetic Yabause-shaped CD read logger/adapter; the third-party emulator and original game were not run.
-- Stage77 adds opt-in, manually opened/closed private capture windows with a strict two-byte sentinel, tested on an invented C callback in one process. Operator-marked windows are not independent game-state or frame evidence; CI pending.
+- Stage77 verified manually gated read windows: GCC/Clang 25/25 CTest and 587/587 Python, NRO/NeXium green, with only fabricated C read callbacks.
+- Stage78 integrates the actual ISO callback from a fixed public Yabause commit into a fabricated raw-sector C harness, with Git blob identity pinning; complete Yabause build and authentic original game remain untested. CI pending.
 - **Do not equate** the synthetic training scene with the first Saturn mission.
 - Original Saturn map geometry, battle parameters, story, graphics and audio
   remain unverified. Never publish the original disc or extracted assets.
