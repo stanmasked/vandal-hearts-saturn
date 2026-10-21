@@ -4,9 +4,10 @@ Base game: Vandal Hearts ~Ushinawareta Kodai Bunmei~, Japanese Saturn `T-9526G` 
 This is an independent project, not the PS1/PlayStation remaster.
 
 ## Verified status on 2026-10-21
-- Stages 01–63 implement a ROM-free synthetic tactical vertical prototype;
-  Stage62 and Stage63 passed GCC/Clang, NRO and experimental NeXium guest evidence.
-- Stage64 adds a selected-unit hovered destination cost HUD; its own CI is pending.
+- Stages 01–64 implement a ROM-free synthetic tactical vertical prototype;
+  Stage64 passed GCC/Clang (22/22 CTest and 459/459 Python per compiler),
+  both Switch NRO builds and real NeXium guest pixel checks.
+- Stage65 adds a metadata-only crosswalk for candidate Saturn resources; CI pending.
 - **Do not equate** the synthetic training scene with the first Saturn mission.
 - Original Saturn map geometry, battle parameters, story, graphics and audio
   remain unverified. Never publish the original disc or extracted assets.
@@ -17,7 +18,10 @@ This is an independent project, not the PS1/PlayStation remaster.
 - Host CLI, optional SDL2 renderer and prospective libnx/SDL2 NRO Makefile.
 - Automated host tests (no game media in CI).
 
-## Stage 02 — Saturn content research (blocked on user's lawful disc dump)
+## Stage 02 — Saturn content research (English v1.1 image already cataloged)
+- The user supplied split Track 1, Track 2 audio BIN and CUE; prior private metadata audit is recorded in docs/STAGE02_DISC_FINDINGS.md.
+- The image is translation-patched English v1.1, not proof of the unpatched Japanese master.
+- Keep all BIN/CUE/CHD/ISO and extracted content private; do not ask the user to upload the same image again.
 - Check catalog ID/track layout, hashes, filenames and data format; no upload to GitHub.
 - Compare Saturn and PS1 battle/map/event/magic/item differences.
 - Record authoritative scene-by-scene Saturn-specific features, including extra maps.
