@@ -17,7 +17,9 @@ GLYPHS = {
     "6": (7,4,7,5,7), "7": (7,1,1,1,1), "8": (7,5,7,5,7),
     "9": (7,5,7,1,7),
 }
-X,Y=540,683
+# The glyph begins at logical x=540; sampling uses +1 for the cell's
+# registered point, so the probe origin is x=539 (as with the HP digit gate).
+X,Y=539,683
 
 def _expected(text):
     bits={}
