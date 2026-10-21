@@ -1,0 +1,44 @@
+name: Stage86 private capture preflight (fabricated test media only)
+
+on:
+  push:
+    branches:
+      - "stage86/**"
+  pull_request:
+    branches:
+      - "stage85/**"
+
+permissions:
+  contents: read
+
+jobs:
+  private-capture-synthetic:
+    name: Private capture preflight Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run private-capture protection regressions (tiny fabricated inputs only)
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_saturn_private_capture_session.py -v
+          echo "STAGE86_SYNTHETIC_PRIVATE_SOURCE_GUARD_TESTS_PASS"
+      - name: No private Saturn media in CI checkout
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+          forbidden = {".bin", ".cue", ".iso", ".chd", ".zip", ".7z", ".rom"}
+          found = [p for p in tracked if p and Path(p).suffix.lower() in forbidden]
+          assert not found, "forbidden media/archive extensions tracked"
+          print("STAGE86_NO_GAME_MEDIA_IN_REPOSITORY_PASS")
+          PY
