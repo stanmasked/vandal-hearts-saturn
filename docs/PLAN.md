@@ -13,7 +13,8 @@ This is an independent project, not the PS1/PlayStation remaster.
 - Stage69 verifies the Python-to-native terrain protocol with independent aggregates and negative mutation tests, using synthetic-only geometry; CI pending.
 - Stage70 passed native movement/terrain equivalence (GCC/Clang 24/24 CTest, 503/503 Python; NRO/NeXium green).
 - Stage71 verified signed elevations and synthetic 128×128 matrix on GCC/Clang (24/24 CTest, 509/509 Python per compiler), NRO and NeXium.
-- Stage72 tests order-sensitive per-cell terrain identity independently in Python and compiled C++, rejecting tile swaps that preserve sums; CI pending.
+- Stage72 passed ordered terrain identity across seven fabricated sizes and four equal-sum permutations (GCC/Clang 25/25 CTest, 514/514 Python; Switch NRO and NeXium green).
+- Stage73 correlates privately captured ISO logical-sector read ranges with ISO9660 file extents and a menu control trace. The report remains explicitly hypothetical; CI pending.
 - **Do not equate** the synthetic training scene with the first Saturn mission.
 - Original Saturn map geometry, battle parameters, story, graphics and audio
   remain unverified. Never publish the original disc or extracted assets.
