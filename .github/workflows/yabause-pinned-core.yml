@@ -1,0 +1,72 @@
+name: Stage80 pinned Yabause core compilation (public source only)
+
+on:
+  push:
+    branches:
+      - "stage80/**"
+  pull_request:
+    branches:
+      - "stage79/**"
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-upstream-core:
+    name: Build pinned Yabause core (${{ matrix.compiler }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc
+            cxx: g++
+          - compiler: clang
+            cxx: clang++
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch only public pinned Yabause revision
+        env:
+          UPSTREAM_COMMIT: 7e38821dbac265490f115e163c523a939acda759
+        run: |
+          set -euo pipefail
+          git init --quiet external-yabause
+          git -C external-yabause remote add origin https://github.com/Yabause/yabause.git
+          git -C external-yabause fetch --quiet --depth 1 origin "${UPSTREAM_COMMIT}"
+          test "$(git -C external-yabause rev-parse FETCH_HEAD)" = "${UPSTREAM_COMMIT}"
+          git -C external-yabause checkout --quiet --detach FETCH_HEAD
+          test -f external-yabause/yabause/src/cdbase.c
+      - name: Strictly pin and instrument whole upstream cdbase.c
+        run: |
+          set -euo pipefail
+          python3 -m tools.patch_yabause_full_cdbase \
+            --source external-yabause/yabause/src/cdbase.c \
+            --output external-yabause/yabause/src/cdbase.instrumented.c
+          mv external-yabause/yabause/src/cdbase.instrumented.c external-yabause/yabause/src/cdbase.c
+          test "$(grep -c 'vh_primary_read == 1' external-yabause/yabause/src/cdbase.c)" = 1
+          test "$(grep -c 'VH_SATURN_CAPTURE_GATE' external-yabause/yabause/src/cdbase.c)" = 1
+      - name: Configure historical full Yabause core
+        env:
+          CC: ${{ matrix.compiler }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          set -euo pipefail
+          cmake -S external-yabause/yabause -B build-yabause \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DYAB_WANT_OPENGL=OFF \
+            -DYAB_WANT_SDL=OFF \
+            -DYAB_WANT_OPENAL=OFF \
+            -DYAB_USE_SSF=OFF \
+            -DYAB_WANT_MUSASHI=OFF \
+            -DYAB_USE_PLAY_JIT=OFF \
+            -DYAB_WANT_MPEG=OFF \
+            -DYAB_PORTS=runner
+      - name: Compile all Yabause core translation units (no game)
+        run: |
+          set -euo pipefail
+          cmake --build build-yabause --target yabause --parallel 2
+          test -s build-yabause/src/libyabause.a
+          ar t build-yabause/src/libyabause.a | grep -E '^cdbase.c.o$|^cdbase.c.obj$'
+          echo "STAGE80_PINNED_UPSTREAM_CORE_COMPILED"
