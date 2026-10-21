@@ -136,6 +136,15 @@ class SaturnBattleEvidenceTests(unittest.TestCase):
         data["schema_version"] = True
         self.assertFalse(validate_document(data)["valid"])
 
+    def test_relative_elevation_accepts_signed_integer_but_not_boolean(self):
+        data = manifest()
+        data["cells"][0]["elevation"] = -3
+        self.assertTrue(validate_document(data)["valid"])
+        data["cells"][0]["elevation"] = True
+        result = validate_document(data)
+        self.assertFalse(result["valid"])
+        self.assertTrue(any("elevation" in e for e in result["errors"]))
+
     def test_non_object_input_is_rejected(self):
         report = validate_document(["not", "a", "manifest"])
         self.assertFalse(report["valid"])

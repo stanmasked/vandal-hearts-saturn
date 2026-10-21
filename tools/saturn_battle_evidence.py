@@ -55,6 +55,17 @@ def _integer(value, path, errors, *, minimum=0, optional=False):
     return value
 
 
+def _signed_integer(value, path, errors, *, optional=False):
+    # Relative elevations may be below the chosen zero datum. Coordinates,
+    # HP and movement budgets remain nonnegative via _integer().
+    if optional and value is None:
+        return None
+    if not isinstance(value, int) or isinstance(value, bool):
+        errors.append(path + ": expected signed integer")
+        return None
+    return value
+
+
 def _enum(value, choices, path, errors):
     if not isinstance(value, str) or value not in choices:
         errors.append(path + ": unsupported value")
@@ -153,8 +164,8 @@ def validate_document(document):
             errors.append(path + ".terrain: expected non-empty string or null")
         if terrain is None:
             unknown_terrain += 1
-        elevation = _integer(cell.get("elevation"), path + ".elevation", errors,
-                             optional=True)
+        elevation = _signed_integer(cell.get("elevation"),
+                                    path + ".elevation", errors, optional=True)
         movement_cost = _integer(cell.get("movement_cost"), path + ".movement_cost",
                                  errors, minimum=1, optional=True)
         if elevation is None:
