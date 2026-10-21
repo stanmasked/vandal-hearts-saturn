@@ -5,6 +5,9 @@
 #include "vh/visual_digest.hpp"
 #include "vh/training_controls.hpp"
 #include "vh/attack_preview_hud.hpp"
+#include "vh/selected_unit_hud.hpp"
+#include <array>
+#include <cctype>
 #ifdef VH_STAGE44_DUEL
 #include "vh/attack_training.hpp"
 #endif
@@ -123,6 +126,97 @@ void render_attack_preview(SDL_Renderer* r, const Ui& ui) {
     }
 }
 
+// Tiny fixed 3x5 uppercase glyphs: display useful numeric fighter stats
+// without a font asset, external SDK font, or copyrighted Saturn resources.
+std::array<unsigned char, 5> unit_stat_glyph(char c) {
+    switch (c) {
+        case '0': return {{7,5,5,5,7}};
+        case '1': return {{2,6,2,2,7}};
+        case '2': return {{7,1,7,4,7}};
+        case '3': return {{7,1,7,1,7}};
+        case '4': return {{5,5,7,1,1}};
+        case '5': return {{7,4,7,1,7}};
+        case '6': return {{7,4,7,5,7}};
+        case '7': return {{7,1,1,1,1}};
+        case '8': return {{7,5,7,5,7}};
+        case '9': return {{7,5,7,1,7}};
+        case 'A': return {{2,5,7,5,5}};
+        case 'B': return {{6,5,6,5,6}};
+        case 'C': return {{3,4,4,4,3}};
+        case 'D': return {{6,5,5,5,6}};
+        case 'E': return {{7,4,6,4,7}};
+        case 'F': return {{7,4,6,4,4}};
+        case 'G': return {{3,4,5,5,3}};
+        case 'H': return {{5,5,7,5,5}};
+        case 'I': return {{7,2,2,2,7}};
+        case 'J': return {{3,1,1,5,2}};
+        case 'K': return {{5,5,6,5,5}};
+        case 'L': return {{4,4,4,4,7}};
+        case 'M': return {{5,7,7,5,5}};
+        case 'N': return {{5,7,7,7,5}};
+        case 'O': return {{2,5,5,5,2}};
+        case 'P': return {{6,5,6,4,4}};
+        case 'Q': return {{2,5,5,7,3}};
+        case 'R': return {{6,5,6,5,5}};
+        case 'S': return {{3,4,2,1,6}};
+        case 'T': return {{7,2,2,2,2}};
+        case 'U': return {{5,5,5,5,7}};
+        case 'V': return {{5,5,5,5,2}};
+        case 'W': return {{5,5,7,7,5}};
+        case 'X': return {{5,5,2,5,5}};
+        case 'Y': return {{5,5,2,2,2}};
+        case 'Z': return {{7,1,2,4,7}};
+        case '-': return {{0,0,7,0,0}};
+        default: return {{0,0,0,0,0}}; // space or unsupported
+    }
+}
+
+void unit_stat_text(SDL_Renderer* r, const std::string& words,
+                    int start_x, int top_y) {
+    const size_t length = std::min(words.size(), static_cast<size_t>(18));
+    for (size_t i = 0; i < length; ++i) {
+        const char letter = static_cast<char>(
+            std::toupper(static_cast<unsigned char>(words[i])));
+        const auto bits = unit_stat_glyph(letter);
+        for (int y = 0; y < 5; ++y) for (int x = 0; x < 3; ++x) {
+            if ((bits[static_cast<size_t>(y)] & (1u << (2 - x))) == 0) continue;
+            SDL_Rect px{start_x + static_cast<int>(i)*8 + x*2, top_y + y*2, 2, 2};
+            SDL_RenderFillRect(r, &px);
+        }
+    }
+}
+
+// The stat panel occupies logical x350..993 and never overlaps Stage54's
+// x141..324 projected attack bar nor the top-right gameplay fingerprint.
+// No actual battle mutation occurs during this rendering pass.
+void render_selected_unit_info(SDL_Renderer* r, const Ui& ui) {
+    const vh::SelectedUnitHud info = vh::selected_unit_hud(ui.battle, ui.selected);
+    if (!info.visible) return;
+    color(r, 23, 30, 41);
+    SDL_Rect bg{350, 668, 644, 44};
+    SDL_RenderFillRect(r, &bg);
+    color(r, 63, 167, 239);
+    SDL_Rect marker{vh::kUnitHudX, vh::kUnitHudY + 3,
+                    vh::kUnitHudMarkerW, vh::kUnitHudMarkerH};
+    SDL_RenderFillRect(r, &marker);
+    color(r, 220, 233, 238);
+    unit_stat_text(r, info.name.substr(0, 14), 374, 677);
+    unit_stat_text(r, "HP " + std::to_string(info.hp), 500, 683);
+    unit_stat_text(r, "ATK " + std::to_string(info.attack), 603, 683);
+    unit_stat_text(r, "DEF " + std::to_string(info.defense), 724, 683);
+    unit_stat_text(r, "RNG " + std::to_string(info.range), 839, 683);
+    // Cyan = action still available, purple = already attacked this round.
+    if (info.acted) color(r, 179, 103, 244);
+    else color(r, 76, 222, 230);
+    SDL_Rect acted{vh::kUnitHudStatusX, vh::kUnitHudStatusY, 14, 14};
+    SDL_RenderFillRect(r, &acted);
+    // Gold = already moved this round, grey-blue = movement still possible.
+    if (info.moved) color(r, 251, 220, 90);
+    else color(r, 74, 94, 111);
+    SDL_Rect moved{976, vh::kUnitHudStatusY, 12, 14};
+    SDL_RenderFillRect(r, &moved);
+}
+
 void render(SDL_Renderer* r, const Ui& ui) {
     color(r, 14, 19, 32);
     SDL_RenderClear(r);
@@ -180,6 +274,7 @@ void render(SDL_Renderer* r, const Ui& ui) {
     SDL_Rect enemies{55, H - 43, 30, 20};
     SDL_RenderFillRect(r, &enemies);
     render_attack_preview(r, ui);
+    render_selected_unit_info(r, ui);
     render_visual_state_digest(r, ui.battle);
     render_action_receipt(r, ui.last_effect);
     SDL_RenderPresent(r);
