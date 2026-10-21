@@ -4,6 +4,7 @@
 #include "vh/replay.hpp"
 #include "vh/visual_digest.hpp"
 #include "vh/training_controls.hpp"
+#include "vh/attack_preview_hud.hpp"
 #ifdef VH_STAGE44_DUEL
 #include "vh/attack_training.hpp"
 #endif
@@ -92,6 +93,36 @@ void render_action_receipt(SDL_Renderer* r, vh::TrainingEffect effect) {
     SDL_RenderFillRect(r, &receipt);
 }
 
+// Stage54 forecast HUD is below the battlefield in the existing info strip.
+// It is deliberately geometric and font-free so Switch/NRO needs no external
+// files. It must NEVER change Battle state or the screen-state hash.
+void render_attack_preview(SDL_Renderer* r, const Ui& ui) {
+    const vh::AttackPreviewHud h =
+        vh::attack_preview_hud(ui.battle, ui.selected, ui.cursor);
+    if (!h.visible) return;
+    const int x = vh::kPreviewBarX;
+    const int y = vh::kPreviewBarY;
+    const int w = vh::kPreviewBarWidth;
+    const int hh = vh::kPreviewBarHeight;
+    color(r, 23, 30, 41);
+    SDL_Rect backdrop{x - 4, y - 4, w + 8, hh + 8};
+    SDL_RenderFillRect(r, &backdrop);
+    if (h.remaining_width > 0) {
+        color(r, 117, 221, 109); // surviving HP after strike
+        SDL_Rect survivor{x, y, h.remaining_width, hh};
+        SDL_RenderFillRect(r, &survivor);
+    }
+    if (h.damage_width > 0) {
+        color(r, 179, 103, 244); // projected HP loss
+        SDL_Rect damage{x + h.remaining_width, y, h.damage_width, hh};
+        SDL_RenderFillRect(r, &damage);
+    }
+    if (h.decisive) {
+        color(r, 251, 220, 90); // lethal hit ends the entire battle
+        SDL_RenderDrawRect(r, &backdrop);
+    }
+}
+
 void render(SDL_Renderer* r, const Ui& ui) {
     color(r, 14, 19, 32);
     SDL_RenderClear(r);
@@ -148,6 +179,7 @@ void render(SDL_Renderer* r, const Ui& ui) {
     color(r, 239, 79, 76);
     SDL_Rect enemies{55, H - 43, 30, 20};
     SDL_RenderFillRect(r, &enemies);
+    render_attack_preview(r, ui);
     render_visual_state_digest(r, ui.battle);
     render_action_receipt(r, ui.last_effect);
     SDL_RenderPresent(r);
