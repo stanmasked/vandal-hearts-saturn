@@ -196,7 +196,22 @@ def patch_split_cue(raw: bytes) -> bytes:
         raise ValueError("already patched upstream")
     source = source.replace(INCLUDE_BEFORE, C_SOURCE + INCLUDE_BEFORE)
     source = source.replace(INIT_ORIGINAL, INIT_REPLACE)
-    if (source.count("VHLoadTwoFileCue(iso, iso_file)") != 1 or
+    # The actual Stage02 CUE begins with CATALOG, not FILE. Historical
+    # ISOCDInit wrongly assumed every CUE's first six bytes are FILE ".
+    # Route by verified .CUE extension; strict split parser enforces grammar.
+    detector = [line for line in source.splitlines(keepends=True)
+                if 'if (stricmp(ext, ".CUE")' in line and
+                'strncmp(header,' in line]
+    if len(detector) != 1:
+        raise ValueError("unexpected old Yabause CUE header detector")
+    line = detector[0]
+    newline = "\r\n" if line.endswith("\r\n") else "\n"
+    prefix = line[:line.index("if (stricmp")]
+    source = source.replace(
+        line, prefix + 'if (ext && stricmp(ext, ".CUE") == 0)' + newline
+    )
+    if (source.count('if (ext && stricmp(ext, ".CUE") == 0)') != 1 or
+            source.count("VHLoadTwoFileCue(iso, iso_file)") != 1 or
             source.count("LoadBinCue(iso, iso_file)") != 1 or
             source.count("if (vh_primary_read == 1)") != 1):
         raise ValueError("invalid split-CUE integration")
