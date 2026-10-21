@@ -92,6 +92,30 @@ class DefeatTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"defeated Scout still has green HP"):
             _hp(fake,0)
 
+    def test_real_nexium_1279_scaled_single_hp_lands_one_pixel_left(self):
+        # Reproduce real Stage52 guest run #39517943768. At 1HP the
+        # 1279-wide X11 capture maps the only green dot to logical x462;
+        # center x463 is DARK. The *real state hash* must still be correct.
+        shifted=frame(7,effect="TurnEnded")
+        draw=ImageDraw.Draw(shifted)
+        draw.rectangle((462,195,463,199),fill=(31,32,32))
+        draw.rectangle((462,195,462,199),fill=(117,221,109))
+        self.assertTrue(_hp(shifted,1))
+        io=FakeIO([*self.rounds[:6],shifted,self.rounds[7],*self.blocked])
+        self.assertTrue(exercise(self.initial,self.after_right,io)["defeat_passed"])
+
+    def test_single_hp_without_either_registered_green_pixel_rejected(self):
+        false=frame(7)
+        ImageDraw.Draw(false).rectangle((462,195,463,199),fill=(31,32,32))
+        with self.assertRaisesRegex(ValueError,"Scout 1HP pixel missing"):
+            _hp(false,1)
+
+    def test_dead_scout_leftover_one_pixel_left_of_bar_rejected(self):
+        false=frame(8)
+        ImageDraw.Draw(false).rectangle((462,195,462,199),fill=(117,221,109))
+        with self.assertRaisesRegex(ValueError,"defeated Scout still has green HP"):
+            _hp(false,0)
+
     def test_terminal_endturn_must_not_create_round_nine(self):
         fake=frame(7,effect="Rejected")
         io=FakeIO([*self.rounds,fake,fake])
