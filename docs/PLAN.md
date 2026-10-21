@@ -28,7 +28,8 @@ This is an independent project, not the PS1/PlayStation remaster.
 - Stage84 ALL GREEN: GCC/Clang true ISOCD backend reads from a generated two-sector file with exact gated numeric-only FAD 150/151 receipts; host regressions, Switch NRO and NeXium also passed. This does not authenticate original Saturn gameplay.
 - Stage85 ALL GREEN at exact head: two independent real Yabause ISO subprocesses per GCC/Clang agreed on 4096-byte synthetic sector SHA-256 and exact numeric FAD receipts; host GCC/Clang, Switch NRO, NeXium all passed. No authentic game data used.
 - Stage86 private-source hash checks and gate/output containment were verified by the new 12 synthetic tests each on Python 3.11 and 3.13; host GCC/Clang passed and NRO built. NeXium final result must be checked separately. No original game boot proven.
-- Stage87 adds an opt-in, locally pinned *executable* SHA-256 check before/after capture and requires the exact declared absolute CUE path as a complete CLI argument. It does not prove the binary's independently trusted build origin or that the emulator opened the CUE. Synthetic CI pending.
+- Stage87 ALL GREEN at exact head: pinned local executable SHA-256 + exact CUE argv binding, 11 new plus 12 existing synthetic safeguards per Python version, host GCC/Clang, Switch NRO and real NeXium all passed. Executable source/build identity and actual CUE opening remain unproven by these checks.
+- Stage88 calls the actual pinned public Yabause CUE parser and ISOCD backend in a real linked runner on a tiny invented CUE + 2-sector MODE1/2352 BIN, via Stage87's existing hash-pinned local wrapper. Negative control requires missing BIN rejection. GCC/Clang CI pending; no authentic game media are used.
 - **Do not equate** the synthetic training scene with the first Saturn mission.
 - Original Saturn map geometry, battle parameters, story, graphics and audio
   remain unverified. Never publish the original disc or extracted assets.
