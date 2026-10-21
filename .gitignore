@@ -30,3 +30,7 @@ __pycache__/
 *.mp3
 # Stage68: locally generated private neutral terrain fixtures
 *.vhterrain
+
+# Stage76: private numeric Saturn CD traces must not be checked in
+*.vhcdlog
+*.vhcdtrace.json

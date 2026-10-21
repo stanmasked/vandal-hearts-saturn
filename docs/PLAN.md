@@ -16,7 +16,8 @@ This is an independent project, not the PS1/PlayStation remaster.
 - Stage72 passed ordered terrain identity across seven fabricated sizes and four equal-sum permutations (GCC/Clang 25/25 CTest, 514/514 Python; Switch NRO and NeXium green).
 - Stage73 crosswalks privately captured logical-sector reads with candidate ISO9660 extents and menu controls; FAD normalization requires an explicit label and Track-1 bounds. CI pending.
 - Stage74 passed numeric multi-run sector read repeatability (GCC/Clang 25/25 CTest and 548/548 Python, Switch NRO and NeXium green); independent capture authenticity remains unproven.
-- Stage75 adds a private recording/session identity, release fingerprint and capture-window consistency gate. The checks never authenticate recording independence or original Saturn gameplay; CI pending.
+- Stage75 passed private metadata preflight: GCC/Clang 25/25 CTest, 564/564 Python per compiler, Switch NRO and NeXium green. No source authenticity claim.
+- Stage76 adds a local optional Yabause ISOCDReadSectorFAD numeric-only logging hook, per-session log parser and Stage73/74-compatible normalized LBA traces. Real original-game boot remains unverified; CI pending.
 - **Do not equate** the synthetic training scene with the first Saturn mission.
 - Original Saturn map geometry, battle parameters, story, graphics and audio
   remain unverified. Never publish the original disc or extracted assets.
