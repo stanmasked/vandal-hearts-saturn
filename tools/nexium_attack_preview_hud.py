@@ -20,9 +20,13 @@ PURPLE = (179,103,244)
 DARK = (23,30,41)
 GOLD = (251,220,90)
 HELP = (45,64,83)
+# The left vertical border has a robust registered pixel across 1279×700
+# NeXium scaling. The former logical (150,676) sample landed *inside* the
+# backdrop (dark), one raster row below the gold top border; real run
+# #39562697131 proved the decisive outline itself was correctly rendered.
 BAR = {
     "left": (160,686), "right": (280,686),
-    "border": (150,676),
+    "border": (141,686),
 }
 
 
