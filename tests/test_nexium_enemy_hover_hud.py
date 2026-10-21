@@ -19,8 +19,10 @@ def frame(hp=None, *, corrupt=None, offset=0,
     draw.rectangle((1008,674,1013,706),fill=RED)
     # Sampled letter bits from the same SDL 3x5 bitmap font:
     # first white top-row pixels for Raider R, H, A, D, R.
-    for x,y in ((1020,675),(1022,690),(1079,690),(1140,690),(1204,690)):
+    for x,y in ((1020,675),(1022,690),(1140,690),(1204,690)):
         draw.rectangle((x,y,x+1,y+1),fill=WHITE)
+    # T has a continuous middle column and survives guest font shifts.
+    draw.rectangle((1087,690+offset,1088,699+offset),fill=WHITE)
     for start_x, value in (
         (1022+8*3,hp),(1077+8*4,attack),
         (1140+8*4,defense),(1204+8*4,attack_range)

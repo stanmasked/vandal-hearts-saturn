@@ -24,7 +24,9 @@ RED = (239, 79, 76)
 PANEL = {
     "marker": (1010, 682), "body": (1268, 705),
     "name": (1021, 676), "hp": (1023, 691),
-    "attack": (1080, 691), "defense": (1141, 691),
+    # ATK uses the centre stroke of 'T', not the flickering rows of 'A'.
+    # This stays white after the Stage55-observed -2/-3-row X11 glyph shift.
+    "attack": (1088, 691), "defense": (1141, 691),
     "range": (1205, 691),
 }
 
