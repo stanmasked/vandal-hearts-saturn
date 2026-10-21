@@ -9,6 +9,7 @@ This is an independent project, not the PS1/PlayStation remaster.
   both Switch NRO builds and real NeXium guest pixel checks.
 - Stage65 adds a metadata-only crosswalk for candidate Saturn resources; CI pending.
 - Stage66 adds a provenance-linked observation-manifest validator with synthetic-only tests; CI pending.
+- Stage67 adds evidence-coverage checks; Stage68 adds a neutral terrain bridge for locally verified numeric geometry, without guessing attack/AI rules. Both require their own CI.
 - **Do not equate** the synthetic training scene with the first Saturn mission.
 - Original Saturn map geometry, battle parameters, story, graphics and audio
   remain unverified. Never publish the original disc or extracted assets.

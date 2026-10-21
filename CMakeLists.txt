@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_library(vh_core src/core/battle.cpp)
+add_library(vh_core src/core/battle.cpp src/core/terrain_bridge.cpp)
 target_include_directories(vh_core PUBLIC include)
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(vh_core PRIVATE -Wall -Wextra -Wpedantic)
@@ -142,6 +142,11 @@ add_test(NAME movement_preview_contract COMMAND vh_movement_preview_tests)
 add_executable(vh_move_preview_hud_tests tests/move_preview_hud_tests.cpp)
 target_link_libraries(vh_move_preview_hud_tests PRIVATE vh_core)
 add_test(NAME move_preview_hud_contract COMMAND vh_move_preview_hud_tests)
+
+# Stage68: fail-closed neutral terrain bridge, no original game media or combat guesses.
+add_executable(vh_terrain_bridge_tests tests/terrain_bridge_tests.cpp)
+target_link_libraries(vh_terrain_bridge_tests PRIVATE vh_core)
+add_test(NAME neutral_terrain_bridge_contract COMMAND vh_terrain_bridge_tests)
 
 # Stage62: selected ally movement allowance is a read-only stat.
 add_executable(vh_selected_unit_movement_stat_tests tests/selected_unit_movement_stat_tests.cpp)
