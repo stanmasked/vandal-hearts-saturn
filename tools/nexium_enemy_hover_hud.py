@@ -39,9 +39,9 @@ def _expect_colors(image, expected):
     return True
 
 
-def _expect_hp_digits(image, hp):
+def _expect_digits(image, hp, start_x, field):
     if not (0 < hp <= 99):
-        raise ValueError("unsupported enemy HP")
+        raise ValueError("unsupported enemy "+field)
     expected = {}
     for index, digit in enumerate(str(hp)):
         for y, mask in enumerate(DIGITS[digit]):
@@ -51,22 +51,31 @@ def _expect_hp_digits(image, hp):
         positions = {}
         for key in expected:
             i, x, y = (int(v) for v in key.split("-"))
-            positions[key] = (1022 + 8*(3+i) + 2*x + 1,
+            positions[key] = (start_x + 2*x + 8*i + 1,
                               690 + 2*y + 1 + offset_y)
         actual = _sample(image, positions)
         if all(similar(actual[k], WHITE if lit else DARK)
                for k, lit in expected.items()):
             return True
-    raise ValueError("enemy HUD HP digit mismatch: " + str(hp))
+    raise ValueError("enemy HUD "+field+" digit mismatch: " + str(hp))
 
 
-def expect_visible(image, hp):
+def expect_visible(image, hp, *, attack=6, defense=2, attack_range=1):
     _expect_colors(image,{
         "marker": RED, "body": DARK,
         "name": WHITE, "hp": WHITE, "attack": WHITE,
         "defense": WHITE, "range": WHITE,
     })
-    return _expect_hp_digits(image,hp)
+    # Exact bitmap bitmaps, not just visible labels: a forged ATK, DEF or
+    # RNG digit must fail even when battle hash and HP were correct.
+    for field, value, glyph_x in (
+        ("HP", hp, 1022+8*3),
+        ("ATK", attack, 1077+8*4),
+        ("DEF", defense, 1140+8*4),
+        ("RNG", attack_range, 1204+8*4),
+    ):
+        _expect_digits(image,value,glyph_x,field)
+    return True
 
 
 def expect_hidden(image):

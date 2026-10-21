@@ -8,7 +8,8 @@ from tools.nexium_enemy_hover_hud import expect_visible, expect_hidden, RED, PAN
 from tools.nexium_selected_unit_hud import DIGITS, DARK, HELP, WHITE
 
 
-def frame(hp=None, *, corrupt=None, offset=0):
+def frame(hp=None, *, corrupt=None, offset=0,
+          attack=6, defense=2, attack_range=1):
     image=picture()
     draw=ImageDraw.Draw(image)
     draw.rectangle((0,660,1279,719),fill=HELP)
@@ -20,13 +21,17 @@ def frame(hp=None, *, corrupt=None, offset=0):
     # first white top-row pixels for Raider R, H, A, D, R.
     for x,y in ((1020,675),(1022,690),(1079,690),(1140,690),(1204,690)):
         draw.rectangle((x,y,x+1,y+1),fill=WHITE)
-    for index,digit in enumerate(str(hp)):
-        for y,mask in enumerate(DIGITS[digit]):
-            for x in range(3):
-                if mask & (1 << (2-x)):
-                    left=1022+8*(3+index)+2*x
-                    top=690+2*y+offset
-                    draw.rectangle((left,top,left+1,top+1),fill=WHITE)
+    for start_x, value in (
+        (1022+8*3,hp),(1077+8*4,attack),
+        (1140+8*4,defense),(1204+8*4,attack_range)
+    ):
+        for index,digit in enumerate(str(value)):
+            for y,mask in enumerate(DIGITS[digit]):
+                for x in range(3):
+                    if mask & (1 << (2-x)):
+                        left=start_x+8*index+2*x
+                        top=690+2*y+offset
+                        draw.rectangle((left,top,left+1,top+1),fill=WHITE)
     if corrupt:
         x,y=PANEL[corrupt]
         draw.rectangle((x-1,y-1,x+1,y+1),fill=(250,150,10))
@@ -52,6 +57,15 @@ class HoverHudPixels(unittest.TestCase):
     def test_forged_14_as_8_rejected(self):
         with self.assertRaisesRegex(ValueError,"HP digit mismatch"):
             expect_visible(frame(14),8)
+    def test_forged_attack_number_rejected(self):
+        with self.assertRaisesRegex(ValueError,"ATK digit mismatch"):
+            expect_visible(frame(20,attack=7),20)
+    def test_forged_defense_number_rejected(self):
+        with self.assertRaisesRegex(ValueError,"DEF digit mismatch"):
+            expect_visible(frame(14,defense=3),14)
+    def test_forged_range_number_rejected(self):
+        with self.assertRaisesRegex(ValueError,"RNG digit mismatch"):
+            expect_visible(frame(8,attack_range=2),8)
     def test_missing_title_rejected(self):
         with self.assertRaisesRegex(ValueError,"name"):
             expect_visible(frame(20,corrupt="name"),20)
