@@ -66,6 +66,13 @@ target_link_libraries(vh_visual_fixture PRIVATE vh_core)
 add_executable(vh_terrain_probe src/app/terrain_probe_main.cpp)
 target_link_libraries(vh_terrain_probe PRIVATE vh_core)
 
+# Stage72: order-sensitive, cell-level terrain consistency check, synthetic only.
+add_executable(vh_terrain_order_probe src/app/terrain_order_probe_main.cpp)
+target_link_libraries(vh_terrain_order_probe PRIVATE vh_core)
+add_executable(vh_terrain_order_tests tests/terrain_order_digest_tests.cpp)
+target_link_libraries(vh_terrain_order_tests PRIVATE vh_core)
+add_test(NAME terrain_order_digest_contract COMMAND vh_terrain_order_tests)
+
 # SDL-independent gameplay actions shared by keyboard, controller and host tests.
 add_executable(vh_training_controls_tests tests/training_controls_tests.cpp)
 target_link_libraries(vh_training_controls_tests PRIVATE vh_core)
