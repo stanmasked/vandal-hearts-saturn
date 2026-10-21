@@ -1,0 +1,42 @@
+name: Stage96 private frame witness + FAD integrity (fake media only)
+on:
+  push:
+    branches:
+      - "stage96/**"
+  pull_request:
+    branches:
+      - "stage95/**"
+permissions:
+  contents: read
+jobs:
+  private-frame-witness:
+    name: Frame files bound to four fake sessions (${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Synthetic PNG framing, SHA256 and numeric FAD binding
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_saturn_private_frame_witness.py -v
+          python -m unittest discover -s tests -p test_saturn_private_capture_cohort.py -v
+          python -m unittest discover -s tests -p test_saturn_private_boot_handoff.py -v
+          echo "STAGE96_PRIVATE_FAKE_FRAME_WITNESS_INTEGRITY_PASS"
+      - name: Reject original media and copyrighted archive formats from checkout
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          files=subprocess.check_output(["git","ls-files","-z"]).decode().split("\0")
+          forbidden={".bin",".cue",".iso",".chd",".rom",".zip",".7z"}
+          assert not any(Path(p).suffix.lower() in forbidden for p in files if p)
+          print("STAGE96_NO_ORIGINAL_GAME_FILES_IN_CI_PASS")
+          PY
