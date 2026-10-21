@@ -41,8 +41,11 @@ class SaturnResourceCandidatesTests(unittest.TestCase):
         self.assertEqual(report["inventory"]["map_family_counts"],
                          {"M_IVE": 22, "M_KEY": 17, "M_MAP": 34, "M_SHOW": 1})
         self.assertEqual(report["inventory"]["map_size_bytes_counts"], {"170624": 74})
-        self.assertNotIn("payload", str(report))
         self.assertNotIn("must-not-export", str(report))
+        for group in report["candidate_groups"]:
+            for entry in group["present_files"]:
+                self.assertEqual(set(entry), {"name", "size_bytes", "extent_lba",
+                                              "iso_sectors", "extent_end_exclusive"})
 
     def test_missing_pair_member_is_reported_not_guessed(self):
         entries = [e for e in fixture_entries() if e["name"] != "MAP_1_1P.BIN"]
