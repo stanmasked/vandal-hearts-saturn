@@ -204,6 +204,18 @@ class FourCaptureCohortTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             _write_private_json(out / "trace.json", trace)
 
+    def test_failed_private_output_fsync_removes_partial_receipt(self):
+        from unittest.mock import patch
+        report, _ = self.audit()
+        output_dir = self.root / "transactional-output"
+        output_dir.mkdir(mode=0o700)
+        target = output_dir / "receipt.json"
+        with patch("tools.saturn_private_capture_cohort.os.fsync",
+                   side_effect=OSError("invented disk write failure")):
+            with self.assertRaises(OSError):
+                _write_private_json(target, report)
+        self.assertFalse(target.exists())
+
     def test_modified_log_line_endings_are_rejected(self):
         file = self.sessions[0][1] / private.LOG_FILE
         file.write_bytes(b"VHCD_FAD 150\r\nVHCD_FAD 151\n")
