@@ -29,3 +29,5 @@ jobs:
         run: .ci-python/bin/python -m tools.check_visual_bridge --binary out/vh_visual_fixture --output out/visual-bridge-report.json
       - name: Stage69 Python export to C++ terrain parser round-trip (synthetic only)
         run: .ci-python/bin/python -m tools.check_terrain_bridge --binary out/vh_terrain_probe --output out/terrain-bridge-report.json
+      - name: Stage71 synthetic grid size/elevation matrix through compiled C++
+        run: .ci-python/bin/python -m tools.check_terrain_matrix --binary out/vh_terrain_probe --output out/terrain-matrix-report.json

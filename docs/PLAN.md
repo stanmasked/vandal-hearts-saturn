@@ -11,7 +11,8 @@ This is an independent project, not the PS1/PlayStation remaster.
 - Stage66 adds a provenance-linked observation-manifest validator with synthetic-only tests; CI pending.
 - Stage67 adds evidence-coverage checks; Stage68 adds a neutral terrain bridge for locally verified numeric geometry, without guessing attack/AI rules. Both require their own CI.
 - Stage69 verifies the Python-to-native terrain protocol with independent aggregates and negative mutation tests, using synthetic-only geometry; CI pending.
-- Stage70 cross-checks loaded synthetic geometry against an independently assembled C++ grid for movement previews, blocked paths, terrain costs, height cliffs and committed moves. CI pending.
+- Stage70 passed native movement/terrain equivalence (GCC/Clang 24/24 CTest, 503/503 Python; NRO/NeXium green).
+- Stage71 adds signed-relative-elevation schema support and a multi-size synthetic Python-export/C++-import test matrix, including 128×128. CI pending.
 - **Do not equate** the synthetic training scene with the first Saturn mission.
 - Original Saturn map geometry, battle parameters, story, graphics and audio
   remain unverified. Never publish the original disc or extracted assets.
