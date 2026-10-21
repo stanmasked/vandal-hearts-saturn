@@ -16,9 +16,11 @@ from tools.patch_yabause_synthetic_iso import (
 MODE = "vh-exact-cue-read"
 RECEIPT = "STAGE88_REAL_YABAUSE_SYNTHETIC_CUE_OPEN_PASS"
 STAGE88_CONDITION = STAGE84_CONDITION.replace(
+    'if (argc == 2 && (', 'if ((argc == 2 && ('
+).replace(
     'strcmp(argv[1], "vh-synthetic-iso-read") == 0))',
-    'strcmp(argv[1], "vh-synthetic-iso-read") == 0 || '
-    'strcmp(argv[1], "vh-exact-cue-read") == 0))',
+    'strcmp(argv[1], "vh-synthetic-iso-read") == 0)) || '
+    '(argc == 3 && strcmp(argv[1], "vh-exact-cue-read") == 0))',
 )
 CUE_CHECK = r'''      if (strcmp(argv[1], "vh-exact-cue-read") == 0)
       {
