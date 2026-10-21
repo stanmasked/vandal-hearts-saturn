@@ -36,7 +36,7 @@ PANEL = {
     "marker": (357,682), "ready_or_acted": (960,688),
     "not_moved": (979,688), "body": (365,704),
     # White glyph pixels, verified only when a live ally is selected:
-    "hp_label": (501,684), "attack_label": (606,684),
+    "hp_label": (501,684), "attack_label": (605,685),
     "defense_label": (725,684), "range_label": (840,684),
 }
 
@@ -53,27 +53,32 @@ def _check_colors(image, expected):
 def _check_digits(image, hp):
     if not 0 <= hp <= 99:
         raise ValueError("unsupported HP numeral")
-    # SDL: unit_stat_text("HP " + decimal HP, x500, y683), scale 2,
-    # each glyph advances 8 logical pixels. Check every onscreen 2x2 cell.
-    digits=str(hp)
-    positions={}
+    # The synthetic 1280x720 fixture puts the white 3x5 glyph exactly at
+    # SDL logical y683. Real 1279x700 NeXium applies a fractional SDL
+    # viewport: the guest screenshots from #39589369800 show the same
+    # correct glyph shifted up 2-3 *registered logical* rows. Probe only
+    # these strictly bounded registrations and demand every single bit.
+    # Unlike a loose color check, even 19 incorrectly claimed as 13 misses
+    # one pixel out of 30 and is rejected.
+    digits = str(hp)
+    expected = {}
     for i, digit in enumerate(digits):
-        glyph=DIGITS[digit]
-        base=500 + 8 * (3+i)
-        for y,mask in enumerate(glyph):
+        for y, mask in enumerate(DIGITS[digit]):
             for x in range(3):
-                positions[f"{i}-{x}-{y}"]=(base+2*x+1,683+2*y+1)
-    observed=_sample(image,positions)
-    for i,digit in enumerate(digits):
-        for y,mask in enumerate(DIGITS[digit]):
-            for x in range(3):
-                expected=WHITE if (mask & (1 << (2-x))) else DARK
-                key=f"{i}-{x}-{y}"
-                if not similar(observed[key],expected):
-                    raise ValueError("unit HUD HP digit mismatch: "+
-                                     str(hp)+" pixel="+key+
-                                     " observed="+str(observed[key]))
-    return True
+                expected[f"{i}-{x}-{y}"] = bool(mask & (1 << (2-x)))
+    for offset_y in (-3, -2, -1, 0):
+        positions = {
+            key: (500 + 8 * (3 + int(key.split("-")[0]))
+                  + 2 * int(key.split("-")[1]) + 1,
+                  683 + 2 * int(key.split("-")[2]) + 1 + offset_y)
+            for key in expected
+        }
+        observed = _sample(image, positions)
+        if all(similar(observed[key], WHITE if expected[key] else DARK)
+               for key in expected):
+            return True
+    raise ValueError("unit HUD HP digit mismatch: " + str(hp) +
+                     " (all glyph bits checked across bounded X11 offsets)")
 
 
 def expect_visible(image, hp, *, attacked=False):
