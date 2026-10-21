@@ -36,6 +36,17 @@ struct Unit {
     bool acted = false;
 };
 
+// Side-effect-free projection of the next legal attack. 'damage' is HP
+// actually removed (never larger than current HP), not raw attack power.
+// Invalid actions return all-zero fields and are never allowed to mutate state.
+// This is an original ROM-free tactics rule, not original Saturn combat data.
+struct AttackPreview {
+    bool legal = false;
+    int damage = 0;
+    int remaining_hp = 0;
+    bool ends_battle = false;
+};
+
 class Battle {
 public:
     Battle(int width, int height);
@@ -55,6 +66,7 @@ public:
     const Unit* find_unit(int id) const;
     std::vector<Pos> reachable(int unit_id) const;
     bool move(int unit_id, Pos dest);
+    AttackPreview preview_attack(int attacker_id, int defender_id) const;
     bool attack(int attacker_id, int defender_id);
     bool end_player_turn(); // Synthetic enemy AI and start of next player round.
 
