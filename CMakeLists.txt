@@ -133,6 +133,11 @@ add_executable(vh_turn_round_hud_tests tests/turn_round_hud_tests.cpp)
 target_link_libraries(vh_turn_round_hud_tests PRIVATE vh_core)
 add_test(NAME turn_round_hud_contract COMMAND vh_turn_round_hud_tests)
 
+# Stage63: verify movement costs and shared legality without state mutation.
+add_executable(vh_movement_preview_tests tests/movement_preview_tests.cpp)
+target_link_libraries(vh_movement_preview_tests PRIVATE vh_core)
+add_test(NAME movement_preview_contract COMMAND vh_movement_preview_tests)
+
 # Stage62: selected ally movement allowance is a read-only stat.
 add_executable(vh_selected_unit_movement_stat_tests tests/selected_unit_movement_stat_tests.cpp)
 target_link_libraries(vh_selected_unit_movement_stat_tests PRIVATE vh_core)

@@ -1,11 +1,13 @@
 # Vandal Hearts — Sega Saturn → Nintendo Switch (native remake)
 
-**Stages 01–25 / ROM-free native prototype.** Separate from the PlayStation-based remaster.
+**Stage62 verified; Stage63 movement legality audit in progress / ROM-free native prototype.**
+Separate from the PlayStation-based remaster.
 The intended reference is the 1997 Japanese Sega Saturn edition `T-9526G`.
 
 > Status: C++17 tactical-core prototype and synthetic 8×8 map, NOT the real game,
-> NOT an authenticated Saturn mechanics recreation. A real Switch `.nro` was
-> built and independently verified, but actual NeXium/console runtime remains unverified.
+> NOT an authenticated Saturn mechanics recreation. A real Switch `.nro`
+> and synthetic-game NeXium guest runtime were verified in CI; physical Switch
+> hardware and authentic Saturn campaign data remain unverified.
 
 ## Current capabilities
 
@@ -17,6 +19,9 @@ The intended reference is the 1997 Japanese Sega Saturn edition `T-9526G`.
 - Shared SDL-free cursor geometry and directional movement now under host tests.
 - Temporary ROM-free pixel-encoded state checksum verifies guest tactical state
   in emulator screenshots, even when guest stderr is unavailable.
+- Host/guest-verified movement, combat, Victory/Defeat, damage forecasts, HUD
+  stats, turn indicator and movement allowance. Stage63 adds a read-only
+  legal-move/path-cost projection and defensive overflow handling (CI pending).
 - Disc CUE/BIN metadata-only hash inventory (read-only, strictly local).
 - Host GCC/Clang test workflow, no ROM or game assets in CI.
 
@@ -55,7 +60,8 @@ make
 
 The Makefile follows the standard `switchbrew/switch-examples` SDL2 template.
 Switch cross-compilation and real NRO0/SHA-256 checks passed GitHub Actions.
-Actual NeXium and console runtime **still require validation**.
+CI has validated NeXium guest runtime on the ROM-free training scene.
+**Physical Switch hardware remains untested.**
 
 ## Original-disc material and repository policy
 

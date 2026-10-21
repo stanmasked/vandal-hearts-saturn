@@ -10,6 +10,8 @@
 namespace vh {
 namespace {
 constexpr Pos kDirections[4] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+// This value is a sentinel, never a valid path. Keep arithmetic below it.
+constexpr int kUnreachableCost = std::numeric_limits<int>::max() / 4;
 int distance(Pos a, Pos b) { return std::abs(a.x - b.x) + std::abs(a.y - b.y); }
 }
 
@@ -61,7 +63,7 @@ bool Battle::occupied(Pos pos, int excluded_id) const {
 }
 
 int Battle::shortest_cost(const Unit& unit, Pos destination) const {
-    constexpr int inf = std::numeric_limits<int>::max() / 4;
+    constexpr int inf = kUnreachableCost;
     if (!in_bounds(destination) || !tile(destination).walkable ||
         occupied(destination, unit.id)) return inf;
     std::vector<int> dist(static_cast<size_t>(width_ * height_), inf);
@@ -79,8 +81,14 @@ int Battle::shortest_cost(const Unit& unit, Pos destination) const {
         for (const Pos delta : kDirections) {
             const Pos next{here.x + delta.x, here.y + delta.y};
             if (!in_bounds(next) || !tile(next).walkable || occupied(next, unit.id)) continue;
-            if (std::abs(tile(next).elevation - tile(here).elevation) > 1) continue;
-            const int next_cost = cost + tile(next).terrain_cost;
+            // Authored elevations are unrestricted ints; avoid signed overflow.
+            const long long rise = static_cast<long long>(tile(next).elevation) -
+                                   static_cast<long long>(tile(here).elevation);
+            if (rise < -1 || rise > 1) continue;
+            // Avoid signed overflow and never relax an unreachable sentinel.
+            const int step_cost = tile(next).terrain_cost;
+            if (step_cost >= inf - cost) continue;
+            const int next_cost = cost + step_cost;
             const int next_index = next.y * width_ + next.x;
             if (next_cost < dist[static_cast<size_t>(next_index)]) {
                 dist[static_cast<size_t>(next_index)] = next_cost;
@@ -98,17 +106,27 @@ std::vector<Pos> Battle::reachable(int unit_id) const {
     for (int y = 0; y < height_; ++y) {
         for (int x = 0; x < width_; ++x) {
             const Pos p{x, y};
-            if (p != u->pos && shortest_cost(*u, p) <= u->move_points) result.push_back(p);
+            // The green legal-destination overlay uses the same contract as move().
+            if (preview_move(unit_id, p).legal) result.push_back(p);
         }
     }
     return result;
 }
 
-bool Battle::move(int id, Pos target) {
-    Unit* u = mutable_unit(id);
+MovePreview Battle::preview_move(int id, Pos target) const {
+    const Unit* u = find_unit(id);
     if (!u || u->hp <= 0 || u->moved || phase_ != Phase::Player ||
-        u->side != Side::Player || u->pos == target ||
-        shortest_cost(*u, target) > u->move_points) return false;
+        u->side != Side::Player || u->pos == target) return {};
+    const int cost = shortest_cost(*u, target);
+    if (cost >= kUnreachableCost || cost > u->move_points) return {};
+    return {true, cost, u->move_points - cost};
+}
+
+bool Battle::move(int id, Pos target) {
+    // One authoritative legality check for preview and committed movement.
+    const MovePreview preview = preview_move(id, target);
+    if (!preview.legal) return false;
+    Unit* u = mutable_unit(id);
     u->pos = target;
     u->moved = true;
     return true;
@@ -192,7 +210,8 @@ void Battle::run_enemy_ai() {
             for (int y = 0; y < height_; ++y) for (int x = 0; x < width_; ++x) {
                 const Pos p{x, y};
                 if (p == enemy->pos || distance(p, goal) >= best_distance) continue;
-                if (shortest_cost(*enemy, p) <= enemy->move_points) {
+                const int cost = shortest_cost(*enemy, p);
+                if (cost < kUnreachableCost && cost <= enemy->move_points) {
                     best = p;
                     best_distance = distance(p, goal);
                 }
