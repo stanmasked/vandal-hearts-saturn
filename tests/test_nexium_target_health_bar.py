@@ -29,7 +29,7 @@ class ProjectedHealthBar(unittest.TestCase):
     def test_lethal_zero_of_two(self):
         self.assertTrue(verify_colors(frame(2,0),current_hp=2,hp_after=0))
     def test_hidden_no_selection(self):
-        self.assertTrue(verify_colors(frame()))
+        self.assertTrue(verify_colors(frame(),enemy_visible=True))
     def test_hidden_after_attack(self):
         self.assertTrue(verify_colors(frame(None,None,spent=True),enemy_visible=True))
     def test_hidden_terminal(self):
@@ -45,7 +45,7 @@ class ProjectedHealthBar(unittest.TestCase):
             verify_colors(frame(20,14,forged=(1200,GREEN)),current_hp=20,hp_after=14)
     def test_forged_nonvisible_bar_fails(self):
         with self.assertRaisesRegex(ValueError,"ghost projected"):
-            verify_colors(frame(None,None,forged=(1100,RED)))
+            verify_colors(frame(None,None,forged=(1100,RED)),enemy_visible=True)
     def test_forged_bar_when_spent_fails(self):
         with self.assertRaisesRegex(ValueError,"ghost projected"):
             verify_colors(frame(None,None,spent=True,forged=(1100,GREEN)),enemy_visible=True)

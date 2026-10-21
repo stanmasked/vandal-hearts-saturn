@@ -16,12 +16,6 @@ GREEN=(117,221,109)
 RED=(239,79,76)
 X,Y,WIDTH=1020,707,220
 
-def _expect_pixels(image,expected):
-    actual=_sample(image,expected)
-    for point,desired in expected.items():
-        # This function accepts coordinates => color, not a sample-key map.
-        pass
-
 def verify_colors(image,*,current_hp=None,hp_after=None,enemy_visible=False):
     if current_hp is None:
         if hp_after is not None:
