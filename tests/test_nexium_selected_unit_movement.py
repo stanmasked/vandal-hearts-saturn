@@ -47,7 +47,8 @@ class SelectedMovementGlyphTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"ghost MOV"):
             expect_hidden(movement_frame(4))
     def test_forged_one_pixel_rejected(self):
-        image=movement_frame(4,forged=(573,683,DARK))
+        # Corrupt the actual sampled left pixel of the first lit cell in the 4 glyph.
+        image=movement_frame(4,forged=(572,683,DARK))
         with self.assertRaisesRegex(ValueError,"bitmap mismatch"):
             expect_movement(image,4)
     def test_invalid_negative_movement_rejected(self):
