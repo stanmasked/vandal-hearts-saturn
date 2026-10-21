@@ -16,12 +16,12 @@ void selected_movement_points_are_real_and_read_only() {
     assert(vh::battle_fingerprint(battle)==fingerprint);
 
     const auto training=vh::Battle::training();
+    const auto training_fingerprint=vh::battle_fingerprint(training);
     const auto scout2=vh::selected_unit_hud(training,1);
     const auto guard=vh::selected_unit_hud(training,2);
     assert(scout2.visible && scout2.move_points==4);
     assert(guard.visible && guard.name=="Guard" && guard.move_points==3);
-    assert(vh::battle_fingerprint(training)==UINT64_C(0x9376e23745926630) ||
-           vh::battle_fingerprint(training)==vh::battle_fingerprint(training));
+    assert(vh::battle_fingerprint(training)==training_fingerprint);
 }
 void spent_movement_keeps_stat_but_not_readiness() {
     auto battle=vh::Battle::training();
