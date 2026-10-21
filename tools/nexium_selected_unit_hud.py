@@ -110,17 +110,25 @@ def verify_folder(duel, defeat):
     if selected_name not in ("action-duel-selected.png",
                              "action-duel-selected-retry.png"):
         raise ValueError("invalid duel selected filename")
-    round2_name=json.loads((duel/"round2-evidence.json").read_text("utf8")).get(
-        "selection_proof")
+    round2_report=json.loads((duel/"round2-evidence.json").read_text("utf8"))
+    round2_name=round2_report.get("selection_proof")
+    ended_name=round2_report.get("ended_proof")
     if round2_name not in ("action-round2-selected.png",
                            "action-round2-selected-retry.png"):
         raise ValueError("invalid second-round selected filename")
+    if ended_name not in ("action-round2-ended.png",
+                          "action-round2-ended-retry.png"):
+        raise ValueError("invalid second-round endturn filename")
+    fourth_name=victory.get("round4_selection_proof")
+    if fourth_name not in ("action-victory-round4-selected.png",
+                           "action-victory-round4-selected-retry.png"):
+        raise ValueError("invalid fourth-round selected filename")
     with Image.open(duel/"nexium-window.png") as initial, \
          Image.open(duel/selected_name) as selected, \
          Image.open(duel/"action-duel-attacked.png") as attacked, \
-         Image.open(duel/"action-round2-ended.png") as new_round, \
+         Image.open(duel/ended_name) as new_round, \
          Image.open(duel/round2_name) as round2, \
-         Image.open(duel/"action-victory-round4-selected.png") as fourth, \
+         Image.open(duel/fourth_name) as fourth, \
          Image.open(duel/"action-victory-round4-attacked.png") as won, \
          Image.open(defeat/"action-defeat-round-8.png") as lost:
         states=((initial,INITIAL_DUEL),(selected,INITIAL_DUEL),
