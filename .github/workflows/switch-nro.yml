@@ -314,6 +314,16 @@ jobs:
           python3 -m tools.nexium_enemy_hover_hud \
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
+      - name: Stage57 real NeXium attack-availability cue verification
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Read independently captured Stage44/50 and Stage52 guest PNGs.
+          # Genuine registered combat hashes and Stage56 stats must pass first.
+          python3 -m tools.nexium_enemy_attack_cue \
+            --duel stage44-session/runtime-evidence \
+            --defeat stage52-session/runtime-evidence
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
