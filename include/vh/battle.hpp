@@ -47,6 +47,15 @@ struct AttackPreview {
     bool ends_battle = false;
 };
 
+// Read-only movement legality/cost projection; never changes turn state.
+// Invalid destinations return {false, 0, 0}. Original Saturn movement
+// rules remain unknown: these are synthetic training-scene rules.
+struct MovePreview {
+    bool legal = false;
+    int path_cost = 0;
+    int remaining_points = 0;
+};
+
 class Battle {
 public:
     Battle(int width, int height);
@@ -65,6 +74,7 @@ public:
     const Unit* unit_at(Pos p) const;
     const Unit* find_unit(int id) const;
     std::vector<Pos> reachable(int unit_id) const;
+    MovePreview preview_move(int unit_id, Pos dest) const;
     bool move(int unit_id, Pos dest);
     AttackPreview preview_attack(int attacker_id, int defender_id) const;
     bool attack(int attacker_id, int defender_id);

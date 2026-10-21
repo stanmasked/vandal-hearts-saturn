@@ -3,7 +3,15 @@
 Base game: Vandal Hearts ~Ushinawareta Kodai Bunmei~, Japanese Saturn `T-9526G` (1997).
 This is an independent project, not the PS1/PlayStation remaster.
 
-## Stage 01 — ROM-free prototype (current)
+## Verified status on 2026-10-21
+- Stages 01–62 implement a ROM-free synthetic tactical vertical prototype;
+  Stage62 passed GCC/Clang, NRO and genuine NeXium guest evidence.
+- Stage63 extends shared, read-only move-cost validation (pending its own CI).
+- **Do not equate** the synthetic training scene with the first Saturn mission.
+- Original Saturn map geometry, battle parameters, story, graphics and audio
+  remain unverified. Never publish the original disc or extracted assets.
+
+## Stage 01 — ROM-free prototype (completed technical foundation)
 - C++17 tactics core: grid elevations, terrain, path costs, units, sides, turn phases.
 - Deterministic test-only damage model, placeholder enemy AI, training arena.
 - Host CLI, optional SDL2 renderer and prospective libnx/SDL2 NRO Makefile.
