@@ -64,12 +64,16 @@ class SaturnResourceCandidatesTests(unittest.TestCase):
     def test_bad_extents_rejected(self):
         for entry in [
             {"name": "A.BIN", "lba": -1, "bytes": 2},
-            {"name": "A.BIN", "lba": 1, "bytes": 0},
             {"name": "../A.BIN", "lba": 1, "bytes": 2},
             {"name": "A.BIN", "lba": True, "bytes": 2},
         ]:
             with self.subTest(entry=entry), self.assertRaises(ValueError):
                 analyze_entries([entry])
+
+    def test_zero_length_iso_file_is_valid_metadata(self):
+        report = analyze_entries([{"name": "EMPTY.DAT", "lba": 5, "bytes": 0}])
+        self.assertEqual(report["inventory"]["file_count"], 1)
+        self.assertEqual(report["inventory"]["map_file_count"], 0)
 
     def test_unknown_map_family_kept_separate(self):
         report = analyze_entries([{"name": "CUSTOM.MAP", "lba": 5, "bytes": 99}])

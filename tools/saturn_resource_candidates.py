@@ -44,7 +44,7 @@ def _normalize_entries(entries):
         if not isinstance(name, str) or not name or "/" in name or "\\" in name:
             raise ValueError("Unsafe or empty ISO filename")
         if (not isinstance(lba, int) or isinstance(lba, bool) or lba < 0 or
-                not isinstance(size, int) or isinstance(size, bool) or size <= 0):
+                not isinstance(size, int) or isinstance(size, bool) or size < 0):
             raise ValueError("Invalid ISO extent or file size")
         key = name.upper()
         if key in by_name:
