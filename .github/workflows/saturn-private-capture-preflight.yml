@@ -33,5 +33,12 @@ jobs:
       - name: No private Saturn media in CI checkout
         run: |
           set -euo pipefail
-          ! git ls-files | grep -E '(^|/)([Tt]rack[12].*\\.(bin|cue|iso)|.*\\.chd)$'
-          echo "STAGE86_NO_GAME_MEDIA_IN_REPOSITORY_PASS"
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+          forbidden = {".bin", ".cue", ".iso", ".chd", ".zip", ".7z", ".rom"}
+          found = [p for p in tracked if p and Path(p).suffix.lower() in forbidden]
+          assert not found, "forbidden media/archive extensions tracked"
+          print("STAGE86_NO_GAME_MEDIA_IN_REPOSITORY_PASS")
+          PY
