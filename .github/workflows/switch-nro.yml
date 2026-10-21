@@ -256,6 +256,16 @@ jobs:
             stage44-session/runtime-evidence/nexium.log \
             stage44-session/runtime-evidence/lifecycle-status.txt \
             --output stage44-session/runtime-evidence/lifecycle-audit.json
+      - name: Stage54 real NeXium forecast HUD pixel and hide/show verification
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Re-open only previously captured REAL Stage44/50 guest PNGs.
+          # Digest, cursor, selection, projected HP and lethal border all gate success.
+          python3 -m tools.nexium_attack_preview_hud \
+            --duel stage44-session/runtime-evidence \
+            --victory stage44-session/runtime-evidence
       - name: Stage52 independent real NeXium Defeat duel and terminal evidence
         if: always()
         shell: bash
