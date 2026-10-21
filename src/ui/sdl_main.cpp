@@ -8,6 +8,7 @@
 #include "vh/selected_unit_hud.hpp"
 #include "vh/enemy_hover_hud.hpp"
 #include "vh/enemy_attack_cue.hpp"
+#include "vh/target_damage_hud.hpp"
 #include <array>
 #include <cctype>
 #ifdef VH_STAGE44_DUEL
@@ -256,6 +257,20 @@ void render_enemy_attack_cue(SDL_Renderer* r, const Ui& ui) {
     SDL_RenderFillRect(r, &marker);
 }
 
+// Stage58: precise capped HP damage readout shares Stage53 preview authority.
+// The text occupies unused Stage56 enemy-card area, not Stage54-57 samples.
+void render_target_damage(SDL_Renderer* r, const Ui& ui) {
+    const auto forecast = vh::target_damage_hud(ui.battle, ui.cursor, ui.selected);
+    if (!forecast.visible) return;
+    color(r, 220, 233, 238);
+    unit_stat_text(r, "DMG " + std::to_string(forecast.damage),
+                   vh::kDamageHudX, vh::kDamageHudY);
+    if (forecast.lethal) {
+        color(r, 251, 220, 90);
+        unit_stat_text(r, "KO", vh::kDamageKoX, vh::kDamageHudY);
+    }
+}
+
 void render(SDL_Renderer* r, const Ui& ui) {
     color(r, 14, 19, 32);
     SDL_RenderClear(r);
@@ -316,6 +331,7 @@ void render(SDL_Renderer* r, const Ui& ui) {
     render_selected_unit_info(r, ui);
     render_enemy_hover_info(r, ui);
     render_enemy_attack_cue(r, ui);
+    render_target_damage(r, ui);
     render_visual_state_digest(r, ui.battle);
     render_action_receipt(r, ui.last_effect);
     SDL_RenderPresent(r);
