@@ -39,6 +39,7 @@ def make_split_fixture(directory: Path) -> tuple[dict, dict]:
     paths["track1"].write_bytes(track1)
     paths["track2"].write_bytes(track2)
     paths["cue"].write_text(
+        'CATALOG 0000000000000\n'
         'FILE "' + DATA + '" BINARY\n'
         '  TRACK 01 MODE1/2352\n'
         '    INDEX 01 00:00:00\n'
