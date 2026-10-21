@@ -113,6 +113,20 @@ class SaturnReadCrosswalkTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "ISO9660 logical"):
                     crosswalk(inventory(), t)
 
+    def test_malformed_trace_schema_and_phase_are_rejected_safely(self):
+        for bad in (1.0, True, "1", None):
+            with self.subTest(schema=bad):
+                t = trace()
+                t["schema_version"] = bad
+                with self.assertRaisesRegex(ValueError, "trace schema"):
+                    crosswalk(inventory(), t)
+        for bad in (["first_battle_entry"], {}, 3, None):
+            with self.subTest(phase=bad):
+                t = trace()
+                t["runs"][0]["phase"] = bad
+                with self.assertRaisesRegex(ValueError, "trace phase"):
+                    crosswalk(inventory(), t)
+
     def test_control_capture_is_required_and_cannot_be_empty(self):
         t = trace()
         t["runs"] = [t["runs"][0]]
