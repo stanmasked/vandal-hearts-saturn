@@ -1,0 +1,41 @@
+name: Stage92 private Track1 Range verification (invented data only)
+on:
+  push:
+    branches:
+      - "stage92/**"
+  pull_request:
+    branches:
+      - "stage91/**"
+permissions:
+  contents: read
+jobs:
+  private-range-unit:
+    name: Fake Drive Range protections (${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test streamed checksums and fail-closed fake HTTP range responses
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_saturn_private_track1_range_retrieval.py -v
+          python -m unittest discover -s tests -p test_saturn_private_split_cue_preflight.py -v
+          echo "STAGE92_RANGE_VERIFICATION_FAKE_ONLY_PASS"
+      - name: Never commit original media or tokens
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          files = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+          forbidden = {".bin", ".cue", ".iso", ".chd", ".rom", ".zip", ".7z"}
+          assert not any(Path(x).suffix.lower() in forbidden for x in files if x)
+          print("STAGE92_NO_PRIVATE_GAME_FILES_TRACKED")
+          PY
