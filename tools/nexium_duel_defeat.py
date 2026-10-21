@@ -46,7 +46,8 @@ def _hp(image, scout_hp):
         raise ValueError("unsupported Defeat HP checkpoint")
     width = max(1, min(34, scout_hp * 34 // 26))
     coords = {
-        "scout_start": (463,197), "scout_blue": (480,230),
+        "scout_start": (463,197), "scout_near_left": (462,197),
+        "scout_blue": (480,230),
         "raider_body": (520,250),
         "raider_green": (515,217), "raider_green_end": (525,217),
         "raider_dark": (532,217),
@@ -63,14 +64,28 @@ def _hp(image, scout_hp):
     if not similar(colors["raider_dark"], DARK):
         raise ValueError("Raider 20HP background shifted")
     if scout_hp == 0:
-        if similar(colors["scout_start"], GREEN):
+        # This left-neighbor sample is essential: NeXium scales the 1280px
+        # guest to 1279px and the *one-pixel* 1HP sliver lands on logical
+        # x462, not x463. The death case must also reject that ghost sliver.
+        if (similar(colors["scout_start"], GREEN) or
+                similar(colors["scout_near_left"], GREEN)):
             raise ValueError("defeated Scout still has green HP bar")
         if similar(colors["scout_blue"], BLUE):
             raise ValueError("defeated Scout blue pawn still visible")
     else:
-        for name in ("scout_start", "scout_inside"):
-            if not similar(colors[name], GREEN):
-                raise ValueError("Scout HP pixel mismatch: " + name + " hp=" + str(scout_hp))
+        if scout_hp == 1:
+            # Real Stage52 run #39517943768 survived seven enemy attacks,
+            # but its registered (463,197) was DARK; the sole rendered
+            # green pixel is at (462,197) after window scaling. Both
+            # positions are accepted ONLY for exactly 1HP, and the 64-bit
+            # guest state and depleted-bar boundary are still mandatory.
+            if not (similar(colors["scout_start"], GREEN) or
+                    similar(colors["scout_near_left"], GREEN)):
+                raise ValueError("Scout 1HP pixel missing in scaled frame")
+        else:
+            for name in ("scout_start", "scout_inside"):
+                if not similar(colors[name], GREEN):
+                    raise ValueError("Scout HP pixel mismatch: " + name + " hp=" + str(scout_hp))
         if not similar(colors["scout_outside"], DARK):
             raise ValueError("Scout depleted HP pixel mismatch: hp=" + str(scout_hp))
         if not similar(colors["scout_blue"], BLUE):
