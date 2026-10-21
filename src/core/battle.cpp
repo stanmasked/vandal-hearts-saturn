@@ -114,15 +114,41 @@ bool Battle::move(int id, Pos target) {
     return true;
 }
 
+AttackPreview Battle::preview_attack(int attacker_id, int defender_id) const {
+    const Unit* from = find_unit(attacker_id);
+    const Unit* to = find_unit(defender_id);
+    // Exactly the same validity rules govern both forecast and real attack:
+    // no friendly fire, duplicate strike, attack on dead units or wrong phase.
+    if (!from || !to || from == to || from->hp <= 0 || to->hp <= 0 ||
+        from->acted || from->side == to->side ||
+        distance(from->pos, to->pos) > from->range ||
+        (from->side == Side::Player && phase_ != Phase::Player) ||
+        (from->side == Side::Enemy && phase_ != Phase::Enemy))
+        return {};
+
+    const int height_bonus = tile(from->pos).elevation > tile(to->pos).elevation ? 2 : 0;
+    const int raw_damage = std::max(1, from->attack + height_bonus - to->defense);
+    const int dealt = std::min(to->hp, raw_damage);
+    bool ends_battle = dealt == to->hp;
+    if (ends_battle) {
+        for (const Unit& other : units_) {
+            if (other.id != to->id && other.side == to->side && other.hp > 0) {
+                ends_battle = false;
+                break;
+            }
+        }
+    }
+    return {true, dealt, to->hp - dealt, ends_battle};
+}
+
 bool Battle::attack(int attacker_id, int defender_id) {
+    // One source of truth: preview and committed attack can never drift
+    // on damage, legal target, overkill or elevation.
+    const AttackPreview forecast = preview_attack(attacker_id, defender_id);
+    if (!forecast.legal) return false;
     Unit* from = mutable_unit(attacker_id);
     Unit* to = mutable_unit(defender_id);
-    if (!from || !to || from == to || from->hp <= 0 || to->hp <= 0 || from->acted ||
-        from->side == to->side || distance(from->pos, to->pos) > from->range ||
-        (from->side == Side::Player && phase_ != Phase::Player) ||
-        (from->side == Side::Enemy && phase_ != Phase::Enemy)) return false;
-    const int height_bonus = tile(from->pos).elevation > tile(to->pos).elevation ? 2 : 0;
-    to->hp = std::max(0, to->hp - std::max(1, from->attack + height_bonus - to->defense));
+    to->hp = forecast.remaining_hp;
     from->acted = true;
     update_outcome();
     return true;
