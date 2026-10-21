@@ -18,7 +18,7 @@ from tools.nexium_selected_unit_hud import (
 
 
 def frame(state=INITIAL_DUEL, hp=22, *, selected=False,
-          aimed=False, attacked=False, ghost=False):
+          aimed=False, attacked=False, ghost=False, glyph_offset_y=0):
     result=picture(cursor=(520,276) if aimed else (480,256),
                    state=state,selected=selected)
     draw=ImageDraw.Draw(result)
@@ -29,7 +29,7 @@ def frame(state=INITIAL_DUEL, hp=22, *, selected=False,
         draw.rectangle((953,683,966,696),fill=ACTED if attacked else READY)
         draw.rectangle((976,683,987,696),fill=NOT_MOVED)
         # Four white uppercase stat label glyphs sampled by the real auditor.
-        for x,y in ((501,684),(606,684),(725,684),(840,684)):
+        for x,y in ((501,684),(605,685),(725,684),(840,684)):
             draw.rectangle((x-1,y-1,x,y),fill=WHITE)
         # Synthetic HP digits: the same 3x5 pixel raster as SDL.
         for index,char in enumerate(str(hp)):
@@ -37,7 +37,7 @@ def frame(state=INITIAL_DUEL, hp=22, *, selected=False,
                 for x in range(3):
                     if mask & (1 << (2-x)):
                         left=500+8*(3+index)+2*x
-                        top=683+2*y
+                        top=683+2*y+glyph_offset_y
                         draw.rectangle((left,top,left+1,top+1),fill=WHITE)
     return result
 
@@ -90,6 +90,23 @@ class SelectedUnitTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"HP digit mismatch"):
             expect_visible(frame(state=ROUND2,selected=True,hp=22),19)
 
+    def test_scaled_guest_two_row_font_shift_is_accepted(self):
+        # Real NeXium 1279x700 is two registered logical rows above
+        # the 1280x720 synthetic raster; all 30 glyph bits remain required.
+        self.assertTrue(expect_visible(frame(selected=True,hp=22,
+                                             glyph_offset_y=-2),22))
+        self.assertTrue(expect_visible(frame(selected=True,hp=19,
+                                             glyph_offset_y=-2),19))
+        self.assertTrue(expect_visible(frame(selected=True,hp=13,
+                                             glyph_offset_y=-2),13))
+
+    def test_similar_19_and_13_digit_patterns_still_cannot_be_forged(self):
+        # The real 19->13 confusion differs by only one white pixel;
+        # a fuzzy/percentage matcher would silently accept a false HP.
+        with self.assertRaisesRegex(ValueError,"HP digit mismatch"):
+            expect_visible(frame(selected=True,hp=19,
+                                 glyph_offset_y=-2),13)
+
     def test_missing_hp_label_is_rejected(self):
         fake=frame(selected=True)
         ImageDraw.Draw(fake).rectangle((500,683,501,684),fill=DARK)
@@ -98,7 +115,7 @@ class SelectedUnitTests(unittest.TestCase):
 
     def test_wrong_attack_label_is_rejected(self):
         fake=frame(selected=True)
-        ImageDraw.Draw(fake).rectangle((605,683,606,684),fill=DARK)
+        ImageDraw.Draw(fake).rectangle((604,684,605,685),fill=DARK)
         with self.assertRaisesRegex(ValueError,"attack_label"):
             expect_visible(fake,22)
 
