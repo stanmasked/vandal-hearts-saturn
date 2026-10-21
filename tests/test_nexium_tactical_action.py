@@ -58,7 +58,7 @@ class ActionEvidenceTests(unittest.TestCase):
         self.right = picture((440, 270))
         self.back = picture((400, 250))
         self.selected = picture((400, 250), selected=True)
-        self.aimed = picture((440, 270))
+        self.aimed = picture((440, 270), selected=True)
         self.moved = picture((440, 270), AFTER_SCOUT_MOVE)
 
     def test_marker_requires_genuine_selection_border(self):
@@ -71,6 +71,7 @@ class ActionEvidenceTests(unittest.TestCase):
         self.assertTrue(report["action_passed"])
         self.assertEqual(report["after_move_fingerprint"], AFTER_SCOUT_MOVE)
         self.assertEqual(io.keys, ["Left", "Return", "Right", "Return"])
+        self.assertEqual(report["aimed_proof"], "action-aim-1.png")
         self.assertEqual(report["moved_proof"], "action-moved.png")
         self.assertFalse(io.focused)
 
@@ -177,6 +178,7 @@ class ActionEvidenceTests(unittest.TestCase):
                 "initial_fingerprint": INITIAL,
                 "after_move_fingerprint": AFTER_SCOUT_MOVE,
                 "selected_proof": "action-selected.png",
+                "aimed_proof": "action-aim-1.png",
                 "moved_proof": "action-moved.png",
             }))
             with self.assertRaises(FileNotFoundError):
@@ -194,6 +196,7 @@ class ActionEvidenceTests(unittest.TestCase):
                 "initial_fingerprint": INITIAL,
                 "after_move_fingerprint": AFTER_SCOUT_MOVE,
                 "selected_proof": "action-selected.png",
+                "aimed_proof": "action-aim-1.png",
                 "moved_proof": "action-moved.png",
             }))
             with self.assertRaisesRegex(ValueError, "selection not observed"):

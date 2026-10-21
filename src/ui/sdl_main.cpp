@@ -12,6 +12,7 @@
 #include "vh/target_remaining_hud.hpp"
 #include "vh/target_health_bar.hpp"
 #include "vh/turn_round_hud.hpp"
+#include "vh/move_preview_hud.hpp"
 #include <array>
 #include <cctype>
 #ifdef VH_STAGE44_DUEL
@@ -224,6 +225,18 @@ void render_selected_unit_info(SDL_Renderer* r, const Ui& ui) {
     SDL_RenderFillRect(r, &moved);
 }
 
+// Stage64: show a legal hovered destination's terrain-weighted cost and
+// remaining movement budget. The display is read-only and disappears on
+// occupied/blocked cells, spent movement, deselection and terminal states.
+void render_move_preview(SDL_Renderer* r, const Ui& ui) {
+    const vh::MovePreviewHud info = vh::move_preview_hud(ui.battle, ui.selected, ui.cursor);
+    if (!info.visible) return;
+    color(r, 251, 220, 90);
+    unit_stat_text(r, "COST " + std::to_string(info.path_cost) +
+                      " LEFT " + std::to_string(info.remaining_points),
+                   vh::kMovePreviewHudX, vh::kMovePreviewHudY);
+}
+
 // Stage56: independent enemy-hover information card. Its x1002..1273 region
 // does not touch Stage55 x350..993 or Stage54 x141..324.
 // Read-only: does not affect tactical state, replay or action receipts.
@@ -376,6 +389,7 @@ void render(SDL_Renderer* r, const Ui& ui) {
     SDL_RenderFillRect(r, &enemies);
     render_attack_preview(r, ui);
     render_selected_unit_info(r, ui);
+    render_move_preview(r, ui);
     render_enemy_hover_info(r, ui);
     render_enemy_attack_cue(r, ui);
     render_target_damage(r, ui);

@@ -1,6 +1,6 @@
 # Vandal Hearts — Sega Saturn → Nintendo Switch (native remake)
 
-**Stage62 verified; Stage63 movement legality audit in progress / ROM-free native prototype.**
+**Stage63 verified; Stage64 movement-cost HUD in progress / ROM-free native prototype.**
 Separate from the PlayStation-based remaster.
 The intended reference is the 1997 Japanese Sega Saturn edition `T-9526G`.
 
@@ -20,8 +20,9 @@ The intended reference is the 1997 Japanese Sega Saturn edition `T-9526G`.
 - Temporary ROM-free pixel-encoded state checksum verifies guest tactical state
   in emulator screenshots, even when guest stderr is unavailable.
 - Host/guest-verified movement, combat, Victory/Defeat, damage forecasts, HUD
-  stats, turn indicator and movement allowance. Stage63 adds a read-only
-  legal-move/path-cost projection and defensive overflow handling (CI pending).
+  stats, turn indicator and movement allowance. Stage63's shared legal-move
+  projection and overflow guards passed CI; Stage64 adds a read-only hovered
+  destination cost/remaining-budget HUD with screenshot-based NeXium checks.
 - Disc CUE/BIN metadata-only hash inventory (read-only, strictly local).
 - Host GCC/Clang test workflow, no ROM or game assets in CI.
 

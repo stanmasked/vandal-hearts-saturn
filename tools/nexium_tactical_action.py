@@ -138,6 +138,7 @@ def exercise(initial_frame, after_right, io):
     # starting center (490.5,251) became (562.5,285.5). Do not commit from
     # that cell. Aim from observed pixels, correcting in either direction.
     at = start
+    aimed_proof = None
     for attempt in range(1, 9):
         if _near(at, target):
             break
@@ -146,6 +147,7 @@ def exercise(initial_frame, after_right, io):
         direction = "Right" if at[0] < target[0] else "Left"
         previous = at
         aimed = io.capture_after(direction, f"aim-{attempt}")
+        aimed_proof = f"action-aim-{attempt}.png"
         _require_state(aimed, INITIAL)
         at = _center(aimed)
         steps.append({"key":direction, "purpose":"aim_scout_move",
@@ -154,6 +156,8 @@ def exercise(initial_frame, after_right, io):
             io.focus()  # only an observed missed pulse authorizes refocus
     if not _near(at, target):
         raise ValueError("aim cursor did not reach exactly one tile right after 8 observations")
+    if aimed_proof is None or not _selected_marker(aimed, start):
+        raise ValueError("Scout selection outline not visible on the legal-move preview frame")
     moved = io.capture_after("Return", "moved")
     final_proof = "action-moved.png"
     last = decode(moved, AFTER_SCOUT_MOVE)
@@ -173,7 +177,8 @@ def exercise(initial_frame, after_right, io):
         "action_passed":True, "initial_fingerprint":first,
         "after_move_fingerprint":final, "cursor_returned_to_scout":True,
         "aimed_exactly_one_tile":True, "steps":steps,
-        "selected_proof":selected_proof, "moved_proof":final_proof,
+        "selected_proof":selected_proof, "aimed_proof":aimed_proof,
+        "moved_proof":final_proof,
         "scope":"X11 keyboard into ROM-free guest; NOT physical Switch controller or original Saturn scene"
     }
 
@@ -185,18 +190,30 @@ def verify_folder(folder):
     if report.get("initial_fingerprint") != INITIAL or report.get("after_move_fingerprint") != AFTER_SCOUT_MOVE:
         raise ValueError("wrong action receipt fingerprint")
     selected_name = report.get("selected_proof")
+    aimed_name = report.get("aimed_proof")
     moved_name = report.get("moved_proof")
     if selected_name not in ("action-selected.png", "action-selected-retry.png"):
         raise ValueError("missing valid selection evidence filename")
+    if aimed_name not in {f"action-aim-{i}.png" for i in range(1, 9)}:
+        raise ValueError("missing valid aimed-move evidence filename")
     if moved_name not in ("action-moved.png", "action-moved-retry.png"):
         raise ValueError("missing valid moved evidence filename")
     with Image.open(folder/"nexium-window.png") as first, \
          Image.open(folder/selected_name) as selected, \
+         Image.open(folder/aimed_name) as aimed, \
          Image.open(folder/moved_name) as moved:
         _require_state(first, INITIAL)
         _require_state(selected, INITIAL)
-        if not _selected_marker(selected,_center(first)):
+        scale = decode(first, INITIAL)
+        start = _center(first)
+        target = (start[0] + 40*scale["scale_x"], start[1] + 20*scale["scale_y"])
+        _require_state(aimed, INITIAL)
+        if not _selected_marker(selected,start):
             raise ValueError("Scout selection not observed in actual screenshot")
+        if not _selected_marker(aimed,start):
+            raise ValueError("Scout selection not observed on legal-move preview screenshot")
+        if not _near(_center(aimed), target):
+            raise ValueError("aimed screenshot cursor is not on the one-tile destination")
         _require_state(moved, AFTER_SCOUT_MOVE)
     return True
 
