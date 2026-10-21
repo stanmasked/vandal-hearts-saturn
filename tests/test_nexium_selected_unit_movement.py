@@ -19,7 +19,7 @@ def movement_frame(points=4,*,selected=True,shift_y=0,forged=None):
                         draw.rectangle((left,top,left+1,top+1),fill=WHITE)
     if forged is not None:
         x,y,color=forged
-        draw.rectangle((x,y,x+1,y+1),fill=color)
+        draw.point((x,y),fill=color)
     return image
 
 class SelectedMovementGlyphTests(unittest.TestCase):
@@ -47,7 +47,8 @@ class SelectedMovementGlyphTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"ghost MOV"):
             expect_hidden(movement_frame(4))
     def test_forged_one_pixel_rejected(self):
-        # Corrupt the actual sampled left pixel of the first lit cell in the 4 glyph.
+        # Corrupt exactly one physical pixel at the sampled baseline,
+        # not the full 2x2 rendered glyph cell.
         image=movement_frame(4,forged=(572,683,DARK))
         with self.assertRaisesRegex(ValueError,"bitmap mismatch"):
             expect_movement(image,4)
