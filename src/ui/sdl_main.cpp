@@ -9,6 +9,7 @@
 #include "vh/enemy_hover_hud.hpp"
 #include "vh/enemy_attack_cue.hpp"
 #include "vh/target_damage_hud.hpp"
+#include "vh/target_remaining_hud.hpp"
 #include <array>
 #include <cctype>
 #ifdef VH_STAGE44_DUEL
@@ -271,6 +272,16 @@ void render_target_damage(SDL_Renderer* r, const Ui& ui) {
     }
 }
 
+// Stage59: projected ENEMY HP after the legal next hit, read-only.
+// The label uses the free gap between Stage58 DMG and KO in the enemy card.
+void render_target_remaining(SDL_Renderer* r, const Ui& ui) {
+    const auto predicted = vh::target_remaining_hud(ui.battle, ui.cursor, ui.selected);
+    if (!predicted.visible) return;
+    color(r, 220, 233, 238);
+    unit_stat_text(r, "HP " + std::to_string(predicted.hp_after),
+                   vh::kRemainingHudX, vh::kRemainingHudY);
+}
+
 void render(SDL_Renderer* r, const Ui& ui) {
     color(r, 14, 19, 32);
     SDL_RenderClear(r);
@@ -332,6 +343,7 @@ void render(SDL_Renderer* r, const Ui& ui) {
     render_enemy_hover_info(r, ui);
     render_enemy_attack_cue(r, ui);
     render_target_damage(r, ui);
+    render_target_remaining(r, ui);
     render_visual_state_digest(r, ui.battle);
     render_action_receipt(r, ui.last_effect);
     SDL_RenderPresent(r);

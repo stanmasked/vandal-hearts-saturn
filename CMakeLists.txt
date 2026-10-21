@@ -117,3 +117,8 @@ add_test(NAME enemy_attack_cue_contract COMMAND vh_enemy_attack_cue_tests)
 add_executable(vh_target_damage_hud_tests tests/target_damage_hud_tests.cpp)
 target_link_libraries(vh_target_damage_hud_tests PRIVATE vh_core)
 add_test(NAME target_damage_hud_contract COMMAND vh_target_damage_hud_tests)
+
+# Stage59: projected enemy HP after the next legal strike, same battle rules.
+add_executable(vh_target_remaining_hud_tests tests/target_remaining_hud_tests.cpp)
+target_link_libraries(vh_target_remaining_hud_tests PRIVATE vh_core)
+add_test(NAME target_remaining_hud_contract COMMAND vh_target_remaining_hud_tests)
