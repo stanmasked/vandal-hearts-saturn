@@ -102,7 +102,9 @@ def _subtract_size(primary, controls):
 
 
 def _validate_trace(trace):
-    if not isinstance(trace, dict) or trace.get("schema_version") != 1 or isinstance(trace.get("schema_version"), bool):
+    if (not isinstance(trace, dict) or
+            type(trace.get("schema_version")) is not int or
+            trace["schema_version"] != 1):
         raise ValueError("invalid trace schema")
     if trace.get("addressing") != ADDRESSING:
         raise ValueError("read trace must use ISO9660 logical data-sector LBA")
@@ -112,7 +114,9 @@ def _validate_trace(trace):
     seen = set()
     validated = []
     for run in runs:
-        if not isinstance(run, dict) or run.get("phase") not in PHASES:
+        if (not isinstance(run, dict) or
+                not isinstance(run.get("phase"), str) or
+                run["phase"] not in PHASES):
             raise ValueError("unknown trace phase")
         phase = run["phase"]
         seen.add(phase)
