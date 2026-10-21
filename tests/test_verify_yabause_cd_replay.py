@@ -60,16 +60,23 @@ class Stage85ReplayTests(unittest.TestCase):
 
     def test_rejects_symlinked_trace(self):
         log = self.root / LOG_NAME
-        target = self.root / "target.txt"
-        target.write_bytes(EXPECTED_TRACE)
-        log.unlink()
-        log.symlink_to(target)
-        with self.assertRaises(ValueError):
-            verify_trial(self.root, SUCCESS + "\n")
+        with tempfile.TemporaryDirectory() as outside:
+            target = Path(outside) / "outside.txt"
+            target.write_bytes(EXPECTED_TRACE)
+            log.unlink()
+            log.symlink_to(target)
+            # Only the two nominal names exist *inside* the workspace;
+            # the rejection must therefore be specifically due to the symlink.
+            self.assertEqual({x.name for x in self.root.iterdir()}, {SOURCE_NAME, LOG_NAME})
+            with self.assertRaises(ValueError):
+                verify_trial(self.root, SUCCESS + "\n")
 
     def test_rejects_workspace_not_empty(self):
+        import sys
+        # Use a genuine executable so the negative outcome is caused by
+        # dirty workspace state, not an unrelated non-executable fixture.
         with self.assertRaises(ValueError):
-            audit_repeated_runs(self.root / SOURCE_NAME, self.root)
+            audit_repeated_runs(Path(sys.executable), self.root)
 
 
 if __name__ == "__main__":
