@@ -1,0 +1,41 @@
+name: Stage90 Saturn two-track CUE private preflight (invented-only)
+on:
+  push:
+    branches:
+      - "stage90/**"
+  pull_request:
+    branches:
+      - "stage89/**"
+permissions:
+  contents: read
+jobs:
+  private-cue-preflight:
+    name: Saturn private split-CUE audit (${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Strict fabricated-only split-CUE metadata and hash preflight
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_saturn_private_split_cue_preflight.py -v
+          python -m unittest discover -s tests -p test_yabause_split_cue.py -v
+          echo "STAGE90_PRIVATE_CUE_PREFLIGHT_SYNTHETIC_PASS"
+      - name: Ensure no copyrighted source image exists in checkout
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          files = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+          bad = {".bin", ".cue", ".iso", ".chd", ".rom", ".zip", ".7z"}
+          assert not any(Path(f).suffix.lower() in bad for f in files if f)
+          print("STAGE90_NO_ORIGINAL_DISC_MEDIA_TRACKED")
+          PY
