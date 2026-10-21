@@ -19,3 +19,9 @@ SDL draws the new right-hand card x1002..1273, y668..711 (dark background, red i
 ## Scope
 
 Original, standalone ROM-free prototype inspired by tactical RPGs; neither a port of the original Sega Saturn game nor a confirmation on physical Nintendo Switch hardware.
+
+## Stage56 first real guest run and calibrated fix
+
+Run [#39595863405](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39595863405) passed the NRO build and all prior guest Stage44/54/52/55 audits. New Stage56 pixel audit accepted the actual `HP 20`, `ATK 6`, and `DEF 2` glyphs from the first live Raider aim, but failed on the rightmost `RNG 1` glyph. An independently reopened original 1279x700 PNG shows the correct visible text; exact registered-sample inspection gave all 15/15 RNG bitmap bits at x-offset **-1**, compared with only 11/15 at the old x-offset 0. The same 15/15 offset held across the saved HP20, HP14, HP8, and HP2 guest screenshots. This is an **auditor sampling bug**, not evidence that the renderer failed. The bounded horizontal scan `-1,0,+1` retains **100% glyph-bit equality** rather than relaxing matching thresholds; new synthetic adversarial tests exercise shifted correct and forged RNG digits.
+
+The fix is pending a new host and NeXium workflow pass on the same new revision.

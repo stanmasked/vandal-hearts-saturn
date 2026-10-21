@@ -9,7 +9,7 @@ from tools.nexium_selected_unit_hud import DIGITS, DARK, HELP, WHITE
 
 
 def frame(hp=None, *, corrupt=None, offset=0,
-          attack=6, defense=2, attack_range=1):
+          attack=6, defense=2, attack_range=1, range_x_offset=0):
     image=picture()
     draw=ImageDraw.Draw(image)
     draw.rectangle((0,660,1279,719),fill=HELP)
@@ -32,6 +32,8 @@ def frame(hp=None, *, corrupt=None, offset=0,
                 for x in range(3):
                     if mask & (1 << (2-x)):
                         left=start_x+8*index+2*x
+                        if start_x==1204+8*4:
+                            left+=range_x_offset
                         top=690+2*y+offset
                         draw.rectangle((left,top,left+1,top+1),fill=WHITE)
     if corrupt:
@@ -68,6 +70,16 @@ class HoverHudPixels(unittest.TestCase):
     def test_forged_range_number_rejected(self):
         with self.assertRaisesRegex(ValueError,"RNG digit mismatch"):
             expect_visible(frame(8,attack_range=2),8)
+    def test_real_near_right_edge_x_minus_one_registration(self):
+        # Real Stage56 guest screenshot: far-right RNG glyph is one
+        # registered logical pixel to the left of the nominal glyph grid.
+        self.assertTrue(expect_visible(frame(20,range_x_offset=-1),20))
+        self.assertTrue(expect_visible(frame(8,range_x_offset=-1,offset=-2),8))
+    def test_opposite_bounded_one_pixel_registration(self):
+        self.assertTrue(expect_visible(frame(14,range_x_offset=1),14))
+    def test_shifted_forged_range_still_fails(self):
+        with self.assertRaisesRegex(ValueError,"RNG digit mismatch"):
+            expect_visible(frame(20,range_x_offset=-1,attack_range=2),20)
     def test_missing_title_rejected(self):
         with self.assertRaisesRegex(ValueError,"name"):
             expect_visible(frame(20,corrupt="name"),20)

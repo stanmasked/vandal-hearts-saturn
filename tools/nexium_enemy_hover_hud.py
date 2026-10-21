@@ -49,17 +49,30 @@ def _expect_digits(image, hp, start_x, field):
         for y, mask in enumerate(DIGITS[digit]):
             for x in range(3):
                 expected[f"{index}-{x}-{y}"] = bool(mask & (1 << (2-x)))
-    for offset_y in (-3, -2, -1, 0):
-        positions = {}
-        for key in expected:
-            i, x, y = (int(v) for v in key.split("-"))
-            positions[key] = (start_x + 2*x + 8*i + 1,
-                              690 + 2*y + 1 + offset_y)
-        actual = _sample(image, positions)
-        if all(similar(actual[k], WHITE if lit else DARK)
-               for k, lit in expected.items()):
-            return True
-    raise ValueError("enemy HUD "+field+" digit mismatch: " + str(hp))
+    # Real NeXium Stage56 #39595863405 at 1279x700: the rightmost
+    # "RNG 1" glyph is shifted exactly ONE registered logical pixel left
+    # of our nominal sample, while HP/ATK/DEF remain on the nominal grid.
+    # The magenta anchor geometry scales over the full width and rounds
+    # fractional pixels differently at x1236 than at x1046.
+    # Check only a bounded +/-1 horizontal registration and the previously
+    # established -3..0 vertical shifts. Every ON and OFF bit must agree.
+    # This is never a fuzzy percentage match or guessed HP/ATK/DEF/RNG.
+    best = 0
+    for offset_x in (-1, 0, 1):
+        for offset_y in (-3, -2, -1, 0):
+            positions = {}
+            for key in expected:
+                i, x, y = (int(v) for v in key.split("-"))
+                positions[key] = (start_x + 2*x + 8*i + 1 + offset_x,
+                                  690 + 2*y + 1 + offset_y)
+            actual = _sample(image, positions)
+            matches = sum(similar(actual[k], WHITE if lit else DARK)
+                          for k, lit in expected.items())
+            best = max(best, matches)
+            if matches == len(expected):
+                return True
+    raise ValueError("enemy HUD "+field+" digit mismatch: " + str(hp) +
+                     " (best glyph bits "+str(best)+"/"+str(len(expected))+")")
 
 
 def expect_visible(image, hp, *, attack=6, defense=2, attack_range=1):
