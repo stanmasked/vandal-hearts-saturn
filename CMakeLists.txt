@@ -147,6 +147,11 @@ add_executable(vh_move_preview_hud_tests tests/move_preview_hud_tests.cpp)
 target_link_libraries(vh_move_preview_hud_tests PRIVATE vh_core)
 add_test(NAME move_preview_hud_contract COMMAND vh_move_preview_hud_tests)
 
+# Stage70: imported numeric terrain must preserve native movement invariants.
+add_executable(vh_imported_terrain_movement_tests tests/imported_terrain_movement_tests.cpp)
+target_link_libraries(vh_imported_terrain_movement_tests PRIVATE vh_core)
+add_test(NAME imported_terrain_movement_equivalence COMMAND vh_imported_terrain_movement_tests)
+
 # Stage68: fail-closed neutral terrain bridge, no original game media or combat guesses.
 add_executable(vh_terrain_bridge_tests tests/terrain_bridge_tests.cpp)
 target_link_libraries(vh_terrain_bridge_tests PRIVATE vh_core)
