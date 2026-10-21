@@ -35,6 +35,9 @@ DIGITS = {
 PANEL = {
     "marker": (357,682), "ready_or_acted": (960,688),
     "not_moved": (979,688), "body": (365,704),
+    # White glyph pixels, verified only when a live ally is selected:
+    "hp_label": (501,684), "attack_label": (606,684),
+    "defense_label": (725,684), "range_label": (840,684),
 }
 
 
@@ -79,6 +82,8 @@ def expect_visible(image, hp, *, attacked=False):
         "ready_or_acted":ACTED if attacked else READY,
         "not_moved":NOT_MOVED,
         "body":DARK,
+        "hp_label":WHITE, "attack_label":WHITE,
+        "defense_label":WHITE, "range_label":WHITE,
     }
     _check_colors(image,expect)
     _check_digits(image,hp)
