@@ -10,6 +10,8 @@ The CUE and Track2 were separately read and verified against Stage02 SHA-256.
 
 This stage creates a **standalone local fallback** that requests chunks
 using the documented HTTP `Range` mechanism on Google's Drive media API.
+Google's official guide describes partial blob downloads using byte ranges:
+https://developers.google.com/workspace/drive/api/guides/manage-downloads#partial_download
 It is not a way to obtain the current ChatGPT connector's OAuth token.
 The script only runs with a separately authorized, local user's Drive
 OAuth token. It is not automatically runnable within this chat or CI.
