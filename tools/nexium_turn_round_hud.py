@@ -8,7 +8,7 @@ from PIL import Image
 
 from tools.nexium_target_health_bar import verify_folder as verify_health_bar
 from tools.nexium_attack_preview_hud import _final_aim
-from tools.nexium_second_round import _receipt
+from tools.nexium_enemy_hover_hud import _receipt
 from tools.nexium_duel_victory import _sample
 from tools.nexium_selected_unit_hud import DIGITS, WHITE, DARK, HELP
 from tools.nexium_visual_digest import similar
