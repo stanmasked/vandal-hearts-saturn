@@ -23,7 +23,10 @@ def patch_full_cdbase(raw: bytes) -> bytes:
     if source.count(FUNCTION) != 1:
         raise ValueError("ambiguous pinned callback start")
     start = source.index(FUNCTION)
-    if source.count(FOLLOWING) != 1:
+    # Upstream legitimately contains a forward declaration before the
+    # callback; only a definition AFTER this callback bounds our edit.
+    suffix = source[start + len(FUNCTION):]
+    if suffix.count(FOLLOWING) != 1:
         raise ValueError("ambiguous pinned callback boundary")
     end = source.index(FOLLOWING, start + len(FUNCTION))
     if not start < end:
