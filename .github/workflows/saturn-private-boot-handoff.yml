@@ -1,0 +1,43 @@
+name: Stage94 private source-to-runner handoff (fabricated only)
+on:
+  push:
+    branches:
+      - "stage94/**"
+  pull_request:
+    branches:
+      - "stage93/**"
+permissions:
+  contents: read
+jobs:
+  fake-handoff:
+    name: Synthetic Saturn source-to-runner transaction (${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Full invented Track1/Track2/CUE to fake emulator handoff
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_saturn_private_boot_handoff.py -v
+          python -m unittest discover -s tests -p test_saturn_private_boot_readiness.py -v
+          python -m unittest discover -s tests -p test_saturn_private_capture_session.py -v
+          python -m unittest discover -s tests -p test_saturn_private_runner_binding.py -v
+          echo "STAGE94_FAKE_SOURCE_EMULATOR_HANDOFF_PASS"
+      - name: Reject tracked original game media/archives
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          files=subprocess.check_output(["git","ls-files","-z"]).decode().split("\0")
+          forbidden={".bin",".cue",".iso",".chd",".rom",".zip",".7z"}
+          assert not any(Path(p).suffix.lower() in forbidden for p in files if p)
+          print("STAGE94_NO_PRIVATE_SATURN_MEDIA_IN_GIT_PASS")
+          PY
