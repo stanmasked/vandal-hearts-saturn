@@ -92,3 +92,8 @@ add_test(NAME duel_defeat_contract COMMAND vh_duel_defeat_tests)
 add_executable(vh_attack_preview_tests tests/attack_preview_tests.cpp)
 target_link_libraries(vh_attack_preview_tests PRIVATE vh_core)
 add_test(NAME attack_preview_contract COMMAND vh_attack_preview_tests)
+
+# Stage54: forecast HUD is deterministic, read-only, and hidden outside legal aim.
+add_executable(vh_attack_preview_hud_tests tests/attack_preview_hud_tests.cpp)
+target_link_libraries(vh_attack_preview_hud_tests PRIVATE vh_core)
+add_test(NAME attack_preview_hud_contract COMMAND vh_attack_preview_hud_tests)
