@@ -7,6 +7,7 @@
 #include "vh/attack_preview_hud.hpp"
 #include "vh/selected_unit_hud.hpp"
 #include "vh/enemy_hover_hud.hpp"
+#include "vh/enemy_attack_cue.hpp"
 #include <array>
 #include <cctype>
 #ifdef VH_STAGE44_DUEL
@@ -238,6 +239,23 @@ void render_enemy_hover_info(SDL_Renderer* r, const Ui& ui) {
     unit_stat_text(r, "RNG " + std::to_string(info.range), 1204, 690);
 }
 
+// Stage57: status cue in the upper-right of the existing Stage56 card.
+// No new game logic: legality is derived from Battle::preview_attack.
+void render_enemy_attack_cue(SDL_Renderer* r, const Ui& ui) {
+    const auto cue = vh::enemy_attack_cue(ui.battle, ui.cursor, ui.selected);
+    if (cue.state == vh::EnemyAttackCueState::Hidden) return;
+    switch (cue.state) {
+        case vh::EnemyAttackCueState::InspectOnly: color(r, 74, 94, 111); break;
+        case vh::EnemyAttackCueState::Ready: color(r, 251, 220, 90); break;
+        case vh::EnemyAttackCueState::Spent: color(r, 179, 103, 244); break;
+        case vh::EnemyAttackCueState::Blocked: color(r, 116, 77, 88); break;
+        case vh::EnemyAttackCueState::Hidden: return;
+    }
+    SDL_Rect marker{vh::kEnemyCueX, vh::kEnemyCueY,
+                    vh::kEnemyCueWidth, vh::kEnemyCueHeight};
+    SDL_RenderFillRect(r, &marker);
+}
+
 void render(SDL_Renderer* r, const Ui& ui) {
     color(r, 14, 19, 32);
     SDL_RenderClear(r);
@@ -297,6 +315,7 @@ void render(SDL_Renderer* r, const Ui& ui) {
     render_attack_preview(r, ui);
     render_selected_unit_info(r, ui);
     render_enemy_hover_info(r, ui);
+    render_enemy_attack_cue(r, ui);
     render_visual_state_digest(r, ui.battle);
     render_action_receipt(r, ui.last_effect);
     SDL_RenderPresent(r);

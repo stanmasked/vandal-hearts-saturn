@@ -107,3 +107,8 @@ add_test(NAME selected_unit_hud_contract COMMAND vh_selected_unit_hud_tests)
 add_executable(vh_enemy_hover_hud_tests tests/enemy_hover_hud_tests.cpp)
 target_link_libraries(vh_enemy_hover_hud_tests PRIVATE vh_core)
 add_test(NAME enemy_hover_hud_contract COMMAND vh_enemy_hover_hud_tests)
+
+# Stage57: independent attack availability cue tied to real combat preview rules.
+add_executable(vh_enemy_attack_cue_tests tests/enemy_attack_cue_tests.cpp)
+target_link_libraries(vh_enemy_attack_cue_tests PRIVATE vh_core)
+add_test(NAME enemy_attack_cue_contract COMMAND vh_enemy_attack_cue_tests)
