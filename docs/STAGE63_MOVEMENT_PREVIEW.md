@@ -24,9 +24,13 @@ Switch NRO and real NeXium [#39619136162](https://github.com/stanmasked/vandal-h
 3. Nintendo Switch NRO build and all existing actual NeXium guest screenshot
    and lifecycle checks to catch gameplay/visual/fingerprint regressions.
 4. Confirm existing Stage44/52/54–62 golden tactical hashes are unchanged.
-5. Do not call Stage63 ALL GREEN before these checks pass.
+5. All acceptance gates passed on commit
+   `7ff19a909fc4418101ab61b29e3c97dbfea69ccb`: GCC and Clang each 21/21
+   CTest plus 447/447 Python tests; both Switch NROs built; NeXium guest
+   workflow passed. See [Host CI #39623221976](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39623221976)
+   and [NRO/NeXium #39623222294](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39623222294).
 
 This stage does not add a gameplay screen or claim to reproduce original
-1997 Saturn pathfinding. The next step is to expose a player-visible hover
-cost only after the invariant and regression checks are green. Actual Saturn
+1997 Saturn pathfinding. Stage64 adds a player-visible hovered cost cue with independent NeXium
+pixel auditing; see `docs/STAGE64_MOVEMENT_PREVIEW_HUD.md`. Actual Saturn
 map/height/terrain data remain a separate private reference requirement.

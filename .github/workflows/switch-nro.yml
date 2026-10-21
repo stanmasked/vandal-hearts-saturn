@@ -370,6 +370,15 @@ jobs:
           python3 -m tools.nexium_selected_unit_movement \
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
+      - name: Stage64 real NeXium hovered movement cost and hide/show pixels
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Actual guest pixels: legal empty tile shows COST/LEFT; occupied
+          # tiles, return to origin, and post-attack frame hide the cue.
+          python3 -m tools.nexium_movement_preview_hud \
+            --duel stage44-session/runtime-evidence
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4

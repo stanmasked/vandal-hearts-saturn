@@ -4,9 +4,11 @@ Base game: Vandal Hearts ~Ushinawareta Kodai Bunmei~, Japanese Saturn `T-9526G` 
 This is an independent project, not the PS1/PlayStation remaster.
 
 ## Verified status on 2026-10-21
-- Stages 01–62 implement a ROM-free synthetic tactical vertical prototype;
-  Stage62 passed GCC/Clang, NRO and genuine NeXium guest evidence.
-- Stage63 extends shared, read-only move-cost validation (pending its own CI).
+- Stages 01–63 implement a ROM-free synthetic tactical vertical prototype;
+  Stage63 passed GCC/Clang (21/21 CTest and 447/447 Python per compiler),
+  both Switch NRO builds and NeXium guest interaction checks.
+- Stage64 adds a read-only hovered-destination cost cue and an independent
+  real-NeXium screenshot gate (CI pending on this branch).
 - **Do not equate** the synthetic training scene with the first Saturn mission.
 - Original Saturn map geometry, battle parameters, story, graphics and audio
   remain unverified. Never publish the original disc or extracted assets.
