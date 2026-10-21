@@ -137,9 +137,11 @@ def patch_runner_file(source: Path, output: Path) -> dict:
         raise ValueError("refusing overwrite")
     if source.name != "yui.cpp" or output.suffix != ".cpp":
         raise ValueError("invalid upstream runner file name")
+    # Verify immutable upstream contents and the exact callback layout before
+    # creating any output, including on a rejected input.
+    patched = instrument_cd_runner(source.read_bytes())
     with output.open("xb") as stream:
-        # Unlike in-place patchers, this checks the hash before writing any bytes.
-        stream.write(instrument_cd_runner(source.read_bytes()))
+        stream.write(patched)
     return {
         "verified_pinned_public_runner": True,
         "synthetic_iso_sectors": 2,
