@@ -19,6 +19,7 @@ MAX_FILES = 20000
 MAX_RUNS = 64
 MAX_EVENTS_PER_RUN = 20000
 MAX_LBA = 20_000_000
+MAX_ISO_FILE_BYTES = 0xffffffff  # ISO9660 both-endian 32-bit file size
 ADDRESSING = "iso9660_logical_data_lba"
 PHASES = {"first_battle_entry", "menu_control"}
 CANDIDATES = tuple(
@@ -26,8 +27,8 @@ CANDIDATES = tuple(
 )
 
 
-def _nonnegative(value, name):
-    if not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= MAX_LBA:
+def _nonnegative(value, name, upper=MAX_LBA):
+    if not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= upper:
         raise ValueError("invalid numeric " + name)
     return value
 
@@ -50,7 +51,7 @@ def _validate_inventory(document):
             raise ValueError("duplicate ISO filename")
         names.add(name.upper())
         lba = _nonnegative(item.get("lba"), "file LBA")
-        size = _nonnegative(item.get("bytes"), "file byte size")
+        size = _nonnegative(item.get("bytes"), "file byte size", MAX_ISO_FILE_BYTES)
         sectors = (size + USER_SECTOR_BYTES - 1) // USER_SECTOR_BYTES
         if lba + sectors > MAX_LBA:
             raise ValueError("ISO extent exceeds bounded sector range")
