@@ -34,7 +34,12 @@ def expect_movement(image,points):
     if not isinstance(points,int) or points<0 or points>9:
         raise ValueError("unsupported MOV allowance")
     bits=_expected("MOV "+str(points))
-    for offset_y in (-3,-2,-1,0):
+    # Anchor calibration leaves two valid raster baselines here: the
+    # unscaled synthetic frame (-1 because probes sample the lower pixel of
+    # a 2x2 logical cell) and the 1279x700 guest frame (-3). Do not scan
+    # adjacent rows: that would let a one-physical-pixel corruption hide
+    # inside a 2x2 glyph cell and be accepted at a neighboring offset.
+    for offset_y in (-3,-1):
         positions={
             key:(X+8*int(key.split("-")[0])+2*int(key.split("-")[1]),
                  Y+2*int(key.split("-")[2])+1+offset_y)
