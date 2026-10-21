@@ -201,10 +201,18 @@ def _write_private_json(path: Path, obj: dict):
     data = (json.dumps(obj, indent=2, sort_keys=True) + "\n").encode("utf-8")
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
     fd = os.open(path, flags, 0o600)
-    with os.fdopen(fd, "wb") as stream:
-        stream.write(data)
-        stream.flush()
-        os.fsync(stream.fileno())
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+    except BaseException:
+        # Never leave a partial receipt that might be mistaken for success.
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            pass
+        raise
 
 
 def main() -> int:
