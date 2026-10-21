@@ -115,7 +115,7 @@ class DuelTests(unittest.TestCase):
         result=exercise(self.initial,self.after_right,io)
         self.assertTrue(result["attack_passed"])
         self.assertEqual([k for k,_ in io.keys],
-                         ["Left","Return","Right","Left","y","y"])
+                         ["Left","Return","Up","Down","Right","Left","y","y"])
 
     def test_real_hp_pixel_delta(self):
         self.assertTrue(_require_hp(self.initial,"full"))
