@@ -83,7 +83,9 @@ class BattleCoverageTests(unittest.TestCase):
 
     def test_bad_roster_and_occupied_cell_blocked(self):
         data = fixture()
-        data["units"] = data["units"][:1]
+        # Preserve valid action references; only change the roster side.
+        # Deleting the enemy would invalidate the Stage66 action target first.
+        data["units"][1]["team"] = "player"
         self.assertIn("ROSTER_REQUIRES_BOTH_SIDES", assess_coverage(data)["blockers"])
         data = fixture()
         data["cells"][0]["traversable"] = False
