@@ -27,7 +27,7 @@ jobs:
           set -euo pipefail
           python -m unittest discover -s tests -p test_saturn_private_capture_cohort.py -v
           python -m unittest discover -s tests -p test_saturn_private_boot_handoff.py -v
-          python -m unittest discover -s tests -p test_saturn_yabause_fad_log.py -v
+          python -m unittest discover -s tests -p test_saturn_yabause_capture.py -v
           echo "STAGE95_PRIVATE_FAKE_QUARTET_COHORT_PASS"
       - name: Reject raw Saturn media and archives in repo
         run: |
