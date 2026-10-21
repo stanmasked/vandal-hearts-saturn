@@ -16,6 +16,7 @@ struct SelectedUnitHud {
     int attack = 0;
     int defense = 0;
     int range = 0;
+    int move_points = 0;
     bool moved = false;
     bool acted = false;
 };
@@ -25,7 +26,7 @@ inline SelectedUnitHud selected_unit_hud(const Battle& battle, int selected) {
     const Unit* unit = battle.find_unit(selected);
     if (!unit || unit->hp <= 0 || unit->side != Side::Player) return {};
     return {true, unit->name, unit->id, unit->hp, unit->attack, unit->defense,
-            unit->range, unit->moved, unit->acted};
+            unit->range, unit->move_points, unit->moved, unit->acted};
 }
 
 // All Stage55 samples lie entirely to the RIGHT of the Stage54 damage HUD;

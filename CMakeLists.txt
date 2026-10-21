@@ -132,3 +132,8 @@ add_test(NAME target_health_bar_contract COMMAND vh_target_health_bar_tests)
 add_executable(vh_turn_round_hud_tests tests/turn_round_hud_tests.cpp)
 target_link_libraries(vh_turn_round_hud_tests PRIVATE vh_core)
 add_test(NAME turn_round_hud_contract COMMAND vh_turn_round_hud_tests)
+
+# Stage62: selected ally movement allowance is a read-only stat.
+add_executable(vh_selected_unit_movement_stat_tests tests/selected_unit_movement_stat_tests.cpp)
+target_link_libraries(vh_selected_unit_movement_stat_tests PRIVATE vh_core)
+add_test(NAME selected_unit_movement_stat_contract COMMAND vh_selected_unit_movement_stat_tests)

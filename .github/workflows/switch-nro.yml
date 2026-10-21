@@ -361,6 +361,15 @@ jobs:
           python3 -m tools.nexium_turn_round_hud \
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
+      - name: Stage62 real NeXium selected movement stat pixels
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Re-run all prior screenshot gates, then verify MOV allowance glyph.
+          python3 -m tools.nexium_selected_unit_movement \
+            --duel stage44-session/runtime-evidence \
+            --defeat stage52-session/runtime-evidence
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
