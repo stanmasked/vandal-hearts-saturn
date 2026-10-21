@@ -138,7 +138,7 @@ def _run_bounded(command: list[str], *, private_dir: Path, seconds: int) -> int:
     process = subprocess.Popen(
         command, cwd=private_dir, env=env,
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        start_new_session=True,
+        start_new_session=True, umask=0o077,
     )
     try:
         return process.wait(timeout=seconds)
