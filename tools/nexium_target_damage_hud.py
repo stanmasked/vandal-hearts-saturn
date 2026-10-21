@@ -62,11 +62,11 @@ def expect_hidden(image,*,enemy_visible):
 def verify_folder(duel,defeat):
     # Independently re-check old Stage44/50/52/54/55/56/57 evidence first.
     verify_cue(duel,defeat)
-    with Image.open(duel/"nexium-window.png") as initial, \\
-         Image.open(_final_aim(duel,"action-duel-aim-")) as first_aim, \\
-         Image.open(duel/"action-duel-attacked.png") as first_hit, \\
-         Image.open(_final_aim(duel,"action-victory-round4-aim-nav-")) as last_aim, \\
-         Image.open(duel/"action-victory-round4-attacked.png") as won, \\
+    with Image.open(duel/"nexium-window.png") as initial, \
+         Image.open(_final_aim(duel,"action-duel-aim-")) as first_aim, \
+         Image.open(duel/"action-duel-attacked.png") as first_hit, \
+         Image.open(_final_aim(duel,"action-victory-round4-aim-nav-")) as last_aim, \
+         Image.open(duel/"action-victory-round4-attacked.png") as won, \
          Image.open(defeat/"action-defeat-round-8.png") as lost:
         # verify_cue already authenticated all full-state hashes and cursor
         # positions. This checker deliberately relies on actual PNG pixels.
