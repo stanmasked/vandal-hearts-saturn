@@ -1,4 +1,5 @@
 #include "vh/attack_training.hpp"
+#include "vh/attack_preview_hud.hpp"
 #include "vh/replay.hpp"
 #include "vh/turn_round_hud.hpp"
 
