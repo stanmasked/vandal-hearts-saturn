@@ -8,6 +8,7 @@ This is an independent project, not the PS1/PlayStation remaster.
   Stage64 passed GCC/Clang (22/22 CTest and 459/459 Python per compiler),
   both Switch NRO builds and real NeXium guest pixel checks.
 - Stage65 adds a metadata-only crosswalk for candidate Saturn resources; CI pending.
+- Stage66 adds a provenance-linked observation-manifest validator with synthetic-only tests; CI pending.
 - **Do not equate** the synthetic training scene with the first Saturn mission.
 - Original Saturn map geometry, battle parameters, story, graphics and audio
   remain unverified. Never publish the original disc or extracted assets.

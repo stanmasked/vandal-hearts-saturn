@@ -1,6 +1,6 @@
 # Vandal Hearts — Sega Saturn → Nintendo Switch (native remake)
 
-**Stage64 verified; Stage65 Saturn resource crosswalk in progress / ROM-free native prototype.**
+**Stage64 verified; Stages65–66 add private-media metadata and evidence validation / ROM-free native prototype.**
 Separate from the PlayStation-based remaster.
 The intended reference is the 1997 Japanese Sega Saturn edition `T-9526G`.
 
@@ -24,6 +24,7 @@ The intended reference is the 1997 Japanese Sega Saturn edition `T-9526G`.
   projection and overflow guards passed CI; Stage64's hovered cost/remaining
   HUD passed GCC/Clang, Switch NRO and real NeXium pixel checks.
 - Disc CUE/BIN metadata-only hash inventory (read-only, strictly local).
+- Stage65 adds a metadata-only candidate crosswalk; Stage66 adds a provenance-linked, payload-free schema for manually observed Saturn battle evidence.
 - Host GCC/Clang test workflow, no ROM or game assets in CI.
 
 ## Build and test on host (no SDL2 required)
