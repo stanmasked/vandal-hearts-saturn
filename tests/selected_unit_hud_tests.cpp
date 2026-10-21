@@ -31,7 +31,7 @@ void selected_ally_shows_real_stats_and_readiness() {
     assert(vh::apply_training_action(ui,TrainingAction::Confirm)==TrainingEffect::Selected);
     auto i=vh::selected_unit_hud(ui.battle,ui.selected);
     assert(i.visible && i.name=="Scout" && i.unit_id==1);
-    assert(i.hp==22 && i.attack==8 && i.defense==3 && i.range==1);
+    assert(i.hp==22 && i.attack==8 && i.defense==3 && i.range==1 && i.move_points==4);
     assert(!i.moved && !i.acted);
     for(int k=0;k<100;++k) {
         i=vh::selected_unit_hud(ui.battle,ui.selected);

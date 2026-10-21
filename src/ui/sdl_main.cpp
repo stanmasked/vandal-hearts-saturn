@@ -208,6 +208,7 @@ void render_selected_unit_info(SDL_Renderer* r, const Ui& ui) {
     color(r, 220, 233, 238);
     unit_stat_text(r, info.name.substr(0, 14), 374, 677);
     unit_stat_text(r, "HP " + std::to_string(info.hp), 500, 683);
+    unit_stat_text(r, "MOV " + std::to_string(info.move_points), 540, 683);
     unit_stat_text(r, "ATK " + std::to_string(info.attack), 603, 683);
     unit_stat_text(r, "DEF " + std::to_string(info.defense), 724, 683);
     unit_stat_text(r, "RNG " + std::to_string(info.range), 839, 683);
