@@ -99,8 +99,13 @@ def assess_coverage(document):
     if missing_kinds:
         blockers.add("REQUIRED_MECHANICS_NOT_OBSERVED")
 
+    if not ({"victory", "defeat"} & observed_kinds):
+        blockers.add("TERMINAL_OUTCOME_NOT_OBSERVED")
+
+    unit_sides = {unit["id"]: unit["team"] for unit in units}
     action_count = 0
     unsupported_actions = 0
+    recorded_action_kinds = set()
     prior_round = 0
     for turn in turns:
         # A full battle replay requires round numbers in monotone order.
@@ -109,10 +114,19 @@ def assess_coverage(document):
         prior_round = turn["round"]
         for action in turn.get("actions", []):
             action_count += 1
-            if not action.get("actor_id") or not action.get("evidence_ids"):
+            recorded_action_kinds.add(action["kind"])
+            actor = action.get("actor_id")
+            target = action.get("target_id")
+            if not actor or not action.get("evidence_ids"):
                 unsupported_actions += 1
+            if actor is not None and unit_sides.get(actor) != turn["active_side"]:
+                blockers.add("ACTION_ACTOR_SIDE_MISMATCH")
+            if action["kind"] == "attack" and (target is None or target == actor):
+                blockers.add("ATTACK_TARGET_NOT_IDENTIFIED")
     if not turns or not action_count or unsupported_actions:
         blockers.add("ACTION_TRACE_INCOMPLETE")
+    if not {"move", "attack"} <= recorded_action_kinds:
+        blockers.add("BATTLE_ACTION_TYPES_INCOMPLETE")
 
     # A filled form is not an authenticated release or a replicated battle.
     return {
@@ -128,6 +142,9 @@ def assess_coverage(document):
             "enemy_units": enemies,
             "mechanic_types_observed": len(observed_kinds & REQUIRED_OBSERVATIONS),
             "mechanic_types_required": len(REQUIRED_OBSERVATIONS),
+            "terminal_observation_count": sum(
+                o["kind"] in {"victory", "defeat"} and o["confidence"] == "observed"
+                and bool(o.get("evidence_ids")) for o in observations),
             "turns": len(turns),
             "actions": action_count,
             "actions_missing_actor_or_evidence": unsupported_actions,

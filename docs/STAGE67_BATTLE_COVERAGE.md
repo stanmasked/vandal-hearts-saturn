@@ -11,8 +11,9 @@ The gate accepts the Stage66 evidence schema. A pass requires:
   cost, walkability and at least one evidence ID on every cell;
 - an observed non-overlapping ally/enemy roster with HP, max HP, movement
   budget and evidence, located on confirmed traversable cells;
-- observed movement, attack and turn-order evidence;
-- an ordered turn/action trace with actor IDs and evidence references.
+- observed movement, attack, turn-order and a terminal victory/defeat outcome;
+- an ordered turn/action trace with both move and attack events, actor IDs,
+  side-consistent actions, identified attack targets and evidence references.
 
 A fail returns stable blocker codes and aggregate counts to guide further
 private research. Missing values do not become invented defaults. Importantly,

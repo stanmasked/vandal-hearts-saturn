@@ -34,12 +34,14 @@ def fixture():
         "observations": [
             {"id": kind, "kind": kind, "claim": "synthetic only",
              "confidence": "observed", "evidence_ids": ["ev-frame"]}
-            for kind in ("movement", "attack", "turn_order")
+            for kind in ("movement", "attack", "turn_order", "victory")
         ],
         "turns": [
             {"round": 1, "active_side": "player", "actions": [
                 {"kind": "move", "actor_id": "ally", "target_id": None,
                  "from": {"x": 0, "y": 0}, "to": {"x": 0, "y": 1},
+                 "result": "synthetic", "evidence_ids": ["ev-frame"]},
+                {"kind": "attack", "actor_id": "ally", "target_id": "foe",
                  "result": "synthetic", "evidence_ids": ["ev-frame"]}]}
         ],
     }
@@ -119,6 +121,28 @@ class BattleCoverageTests(unittest.TestCase):
                                        "evidence_ids": ["ev-frame"]}]}
                          ] + data["turns"]
         self.assertIn("ROUND_ORDER_INCONSISTENT", assess_coverage(data)["blockers"])
+
+    def test_terminal_observation_must_be_supported(self):
+        data = fixture()
+        data["observations"][-1]["confidence"] = "unknown"
+        self.assertIn("TERMINAL_OUTCOME_NOT_OBSERVED",
+                      assess_coverage(data)["blockers"])
+
+    def test_attack_requires_target_and_action_type(self):
+        data = fixture()
+        data["turns"][0]["actions"] = data["turns"][0]["actions"][:1]
+        self.assertIn("BATTLE_ACTION_TYPES_INCOMPLETE",
+                      assess_coverage(data)["blockers"])
+        data = fixture()
+        data["turns"][0]["actions"][1]["target_id"] = None
+        self.assertIn("ATTACK_TARGET_NOT_IDENTIFIED",
+                      assess_coverage(data)["blockers"])
+
+    def test_actor_must_match_turn_side(self):
+        data = fixture()
+        data["turns"][0]["active_side"] = "enemy"
+        self.assertIn("ACTION_ACTOR_SIDE_MISMATCH",
+                      assess_coverage(data)["blockers"])
 
     def test_counts_and_blockers_do_not_contain_private_labels(self):
         data = fixture()
