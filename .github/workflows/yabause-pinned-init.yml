@@ -1,0 +1,109 @@
+name: Stage82 real Yabause no-media core initialization
+on:
+  push:
+    branches:
+      - "stage82/**"
+  pull_request:
+    branches:
+      - "stage81/**"
+permissions:
+  contents: read
+jobs:
+  linked-runner:
+    name: Linked public Yabause runner (${{ matrix.compiler }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc
+            cxx: g++
+          - compiler: clang
+            cxx: clang++
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact public Yabause commit
+        env:
+          UPSTREAM_COMMIT: 7e38821dbac265490f115e163c523a939acda759
+        run: |
+          set -euo pipefail
+          git init -q external-yabause
+          git -C external-yabause remote add origin https://github.com/Yabause/yabause.git
+          git -C external-yabause fetch --quiet --depth 1 origin "${UPSTREAM_COMMIT}"
+          test "$(git -C external-yabause rev-parse FETCH_HEAD)" = "${UPSTREAM_COMMIT}"
+          git -C external-yabause checkout --quiet --detach FETCH_HEAD
+      - name: Fetch and verify pinned public runner PNG dependency
+        env:
+          LODEPNG_COMMIT: e584a8490db1b76b81bf298c11c09d3b55d9c270
+        run: |
+          set -euo pipefail
+          git init -q external-lodepng
+          git -C external-lodepng remote add origin https://github.com/lvandeve/lodepng.git
+          git -C external-lodepng fetch --quiet --depth 1 origin "${LODEPNG_COMMIT}"
+          test "$(git -C external-lodepng rev-parse FETCH_HEAD)" = "${LODEPNG_COMMIT}"
+          git -C external-lodepng checkout --quiet --detach FETCH_HEAD
+          test "$(git hash-object external-lodepng/lodepng.cpp)" = 4915ed7a1ddc827559eb42b8968924a61454f2e6
+          test "$(git hash-object external-lodepng/lodepng.h)" = 8f789b677668a495f641336cf62f3afe0b98a80d
+          mkdir -p external-yabause/yabause/src/runner/lodepng
+          cp external-lodepng/lodepng.cpp external-lodepng/lodepng.h external-yabause/yabause/src/runner/lodepng/
+      - name: Pin and patch real Yabause CD reader
+        run: |
+          set -euo pipefail
+          python3 -m tools.patch_yabause_full_cdbase \
+            --source external-yabause/yabause/src/cdbase.c \
+            --output external-yabause/yabause/src/cdbase.instrumented.c
+          mv external-yabause/yabause/src/cdbase.instrumented.c external-yabause/yabause/src/cdbase.c
+          test "$(grep -c 'if (vh_primary_read == 1)' external-yabause/yabause/src/cdbase.c)" = 1
+      - name: Inject pinned no-media YabauseInit frontend path
+        run: |
+          set -euo pipefail
+          python3 -m tools.patch_yabause_no_media_runner \
+            --source external-yabause/yabause/src/runner/yui.cpp \
+            --output external-yabause/yabause/src/runner/yui.instrumented.cpp
+          mv external-yabause/yabause/src/runner/yui.instrumented.cpp external-yabause/yabause/src/runner/yui.cpp
+      - name: Configure minimal real Yabause runner frontend
+        env:
+          CC: ${{ matrix.compiler }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          set -euo pipefail
+          cmake -S external-yabause/yabause -B build-yabause \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DYAB_WANT_OPENGL=OFF \
+            -DYAB_WANT_SDL=OFF \
+            -DYAB_WANT_OPENAL=OFF \
+            -DYAB_USE_SSF=OFF \
+            -DYAB_WANT_MUSASHI=OFF \
+            -DYAB_USE_PLAY_JIT=OFF \
+            -DYAB_WANT_MPEG=OFF \
+            -DYAB_PORTS=runner
+      - name: Link complete runner executable against real Yabause core
+        run: |
+          set -euo pipefail
+          cmake --build build-yabause --target yabause-runner --parallel 2
+          test -x build-yabause/src/runner/yabause
+      - name: Execute disc-free and BIOS-free CLI smoke
+        run: |
+          set -euo pipefail
+          env -u VH_SATURN_CAPTURE_GATE -u VH_SATURN_FAD_LOG \
+            timeout 15s build-yabause/src/runner/yabause > runner-cli.txt 2>&1
+          grep -Fq 'Not enough command line arguments.' runner-cli.txt
+          test ! -e vh-cd-capture.log
+          echo 'STAGE81_LINKED_YABAUSE_RUNNER_CLI_SMOKE_PASS'
+
+      - name: Actually initialize and teardown Saturn core without BIOS or disc
+        run: |
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+          if ! (cd "$workdir" && HOME="$workdir" env -u VH_SATURN_CAPTURE_GATE -u VH_SATURN_FAD_LOG \
+                timeout 20s "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" vh-no-media-init) > init-smoke.txt 2>&1; then
+            cat init-smoke.txt
+            exit 1
+          fi
+          cat init-smoke.txt
+          grep -Fxq "STAGE82_REAL_YABAUSE_INIT_NO_MEDIA_PASS" init-smoke.txt
+          test ! -e vh-cd-capture.log
+          echo "STAGE82_YABAUSE_INIT_REAL_PROCESS_PASS"
