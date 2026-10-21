@@ -15,7 +15,7 @@ from tools.nexium_visual_digest import (
 )
 
 
-def picture(cursor, fingerprint=INITIAL, selected=False):
+def picture(cursor, fingerprint=INITIAL, selected=False, selected_cursor=None):
     im = Image.new("RGB", (1280, 720), (14, 19, 32))
     d = ImageDraw.Draw(im)
     for bit in range(64):
@@ -29,9 +29,10 @@ def picture(cursor, fingerprint=INITIAL, selected=False):
     x, y = cursor
     d.rectangle((x, y, x + 49, y + 22), fill=(220, 178, 68))
     if selected:
-        # Synthetic copy of the ROM-free unit-selection border; not
-        # original Saturn artwork or an assertion that X11 selected a unit.
-        d.rectangle((x + 10, y - 35, x + 42, y + 5),
+        # The selected unit can stay on its original tile while the cursor
+        # previews an adjacent destination; these coordinates are independent.
+        sx, sy = selected_cursor if selected_cursor is not None else cursor
+        d.rectangle((sx + 10, sy - 35, sx + 42, sy + 5),
                     outline=(251, 220, 90), width=2)
     return im
 
@@ -58,7 +59,7 @@ class ActionEvidenceTests(unittest.TestCase):
         self.right = picture((440, 270))
         self.back = picture((400, 250))
         self.selected = picture((400, 250), selected=True)
-        self.aimed = picture((440, 270))
+        self.aimed = picture((440, 270), selected=True, selected_cursor=(400, 250))
         self.moved = picture((440, 270), AFTER_SCOUT_MOVE)
 
     def test_marker_requires_genuine_selection_border(self):
@@ -71,6 +72,7 @@ class ActionEvidenceTests(unittest.TestCase):
         self.assertTrue(report["action_passed"])
         self.assertEqual(report["after_move_fingerprint"], AFTER_SCOUT_MOVE)
         self.assertEqual(io.keys, ["Left", "Return", "Right", "Return"])
+        self.assertEqual(report["aimed_proof"], "action-aim-1.png")
         self.assertEqual(report["moved_proof"], "action-moved.png")
         self.assertFalse(io.focused)
 
@@ -177,6 +179,7 @@ class ActionEvidenceTests(unittest.TestCase):
                 "initial_fingerprint": INITIAL,
                 "after_move_fingerprint": AFTER_SCOUT_MOVE,
                 "selected_proof": "action-selected.png",
+                "aimed_proof": "action-aim-1.png",
                 "moved_proof": "action-moved.png",
             }))
             with self.assertRaises(FileNotFoundError):
@@ -188,12 +191,14 @@ class ActionEvidenceTests(unittest.TestCase):
             (folder / "nexium-window.png").write_bytes(b"")
             self.start.save(folder / "nexium-window.png")
             self.back.save(folder / "action-selected.png")
+            self.aimed.save(folder / "action-aim-1.png")
             self.moved.save(folder / "action-moved.png")
             (folder / "action-evidence.json").write_text(json.dumps({
                 "action_passed": True,
                 "initial_fingerprint": INITIAL,
                 "after_move_fingerprint": AFTER_SCOUT_MOVE,
                 "selected_proof": "action-selected.png",
+                "aimed_proof": "action-aim-1.png",
                 "moved_proof": "action-moved.png",
             }))
             with self.assertRaisesRegex(ValueError, "selection not observed"):
