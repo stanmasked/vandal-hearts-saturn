@@ -28,3 +28,5 @@ __pycache__/
 *.adx
 *.ssf
 *.mp3
+# Stage68: locally generated private neutral terrain fixtures
+*.vhterrain

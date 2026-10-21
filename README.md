@@ -24,7 +24,7 @@ The intended reference is the 1997 Japanese Sega Saturn edition `T-9526G`.
   projection and overflow guards passed CI; Stage64's hovered cost/remaining
   HUD passed GCC/Clang, Switch NRO and real NeXium pixel checks.
 - Disc CUE/BIN metadata-only hash inventory (read-only, strictly local).
-- Stage65 adds a metadata-only candidate crosswalk; Stage66 adds a provenance-linked, payload-free schema for manually observed Saturn battle evidence.
+- Stage65 adds a metadata-only candidate crosswalk; Stage66–67 validate evidence and coverage. Stage68 introduces a fail-closed private geometry-to-native terrain bridge (research stage, not authenticated gameplay).
 - Host GCC/Clang test workflow, no ROM or game assets in CI.
 
 ## Build and test on host (no SDL2 required)
