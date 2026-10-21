@@ -16,6 +16,11 @@ The read-trace JSON has `schema_version: 1`,
 `reads` entries of the shape `{"lba": 10, "sectors": 2}` (these numbers
 are illustrative, **not** original Saturn offsets).
 
+Raw Saturn CD-block FAD observations may be converted explicitly using
+`tools/saturn_fad_trace.py` and the first-track sector count, as documented
+in `docs/STAGE73_FAD_ADDRESSING.md`. The converter never guesses the offset
+and refuses Track-2 or pre-track reads.
+
 The address convention is strict: ISO file extent LBA is NOT the physical
 disc frame count, MSF timestamp, or an implicit +150 conversion. An emulator
 that logs physical-sector offsets must be independently calibrated before
