@@ -80,10 +80,11 @@ int main() {
     multi.add_unit({1,"Hero",vh::Side::Player,{0,0},20,20,2});
     multi.add_unit({3,"Raider",vh::Side::Enemy,{1,0},2,5,1});
     multi.add_unit({4,"Archer",vh::Side::Enemy,{2,0},2,5,1});
+    const auto before_multi=vh::battle_fingerprint(multi);
     h=vh::attack_preview_hud(multi,1,{1,0});
     assert(h.visible && !h.decisive && h.hp_before==2 && h.hp_after==0);
     assert(h.damage==2 && h.remaining_width==0);
-    assert(vh::battle_fingerprint(multi)==vh::battle_fingerprint(multi));
+    assert(vh::battle_fingerprint(multi)==before_multi);
 
     std::printf("Stage54 ROM-free non-mutating forecast HUD: 4-round parity, show/hide, lethal 2HP, 2v2 and terminal rejection passed\n");
 }
