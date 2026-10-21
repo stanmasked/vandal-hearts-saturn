@@ -343,6 +343,15 @@ jobs:
           python3 -m tools.nexium_target_remaining_hud \
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
+      - name: Stage60 real NeXium projected damage health bar pixels
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Revalidate original guest and Stage54-59 image evidence first.
+          python3 -m tools.nexium_target_health_bar \
+            --duel stage44-session/runtime-evidence \
+            --defeat stage52-session/runtime-evidence
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4

@@ -122,3 +122,8 @@ add_test(NAME target_damage_hud_contract COMMAND vh_target_damage_hud_tests)
 add_executable(vh_target_remaining_hud_tests tests/target_remaining_hud_tests.cpp)
 target_link_libraries(vh_target_remaining_hud_tests PRIVATE vh_core)
 add_test(NAME target_remaining_hud_contract COMMAND vh_target_remaining_hud_tests)
+
+# Stage60: projected HP bar, two-color read-only split of current enemy HP.
+add_executable(vh_target_health_bar_tests tests/target_health_bar_tests.cpp)
+target_link_libraries(vh_target_health_bar_tests PRIVATE vh_core)
+add_test(NAME target_health_bar_contract COMMAND vh_target_health_bar_tests)

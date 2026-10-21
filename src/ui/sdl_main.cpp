@@ -10,6 +10,7 @@
 #include "vh/enemy_attack_cue.hpp"
 #include "vh/target_damage_hud.hpp"
 #include "vh/target_remaining_hud.hpp"
+#include "vh/target_health_bar.hpp"
 #include <array>
 #include <cctype>
 #ifdef VH_STAGE44_DUEL
@@ -282,6 +283,24 @@ void render_target_remaining(SDL_Renderer* r, const Ui& ui) {
                    vh::kRemainingHudX, vh::kRemainingHudY);
 }
 
+// Stage60: split the CURRENT target HP into predicted remaining/lost portions.
+// Current HP is the denominator because the synthetic Unit has no max-HP.
+// This is a read-only visualization of Battle::preview_attack, never a rule.
+void render_target_health_bar(SDL_Renderer* r, const Ui& ui) {
+    const vh::TargetHealthBar bar = vh::target_health_bar(ui.battle, ui.cursor, ui.selected);
+    if (!bar.visible) return;
+    color(r, 239, 79, 76); // HP lost by the next legal strike.
+    SDL_Rect loss{vh::kHealthBarX, vh::kHealthBarY,
+                  vh::kHealthBarWidth, vh::kHealthBarHeight};
+    SDL_RenderFillRect(r, &loss);
+    if (bar.remaining_width > 0) {
+        color(r, 117, 221, 109); // HP remaining after that strike.
+        SDL_Rect left{vh::kHealthBarX, vh::kHealthBarY,
+                      bar.remaining_width, vh::kHealthBarHeight};
+        SDL_RenderFillRect(r, &left);
+    }
+}
+
 void render(SDL_Renderer* r, const Ui& ui) {
     color(r, 14, 19, 32);
     SDL_RenderClear(r);
@@ -344,6 +363,7 @@ void render(SDL_Renderer* r, const Ui& ui) {
     render_enemy_attack_cue(r, ui);
     render_target_damage(r, ui);
     render_target_remaining(r, ui);
+    render_target_health_bar(r, ui);
     render_visual_state_digest(r, ui.battle);
     render_action_receipt(r, ui.last_effect);
     SDL_RenderPresent(r);
