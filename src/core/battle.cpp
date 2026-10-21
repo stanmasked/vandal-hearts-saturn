@@ -81,7 +81,10 @@ int Battle::shortest_cost(const Unit& unit, Pos destination) const {
         for (const Pos delta : kDirections) {
             const Pos next{here.x + delta.x, here.y + delta.y};
             if (!in_bounds(next) || !tile(next).walkable || occupied(next, unit.id)) continue;
-            if (std::abs(tile(next).elevation - tile(here).elevation) > 1) continue;
+            // Authored elevations are unrestricted ints; avoid signed overflow.
+            const long long rise = static_cast<long long>(tile(next).elevation) -
+                                   static_cast<long long>(tile(here).elevation);
+            if (rise < -1 || rise > 1) continue;
             // Avoid signed overflow and never relax an unreachable sentinel.
             const int step_cost = tile(next).terrain_cost;
             if (step_cost >= inf - cost) continue;
@@ -103,7 +106,8 @@ std::vector<Pos> Battle::reachable(int unit_id) const {
     for (int y = 0; y < height_; ++y) {
         for (int x = 0; x < width_; ++x) {
             const Pos p{x, y};
-            if (p != u->pos && shortest_cost(*u, p) <= u->move_points) result.push_back(p);
+            // The green legal-destination overlay uses the same contract as move().
+            if (preview_move(unit_id, p).legal) result.push_back(p);
         }
     }
     return result;
