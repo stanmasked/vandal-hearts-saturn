@@ -324,6 +324,16 @@ jobs:
           python3 -m tools.nexium_enemy_attack_cue \
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
+      - name: Stage58 real NeXium exact damage numeral and KO verification
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Stage57 and earlier guest assertions must pass independently.
+          # Reopen actual captured registered PNGs, never rely on receipts alone.
+          python3 -m tools.nexium_target_damage_hud \
+            --duel stage44-session/runtime-evidence \
+            --defeat stage52-session/runtime-evidence
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
