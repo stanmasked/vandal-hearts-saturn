@@ -1,0 +1,41 @@
+name: Stage87 pinned local emulator executable binding (fake media only)
+on:
+  push:
+    branches:
+      - "stage87/**"
+  pull_request:
+    branches:
+      - "stage86/**"
+permissions:
+  contents: read
+jobs:
+  runner-binding:
+    name: Runner identity and source CLI binding (${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Stage87 pinned executable identity with invented local inputs
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_saturn_private_runner_binding.py -v
+          python -m unittest discover -s tests -p test_saturn_private_capture_session.py -v
+          echo "STAGE87_SYNTHETIC_EMULATOR_PIN_AND_CUE_BINDING_PASS"
+      - name: Reject media/archive files in tracked source
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+          forbidden = {".bin", ".cue", ".iso", ".chd", ".zip", ".7z", ".rom"}
+          assert not any(Path(p).suffix.lower() in forbidden for p in tracked if p)
+          print("STAGE87_NO_GAME_MEDIA_IN_GIT_PASS")
+          PY
