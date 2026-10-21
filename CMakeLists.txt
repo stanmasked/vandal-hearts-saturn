@@ -86,3 +86,9 @@ add_test(NAME duel_victory_contract COMMAND vh_duel_victory_tests)
 add_executable(vh_duel_defeat_tests tests/duel_defeat_tests.cpp)
 target_link_libraries(vh_duel_defeat_tests PRIVATE vh_core)
 add_test(NAME duel_defeat_contract COMMAND vh_duel_defeat_tests)
+
+# Stage53: read-only damage forecast, shared with actual attacks and both
+# previously guest-verified Victory/Defeat terminal states.
+add_executable(vh_attack_preview_tests tests/attack_preview_tests.cpp)
+target_link_libraries(vh_attack_preview_tests PRIVATE vh_core)
+add_test(NAME attack_preview_contract COMMAND vh_attack_preview_tests)
