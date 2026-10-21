@@ -35,9 +35,13 @@ EXACT_LOG = re.compile(rb"(?:VHCD_FAD (?:0|[1-9][0-9]{0,8})\n){1,10000}\Z")
 
 
 def _not_in_checkout(path: Path) -> None:
-    for parent in (path, *path.parents):
-        if (parent / ".git").exists():
-            raise ValueError("private source or output inside a git checkout")
+    # Resolve parent aliases as well: paths entering a checkout through a
+    # symlinked ancestor must not bypass the local-only output boundary.
+    resolved = path.resolve()
+    for candidate in (path, resolved):
+        for parent in (candidate, *candidate.parents):
+            if (parent / ".git").exists():
+                raise ValueError("private source or output inside a git checkout")
 
 
 def _regular_no_link(path: Path) -> None:
@@ -187,7 +191,7 @@ def capture_private(
     }
     output = private_dir / RECEIPT_FILE
     with output.open("x", encoding="utf-8") as stream:
-        os.chmod(output, 0o600)
+        os.fchmod(stream.fileno(), 0o600)
         json.dump(receipt, stream, indent=2)
         stream.write("\n")
     return receipt
