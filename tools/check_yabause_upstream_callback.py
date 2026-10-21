@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage78: integrate pinned PUBLIC Yabause ISO callback with invented sectors.
+"""Stage79: verify original upstream Yabause ISO callback with primary-data read checks.
 
 Fetches only the pinned GPL Yabause *source code* (not a Saturn game), verifies
 its Git blob SHA-1, applies our gated capture patch, then compiles and runs the
@@ -27,7 +27,7 @@ UPSTREAM_URL = ("https://raw.githubusercontent.com/Yabause/yabause/" +
                 UPSTREAM_COMMIT + "/yabause/src/cdbase.c")
 MAX_SOURCE_BYTES = 160_000
 RECEIPT = "VH_UPSTREAM_ISO_CALLBACK_TEST_PASS"
-EXPECTED_LOG = "VHCD_FAD 152\nVHCD_FAD 153\n"
+EXPECTED_LOG = "VHCD_FAD 152\nVHCD_FAD 153\nVHCD_FAD 200\nVHCD_FAD 300\nVHCD_FAD 400\n"
 
 
 def git_blob_sha(data: bytes) -> str:
@@ -62,6 +62,36 @@ def extract_patched_callback(source: str) -> str:
             not in fragment):
         raise ValueError("unexpected instrumented callback layout")
     return fragment
+
+
+
+def extract_primary_read_callback(source: str) -> str:
+    """Fail-closed Stage79 specialization for the exact pinned upstream callback.
+
+    Older Yabause overwrites num_read when reading auxiliary CD subcode, even
+    if the primary 2352-byte read failed. The numeric FAD trace must describe
+    primary sector-data reads, not the outcome of a later subcode read.
+    """
+    callback = extract_patched_callback(source)
+    marker = "   size_t num_read = 0;"
+    if callback.count(marker) != 1 or "vh_primary_read" in callback:
+        raise ValueError("unexpected upstream read-variable layout")
+    newline = "\r\n" if "\r\n" in callback else "\n"
+    callback = callback.replace(marker, marker + newline + "   size_t vh_primary_read = 0;")
+    data_reads = (
+        ("num_read = fread(buffer, 2352, 1, track->fp);", 3),
+        ("num_read = fread(buffer, 2448, 1, track->fp);", 1),
+        ("num_read = fread((char *)buffer + 0x10, 2048, 1, track->fp);", 1),
+    )
+    for target, count in data_reads:
+        if callback.count(target) != count:
+            raise ValueError("pinned Yabause data-read layout changed")
+        callback = callback.replace(target, "vh_primary_read = (" + target[:-1] + ");")
+    gate = "if (num_read > 0)"
+    if callback.count(gate) != 1:
+        raise ValueError("unexpected primary read-gate layout")
+    callback = callback.replace(gate, "if (vh_primary_read == 1)")
+    return callback
 
 
 def harness(callback: str) -> str:
@@ -143,6 +173,65 @@ int main(void) {
     if (!ISOCDReadSectorFAD(154, buffer)) return 30;
     if (remove(gate_path) != 0) return 31;
     if (!ISOCDReadSectorFAD(151, buffer)) return 32;
+
+    /* Stage79: missing 2352-byte payload, present 96-byte subcode.
+       Upstream num_read is overwritten by the subcode fread, so the old
+       hook would wrongly record FAD 200 for this failed primary read. */
+    FILE *raw_empty = tmpfile();
+    FILE *raw_good = tmpfile();
+    FILE *sub_good = tmpfile();
+    FILE *iso_good = tmpfile();
+    FILE *raw2448 = tmpfile();
+    if (!raw_empty || !raw_good || !sub_good || !iso_good || !raw2448) return 33;
+    for (int n = 0; n < 2352; ++n) {
+        if (fputc(n & 255, raw_good) == EOF) return 34;
+    }
+    for (int n = 0; n < 96; ++n) {
+        if (fputc(n & 255, sub_good) == EOF) return 35;
+    }
+    for (int n = 0; n < 2048; ++n) {
+        if (fputc(n & 255, iso_good) == EOF) return 36;
+    }
+    for (int n = 0; n < 2448; ++n) {
+        if (fputc(n & 255, raw2448) == EOF) return 37;
+    }
+    fflush(raw_good); fflush(sub_good); fflush(iso_good); fflush(raw2448);
+    rewind(raw_good); rewind(sub_good); rewind(iso_good); rewind(raw2448);
+    gate = fopen(gate_path, "wb");
+    if (!gate) return 38;
+    if (fputs("1\n", gate) < 0 || fclose(gate)) return 39;
+
+    session.track[0].fad_start = 200;
+    session.track[0].fad_end = 200;
+    session.track[0].sector_size = 2448;
+    session.track[0].interleaved_sub = 0;
+    session.track[0].sub_fp = sub_good;
+    session.track[0].fp = raw_empty;
+    if (!ISOCDReadSectorFAD(200, buffer)) return 40;
+    session.track[0].fp = raw_good;
+    if (!ISOCDReadSectorFAD(200, buffer)) return 41;
+
+    /* One fabricated 2048-byte user-data read, plus failed read. */
+    session.track[0].fad_start = 300;
+    session.track[0].fad_end = 300;
+    session.track[0].sector_size = 2048;
+    session.track[0].sub_fp = NULL;
+    session.track[0].fp = raw_empty;
+    if (!ISOCDReadSectorFAD(300, buffer)) return 42;
+    session.track[0].fp = iso_good;
+    if (!ISOCDReadSectorFAD(300, buffer)) return 43;
+
+    /* Full 2448-byte interleaved payload without external subcode. */
+    session.track[0].fad_start = 400;
+    session.track[0].fad_end = 400;
+    session.track[0].sector_size = 2448;
+    session.track[0].fp = raw_empty;
+    if (!ISOCDReadSectorFAD(400, buffer)) return 44;
+    session.track[0].fp = raw2448;
+    if (!ISOCDReadSectorFAD(400, buffer)) return 45;
+    if (remove(gate_path) != 0) return 46;
+    fclose(raw_empty); fclose(raw_good); fclose(sub_good);
+    fclose(iso_good); fclose(raw2448);
     fclose(cd);
     puts("VH_UPSTREAM_ISO_CALLBACK_TEST_PASS");
     return 0;
@@ -158,7 +247,7 @@ def verify(cc: str, *, upstream_source: bytes | None = None) -> dict:
         with urlopen(UPSTREAM_URL, timeout=40) as res:
             upstream_source = res.read(MAX_SOURCE_BYTES + 1)
     real_source = validate_upstream_source(upstream_source)
-    callback = extract_patched_callback(real_source)
+    callback = extract_primary_read_callback(real_source)
     code = harness(callback)
     with tempfile.TemporaryDirectory(prefix="vh-public-upstream-cd-") as folder:
         root = Path(folder)
@@ -196,6 +285,8 @@ def verify(cc: str, *, upstream_source: bytes | None = None) -> dict:
         "gated_numeric_fad_receipt": True,
         "closed_and_invalid_gate_suppressed": True,
         "failed_sector_read_suppressed": True,
+        "primary_data_reads_not_overwritten_by_subcode": True,
+        "synthetic_2048_2352_2448_data_modes_checked": True,
         "original_saturn_game_executed": False,
         "full_yabause_emulator_built": False,
         "authentic_first_battle_data_verified": False,
