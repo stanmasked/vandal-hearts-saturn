@@ -25,7 +25,8 @@ This is an independent project, not the PS1/PlayStation remaster.
 - Stage81 verified real pinned Yabause runner executable linkage and host CLI execution with GCC and Clang; remaining whole-project regressions are checked separately. CLI smoke does not initialize emulated Saturn hardware.
 - Stage82 successfully executed YabauseInit/YabauseDeInit in the real pinned runner with GCC and Clang on a dummy CD and no BIOS or game. NRO succeeded; full exact-head CI finishes independently. This is initialization only, not execution of a Saturn game.
 - Stage83 GCC/Clang real Yabause CI verified one YabauseEmulate frame with fabricated SH-2 instructions and changed R0/PC; Switch NRO and NeXium passed, remaining host checks run independently. This is no authentic game boot.
-- Stage84 executes the real live instrumented ISOCD backend in the linked runner using a generated two-sector 2048-byte-per-sector file, with exact manually gated numeric FAD receipts and failed/closed reads suppressed. Initial CI pending; original game media still private and untested.
+- Stage84 ALL GREEN: GCC/Clang true ISOCD backend reads from a generated two-sector file with exact gated numeric-only FAD 150/151 receipts; host regressions, Switch NRO and NeXium also passed. This does not authenticate original Saturn gameplay.
+- Stage85 audits two independent real Yabause processes per compiler with strict generated-sector SHA-256, numeric-trace SHA-256, absence of unexpected files and exact output reproducibility. Initial CI pending; original game media still private.
 - **Do not equate** the synthetic training scene with the first Saturn mission.
 - Original Saturn map geometry, battle parameters, story, graphics and audio
   remain unverified. Never publish the original disc or extracted assets.
