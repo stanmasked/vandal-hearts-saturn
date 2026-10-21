@@ -294,6 +294,16 @@ jobs:
             stage52-session/runtime-evidence/nexium.log \
             stage52-session/runtime-evidence/lifecycle-status.txt \
             --output stage52-session/runtime-evidence/lifecycle-audit.json
+      - name: Stage55 real NeXium selected ally HP and readiness evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Audit existing REAL 1279x700 guest frames, not synthetic screenshots.
+          # The Stage44/50 and Stage52 receipts must exist and be true first.
+          python3 -m tools.nexium_selected_unit_hud \
+            --duel stage44-session/runtime-evidence \
+            --defeat stage52-session/runtime-evidence
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
