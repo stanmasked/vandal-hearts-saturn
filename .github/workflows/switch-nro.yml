@@ -1,0 +1,317 @@
+name: Nintendo Switch NRO build (ROM-free)
+concurrency:
+  group: switch-nro-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-nro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: devkitpro/devkita64:20260219
+    env:
+      DEVKITPRO: /opt/devkitpro
+      DEVKITA64: /opt/devkitpro/devkitA64
+      LIBNX: /opt/devkitpro/libnx
+      PORTLIBS: /opt/devkitpro/portlibs/switch
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify devkitPro SDK and Switch SDL2
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x "$DEVKITA64/bin/aarch64-none-elf-g++"
+          test -f "$LIBNX/switch_rules"
+          test -f "$PORTLIBS/include/SDL2/SDL.h"
+          if ! command -v sdl2-config && ! test -x "$PORTLIBS/bin/sdl2-config"; then
+            echo 'Cross-target SDL2 sdl2-config was not found' >&2
+            exit 1
+          fi
+      - name: Compile homebrew NRO
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$PORTLIBS/bin:$DEVKITPRO/tools/bin:$PATH"
+          make -j2
+          # An isolated build variant: no change to the default Stage43 NRO.
+          make TARGET=vh_saturn_attack BUILD=switch-attack-build DEFINES=-DVH_STAGE44_DUEL -j2
+      - name: Inspect NRO structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s vh_saturn_demo.nro
+          python3 -m tools.nro_verify vh_saturn_demo.nro --output switch-build-verification.json
+          test -s vh_saturn_attack.nro
+          python3 -m tools.nro_verify vh_saturn_attack.nro --output attack-build-verification.json
+          cat switch-build-verification.json attack-build-verification.json
+      - name: Store ROM-free homebrew prototype
+        uses: actions/upload-artifact@v4
+        with:
+          name: vh-saturn-prototype-nro
+          path: |
+            vh_saturn_demo.nro
+            vh_saturn_demo.nacp
+            switch-build-verification.json
+            vh_saturn_attack.nro
+            vh_saturn_attack.nacp
+            attack-build-verification.json
+          if-no-files-found: error
+          retention-days: 14
+
+  run-in-nexium:
+    name: Experimental NeXium guest framebuffer smoke
+    needs: build-nro
+    runs-on: ubuntu-26.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download built NRO
+        uses: actions/download-artifact@v4
+        with:
+          name: vh-saturn-prototype-nro
+          path: nros
+
+      - name: Install headless NeXium graphics dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y curl jq xvfb xauth xdotool openbox wmctrl x11-utils imagemagick python3-pil \
+            libgtk-3-0t64 libasound2t64 libudev1 libxkbcommon0 libxkbcommon-x11-0 \
+            libx11-xcb1 libxcb-cursor0 libxcb-xinerama0 libxcb-xfixes0 \
+            libxcb-randr0 libxcb-render0 libxcb-shape0 libxcb-xkb1 \
+            libvulkan1 mesa-vulkan-drivers
+
+      - name: Fetch NeXium nightly build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          release_json="$(curl -fsSL --retry 3 --retry-all-errors -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/nexium-emu/nexium-nightly/releases/tags/nightly)"
+          asset_url="$(printf '%s' "$release_json" | jq -r '.assets[] | select(.name == "nexium-linux-x86_64.tar.gz") | .browser_download_url')"
+          test -n "$asset_url"
+          curl -fL --retry 3 --retry-all-errors "$asset_url" -o /tmp/nexium-linux.tar.gz
+          mkdir -p /tmp/nexium
+          tar -xzf /tmp/nexium-linux.tar.gz -C /tmp/nexium
+          emu_bin="$(find /tmp/nexium -type f -executable \( -name 'nexium-gui' -o -name 'nexium' \) -print -quit)"
+          test -n "$emu_bin"
+          echo "NEXIUM_BIN=$emu_bin" >> "$GITHUB_ENV"
+
+      - name: Launch NRO and capture emulator framebuffer
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p runtime-evidence
+          test -s nros/vh_saturn_demo.nro
+          icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -name 'lvp_icd*.json' -print -quit)"
+          test -n "$icd"
+          export VK_ICD_FILENAMES="$icd"
+          bash -n scripts/nexium_capture.sh
+          bash -n scripts/nexium_xvfb_session.sh
+          bash -n scripts/nexium_x11_close.sh
+          export RUST_BACKTRACE=1
+          export NEXIUM_ACTION_PROBE=1
+          export NEXIUM_POST_MOVE_PROBE=1
+          timeout --kill-after=5s 110s xvfb-run -a -s '-screen 0 1280x720x24' \
+            bash scripts/nexium_xvfb_session.sh
+
+      - name: Check two allied and two opposing game markers
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 -m tools.nexium_frame_verify \
+            runtime-evidence/nexium-window.png \
+            --output runtime-evidence/frame-check.json
+
+      - name: Verify native guest state via screenshot pixels
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 -m tools.nexium_visual_digest \
+            runtime-evidence/nexium-window.png \
+            --expected ae38b0b5ab887f00 \
+            --output runtime-evidence/state-digest.json
+
+      - name: Inspect optional Right-key input evidence
+        if: always()
+        shell: bash
+        run: |
+          set -eu
+          if [ -s runtime-evidence/nexium-window.png ] && [ -s runtime-evidence/nexium-after-right.png ]; then
+            python3 -m tools.nexium_cursor_motion \
+              runtime-evidence/nexium-window.png \
+              runtime-evidence/nexium-after-right.png \
+              --output runtime-evidence/cursor-motion.json || echo 'Guest cursor input remains unverified'
+          else
+            mkdir -p runtime-evidence
+            printf '%s\n' 'Cursor input not evaluated: screenshots missing' >runtime-evidence/cursor-motion-skipped.txt
+          fi
+      - name: Strict two-frame guest state and cursor evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-evidence
+          python3 -m tools.nexium_guest_evidence \
+            runtime-evidence/nexium-window.png \
+            runtime-evidence/nexium-after-right.png \
+            --receipt runtime-evidence/input-probe-status.txt \
+            --output runtime-evidence/guest-visual-evidence.json
+
+      - name: Verify real move action changed the guest tactical state
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m tools.nexium_tactical_action --verify-dir runtime-evidence
+      - name: Verify rejected second move and cancelled Scout selection on guest pixels
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m tools.nexium_post_move --verify-dir runtime-evidence
+      - name: Classify NeXium host runtime failures
+        if: always()
+        shell: bash
+        run: |
+          set -eu
+          mkdir -p runtime-evidence
+          if [ -s runtime-evidence/nexium.log ]; then
+            python3 -m tools.nexium_log_health \
+              runtime-evidence/nexium.log \
+              --output runtime-evidence/emulator-log-health.json
+          else
+            printf '%s\n' 'Host log absent: NeXium did not reach a confirmed runtime state' >runtime-evidence/emulator-log-unavailable.txt
+            exit 1
+          fi
+      - name: Distinguish NeXium host errors before versus after window close
+        if: always()
+        shell: bash
+        run: |
+          set -eu
+          if [ -s runtime-evidence/nexium-log-before-close.log ] && [ -s runtime-evidence/nexium.log ] && [ -s runtime-evidence/lifecycle-status.txt ]; then
+            python3 -m tools.nexium_lifecycle_audit \
+              runtime-evidence/nexium-log-before-close.log \
+              runtime-evidence/nexium.log \
+              runtime-evidence/lifecycle-status.txt \
+              --output runtime-evidence/lifecycle-audit.json
+          else
+            mkdir -p runtime-evidence
+            printf '%s\n' 'Host did not reach auditable shutdown; see launcher error' >runtime-evidence/lifecycle-audit-unavailable.txt
+            exit 1
+          fi
+      - name: Repeat NeXium in three independent Xvfb sessions
+        shell: bash
+        run: |
+          set -euo pipefail
+          icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -name 'lvp_icd*.json' -print -quit)"
+          test -n "$icd"
+          export VK_ICD_FILENAMES="$icd"
+          export RUST_BACKTRACE=1
+          bash -n scripts/nexium_repeat_trials.sh
+          bash scripts/nexium_repeat_trials.sh
+          python3 -m tools.nexium_repeat_audit runtime-evidence/repeat-trials \
+            --output runtime-evidence/repeat-audit.json
+      - name: Stage44 independent real NeXium attack duel and HP evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s nros/vh_saturn_attack.nro
+          mkdir -p stage44-session/nros
+          cp nros/vh_saturn_attack.nro stage44-session/nros/vh_saturn_demo.nro
+          ln -s "$GITHUB_WORKSPACE/scripts" stage44-session/scripts
+          ln -s "$GITHUB_WORKSPACE/tools" stage44-session/tools
+          icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -name 'lvp_icd*.json' -print -quit)"
+          test -n "$icd"
+          export VK_ICD_FILENAMES="$icd"
+          export RUST_BACKTRACE=1
+          export NEXIUM_ATTACK_PROBE=1
+          export NEXIUM_RESELECT_PROBE=1
+          export NEXIUM_SECOND_ROUND_PROBE=1
+          export NEXIUM_VICTORY_PROBE=1
+          (
+            cd stage44-session
+            timeout --kill-after=5s 320s xvfb-run -a -s '-screen 0 1280x720x24' \
+              bash scripts/nexium_xvfb_session.sh
+          )
+          python3 -m tools.nexium_attack_action --verify-dir stage44-session/runtime-evidence
+          python3 -m tools.nexium_duel_reselect --verify-dir stage44-session/runtime-evidence
+          python3 -m tools.nexium_second_round --verify-dir stage44-session/runtime-evidence
+          python3 -m tools.nexium_duel_victory --verify-dir stage44-session/runtime-evidence
+          python3 -m tools.nexium_log_health stage44-session/runtime-evidence/nexium.log \
+            --output stage44-session/runtime-evidence/emulator-log-health.json
+          python3 -m tools.nexium_lifecycle_audit \
+            stage44-session/runtime-evidence/nexium-log-before-close.log \
+            stage44-session/runtime-evidence/nexium.log \
+            stage44-session/runtime-evidence/lifecycle-status.txt \
+            --output stage44-session/runtime-evidence/lifecycle-audit.json
+      - name: Stage54 real NeXium forecast HUD pixel and hide/show verification
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Re-open only previously captured REAL Stage44/50 guest PNGs.
+          # Digest, cursor, selection, projected HP and lethal border all gate success.
+          python3 -m tools.nexium_attack_preview_hud \
+            --duel stage44-session/runtime-evidence \
+            --victory stage44-session/runtime-evidence
+      - name: Stage52 independent real NeXium Defeat duel and terminal evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s nros/vh_saturn_attack.nro
+          mkdir -p stage52-session/nros
+          cp nros/vh_saturn_attack.nro stage52-session/nros/vh_saturn_demo.nro
+          ln -s "$GITHUB_WORKSPACE/scripts" stage52-session/scripts
+          ln -s "$GITHUB_WORKSPACE/tools" stage52-session/tools
+          icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -name 'lvp_icd*.json' -print -quit)"
+          test -n "$icd"
+          export VK_ICD_FILENAMES="$icd"
+          export RUST_BACKTRACE=1
+          export NEXIUM_DEFEAT_PROBE=1
+          (
+            cd stage52-session
+            timeout --kill-after=5s 200s xvfb-run -a -s '-screen 0 1280x720x24' \
+              bash scripts/nexium_xvfb_session.sh
+          )
+          python3 -m tools.nexium_duel_defeat --verify-dir stage52-session/runtime-evidence
+          python3 -m tools.nexium_log_health stage52-session/runtime-evidence/nexium.log \
+            --output stage52-session/runtime-evidence/emulator-log-health.json
+          python3 -m tools.nexium_lifecycle_audit \
+            stage52-session/runtime-evidence/nexium-log-before-close.log \
+            stage52-session/runtime-evidence/nexium.log \
+            stage52-session/runtime-evidence/lifecycle-status.txt \
+            --output stage52-session/runtime-evidence/lifecycle-audit.json
+      - name: Stage55 real NeXium selected ally HP and readiness evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Audit existing REAL 1279x700 guest frames, not synthetic screenshots.
+          # The Stage44/50 and Stage52 receipts must exist and be true first.
+          python3 -m tools.nexium_selected_unit_hud \
+            --duel stage44-session/runtime-evidence \
+            --defeat stage52-session/runtime-evidence
+      - name: Upload emulator evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vh-saturn-nexium-runtime-evidence
+          path: |
+            runtime-evidence/
+            stage44-session/runtime-evidence/
+            stage52-session/runtime-evidence/
+          if-no-files-found: warn
+          retention-days: 14

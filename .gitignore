@@ -1,0 +1,30 @@
+# Build outputs
+/build/
+/out/
+/switch-build/
+__pycache__/
+*.pyc
+*.o
+*.elf
+*.nro
+*.nacp
+*.nsp
+*.map
+.DS_Store
+# Never commit owned copyrighted originals or derived assets
+*.cue
+*.bin
+*.iso
+*.chd
+*.ccd
+*.img
+*.sub
+*.mds
+*.mdf
+/private/
+/original_assets/
+/local_assets/
+*.wav
+*.adx
+*.ssf
+*.mp3
