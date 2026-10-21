@@ -97,3 +97,8 @@ add_test(NAME attack_preview_contract COMMAND vh_attack_preview_tests)
 add_executable(vh_attack_preview_hud_tests tests/attack_preview_hud_tests.cpp)
 target_link_libraries(vh_attack_preview_hud_tests PRIVATE vh_core)
 add_test(NAME attack_preview_hud_contract COMMAND vh_attack_preview_hud_tests)
+
+# Stage55: selected-unit informational overlay without tactical mutation.
+add_executable(vh_selected_unit_hud_tests tests/selected_unit_hud_tests.cpp)
+target_link_libraries(vh_selected_unit_hud_tests PRIVATE vh_core)
+add_test(NAME selected_unit_hud_contract COMMAND vh_selected_unit_hud_tests)
