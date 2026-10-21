@@ -153,10 +153,28 @@ def _run_bounded(command: list[str], *, private_dir: Path, seconds: int) -> int:
 
 def capture_private(
     manifest: dict, private_dir: Path, phase: str, command: list[str],
-    *, seconds=1800, pins=PINNED,
+    *, seconds=1800, pins=PINNED, expected_executable_sha256=None,
 ) -> dict:
     if phase not in PHASES:
         raise ValueError("phase must be a defined capture window")
+    # Stage87 opt-in: a locally independently pinned executable and an
+    # exact CUE argv token are required to bind capture to its declared
+    # source. A matching token alone does not prove the emulator opened it.
+    runner_before = None
+    if expected_executable_sha256 is not None:
+        if (not isinstance(expected_executable_sha256, str) or
+                re.fullmatch(r"[0-9a-f]{64}", expected_executable_sha256) is None):
+            raise ValueError("invalid externally pinned runner SHA256")
+        cue = (manifest.get("files", {}).get("cue")
+               if isinstance(manifest, dict) else None)
+        if (not isinstance(cue, str) or not isinstance(command, list) or
+                not command or cue not in command[1:]):
+            raise ValueError("declared CUE not passed as exact emulator argument")
+        if not Path(command[0]).is_absolute():
+            raise ValueError("absolute emulator executable required")
+        runner_before = _fingerprint(Path(command[0]))
+        if runner_before[1] != expected_executable_sha256:
+            raise ValueError("emulator executable differs from private local pin")
     _private_empty_dir(private_dir)
     start = inspect_sources(manifest, pins=pins)
     try:
@@ -166,6 +184,10 @@ def capture_private(
         end = inspect_sources(manifest, pins=pins)
         if end != start:
             raise ValueError("source identity changed during session")
+        if runner_before is not None:
+            runner_after = _fingerprint(Path(command[0]))
+            if runner_after != runner_before:
+                raise ValueError("emulator executable changed during session")
     if status != 0:
         raise ValueError("local emulator returned a nonzero status")
     if (private_dir / GATE_FILE).exists() or (private_dir / GATE_FILE).is_symlink():
@@ -188,6 +210,10 @@ def capture_private(
         "first_battle_loader_verified": False,
         "japanese_master_identity_verified": False,
         "media_bytes_exported": False,
+        "runner_matches_separately_supplied_sha256": runner_before is not None,
+        "cue_path_exactly_present_in_command": runner_before is not None,
+        "emulator_binary_origin_independently_verified": False,
+        "game_disc_actually_opened_verified": False,
     }
     output = private_dir / RECEIPT_FILE
     with output.open("x", encoding="utf-8") as stream:
@@ -203,6 +229,8 @@ def main() -> int:
     p.add_argument("--private-dir", type=Path, required=True)
     p.add_argument("--phase", choices=sorted(PHASES), required=True)
     p.add_argument("--timeout", type=int, default=1800)
+    p.add_argument("--expected-runner-sha256", type=str,
+                   help="Stage87: locally pinned executable hash, separate from media pin")
     p.add_argument("command", nargs=argparse.REMAINDER,
                    help="-- followed by absolute executable and its arguments")
     a = p.parse_args()
@@ -213,7 +241,8 @@ def main() -> int:
         _regular_no_link(a.manifest)
         manifest = json.loads(a.manifest.read_text(encoding="utf-8"))
         capture_private(manifest, a.private_dir, a.phase, a.command[1:],
-                        seconds=a.timeout)
+                        seconds=a.timeout,
+                        expected_executable_sha256=a.expected_runner_sha256)
     except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError,
             subprocess.SubprocessError):
         print("STAGE86_PRIVATE_CAPTURE_REJECTED", file=sys.stderr)
