@@ -11,7 +11,7 @@ def movement_frame(points=4,*,selected=True,shift_y=0,forged=None):
     draw=ImageDraw.Draw(image)
     if selected:
         for i,char in enumerate("MOV "+str(points)):
-            for y,mask in enumerate(GLYPHS[char]):
+            for y,mask in enumerate(GLYPHS.get(char,(0,0,0,0,0))):
                 for x in range(3):
                     if mask & (1 << (2-x)):
                         left=X+8*i+2*x
