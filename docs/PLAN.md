@@ -15,7 +15,8 @@ This is an independent project, not the PS1/PlayStation remaster.
 - Stage71 verified signed elevations and synthetic 128×128 matrix on GCC/Clang (24/24 CTest, 509/509 Python per compiler), NRO and NeXium.
 - Stage72 passed ordered terrain identity across seven fabricated sizes and four equal-sum permutations (GCC/Clang 25/25 CTest, 514/514 Python; Switch NRO and NeXium green).
 - Stage73 crosswalks privately captured logical-sector reads with candidate ISO9660 extents and menu controls; FAD normalization requires an explicit label and Track-1 bounds. CI pending.
-- Stage74 requires repeated per-sector overlap across at least two first-battle entry and two menu-control captures before labeling a numeric pattern as a *repeated unverified candidate*. A trace alone never proves source authenticity or loader identity. CI pending.
+- Stage74 passed numeric multi-run sector read repeatability (GCC/Clang 25/25 CTest and 548/548 Python, Switch NRO and NeXium green); independent capture authenticity remains unproven.
+- Stage75 adds a private recording/session identity, release fingerprint and capture-window consistency gate. The checks never authenticate recording independence or original Saturn gameplay; CI pending.
 - **Do not equate** the synthetic training scene with the first Saturn mission.
 - Original Saturn map geometry, battle parameters, story, graphics and audio
   remain unverified. Never publish the original disc or extracted assets.

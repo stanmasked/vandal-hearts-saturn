@@ -24,7 +24,7 @@ The intended reference is the 1997 Japanese Sega Saturn edition `T-9526G`.
   projection and overflow guards passed CI; Stage64's hovered cost/remaining
   HUD passed GCC/Clang, Switch NRO and real NeXium pixel checks.
 - Disc CUE/BIN metadata-only hash inventory (read-only, strictly local).
-- Stages65–67 validate source metadata and observation coverage; Stages68–71 verify geometry import and movement on fabricated maps up to 128×128 (Stage71: GCC/Clang 24/24 CTest and 509/509 Python tests, NRO and NeXium green). Stage72 checks *ordered per-cell* geometry (GCC/Clang 25/25 CTest and 514/514 Python, Switch NRO and NeXium verified). Stage73 adds a metadata-only first-battle-versus-menu read crosswalk and explicit Saturn FAD→ISO LBA normalization. Stage74 adds a repeated-sector consistency gate across at least two battle and two menu observations (CI pending). None of this authenticates original Saturn gameplay.
+- Stages65–67 validate source metadata and observation coverage; Stages68–71 verify geometry import and movement on fabricated maps up to 128×128 (Stage71: GCC/Clang 24/24 CTest and 509/509 Python tests, NRO and NeXium green). Stage72 checks *ordered per-cell* geometry (GCC/Clang 25/25 CTest and 514/514 Python, Switch NRO and NeXium verified). Stage73 adds a metadata-only first-battle-versus-menu read crosswalk and explicit Saturn FAD→ISO LBA normalization. Stage74 passed 25/25 CTest and 548/548 Python on both host compilers plus Switch NRO/NeXium. Stage75 adds private capture-session self-consistency and fingerprint preflight (CI pending). None of this authenticates original Saturn gameplay.
 - Host GCC/Clang test workflow, no ROM or game assets in CI.
 
 ## Build and test on host (no SDL2 required)
