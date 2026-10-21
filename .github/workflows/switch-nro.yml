@@ -304,6 +304,16 @@ jobs:
           python3 -m tools.nexium_selected_unit_hud \
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
+      - name: Stage56 real NeXium hovered enemy stats and hide/show evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Reinspect actual captured guest PNGs with canonical battle hashes,
+          # never synthetic images as evidence of NeXium execution.
+          python3 -m tools.nexium_enemy_hover_hud \
+            --duel stage44-session/runtime-evidence \
+            --defeat stage52-session/runtime-evidence
       - name: Upload emulator evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4

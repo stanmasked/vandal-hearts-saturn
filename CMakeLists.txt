@@ -102,3 +102,8 @@ add_test(NAME attack_preview_hud_contract COMMAND vh_attack_preview_hud_tests)
 add_executable(vh_selected_unit_hud_tests tests/selected_unit_hud_tests.cpp)
 target_link_libraries(vh_selected_unit_hud_tests PRIVATE vh_core)
 add_test(NAME selected_unit_hud_contract COMMAND vh_selected_unit_hud_tests)
+
+# Stage56: enemy-hover attributes; side-effect-free, no new controls or ROM assets.
+add_executable(vh_enemy_hover_hud_tests tests/enemy_hover_hud_tests.cpp)
+target_link_libraries(vh_enemy_hover_hud_tests PRIVATE vh_core)
+add_test(NAME enemy_hover_hud_contract COMMAND vh_enemy_hover_hud_tests)
