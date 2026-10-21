@@ -48,13 +48,15 @@ def expect_move_preview(image, cost, remaining):
         raise ValueError("unsupported movement preview values")
     text = f"COST {cost} LEFT {remaining}"
     bits = _bits(text)
-    # The actual guest viewport has two observed bounded y registrations.
-    # Probe one pixel in each 2x2 glyph cell, and require every lit AND blank
-    # cell to match. No broad color scan can accept a missing/forged numeral.
+    # The guest's fractional vertical scale can round the final 2px logical
+    # glyph row one physical pixel lower than the preceding rows. Sample its
+    # interior separately, while keeping both calibrated vertical baselines.
+    # Every lit AND blank cell must match; broad color scans are insufficient.
     for offset_y in (-3, -1):
         positions = {
             key: (X + 8*int(key.split("-")[0]) + 2*int(key.split("-")[1]),
-                  Y + 2*int(key.split("-")[2]) + 1 + offset_y)
+                  Y + 2*int(key.split("-")[2]) + 1 + offset_y +
+                  (1 if int(key.split("-")[2]) == 4 else 0))
             for key in bits
         }
         observed = _sample(image, positions)
@@ -69,7 +71,8 @@ def expect_hidden(image, *, selected=False):
     for offset_y in (-3, -1):
         positions = {
             key: (X + 8*int(key.split("-")[0]) + 2*int(key.split("-")[1]),
-                  Y + 2*int(key.split("-")[2]) + 1 + offset_y)
+                  Y + 2*int(key.split("-")[2]) + 1 + offset_y +
+                  (1 if int(key.split("-")[2]) == 4 else 0))
             for key in bits
         }
         observed = _sample(image, positions)

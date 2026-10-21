@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import unittest
-from PIL import Image, ImageDraw
+from PIL import ImageDraw
+from test_nexium_enemy_attack_cue import synthetic
 
 from tools.nexium_move_preview_hud import (
     GOLD, X, Y, GLYPHS, expect_hidden, expect_move_preview,
@@ -11,8 +12,11 @@ from tools.nexium_selected_unit_hud import DARK, HELP
 
 
 def frame(*, selected=True, text=None, shift_y=0):
-    image = Image.new("RGB", (1280, 720), HELP)
+    # Include registration anchors because _sample maps logical HUD coordinates
+    # through those observed pixels in a NeXium-sized guest frame.
+    image = synthetic("hidden")
     draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 660, 1279, 719), fill=HELP)
     if selected:
         draw.rectangle((350, 668, 993, 711), fill=DARK)
     if text is not None:
