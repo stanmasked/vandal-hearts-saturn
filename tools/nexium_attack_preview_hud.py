@@ -96,7 +96,7 @@ def verify_folder(duel_folder, victory_folder):
     victory = json.loads((victory_folder/"victory-evidence.json").read_text("utf-8"))
     if victory.get("victory_passed") is not True:
         raise ValueError("prior Stage50 real victory not verified")
-    with Image.open(_final_aim(victory_folder,"action-victory-round4-aim-")) as aimed, \
+    with Image.open(_final_aim(victory_folder,"action-victory-round4-aim-nav-")) as aimed, \
          Image.open(victory_folder/"action-victory-round4-attacked.png") as hit:
         _require_state(aimed,ROUND4)
         _require_state(hit,VICTORY)
