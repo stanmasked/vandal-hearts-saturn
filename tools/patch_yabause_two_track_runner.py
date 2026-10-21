@@ -88,8 +88,8 @@ def instrument_split_runner(raw: bytes) -> bytes:
         raise ValueError("unexpected original runner source/Stage88 layout")
     text = text.replace(STAGE88_CONDITION, STAGE89_CONDITION)
     text = text.replace(CUE_CHECK, SPLIT_CHECK + "\n" + CUE_CHECK)
-    if text.count(RECEIPT) != 1 or
-            text.count("ISOCD.Init(argv[2])") != 2:
+    if (text.count(RECEIPT) != 1 or
+            text.count("ISOCD.Init(argv[2])") != 2):
         raise ValueError("invalid split runner test insertion")
     return text.encode("utf-8")
 
