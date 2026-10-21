@@ -66,7 +66,7 @@ def inspect_cue(cue_bytes: bytes, *, track1_bytes: int, track2_bytes: int) -> di
         raise ValueError("invalid RAW/2352 track sizes")
     data_frames = track1_bytes // RAW_SECTOR
     audio_file_frames = track2_bytes // RAW_SECTOR
-    pregap_frames = 2 * 60 * FRAMES_PER_SECOND
+    pregap_frames = 2 * FRAMES_PER_SECOND  # INDEX 01 00:02:00 is 2 seconds
     first_audio_fad = 150 + data_frames + pregap_frames
     first_data_fad = 150
     end_data_fad = first_audio_fad - pregap_frames - 1
