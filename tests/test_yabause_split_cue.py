@@ -36,6 +36,9 @@ class Stage89SplitCueTests(unittest.TestCase):
             self.assertIn(key, C_SOURCE)
         self.assertIn("VHIsSplitCue(iso_file)", INIT_REPLACE)
         self.assertIn("LoadBinCue(iso, iso_file)", INIT_REPLACE)
+        # The actual Stage02 CUE begins with CATALOG; bare FILE-header
+        # detection in historical Yabause must not be used.
+        self.assertIn("VHLoadTwoFileCue", INIT_REPLACE)
 
     def test_real_yabause_audio_fad_and_frame_contract(self):
         self.assertEqual(MODE, "vh-two-file-cue-read")
@@ -56,6 +59,8 @@ class Stage89SplitCueTests(unittest.TestCase):
             self.assertEqual({p.name for p in root.iterdir()}, {DATA, AUDIO, CUE})
             self.assertEqual(pins["track1"][0], 2*2352)
             self.assertEqual(pins["track2"][0], 152*2352)
+            self.assertEqual((root/CUE).read_bytes().splitlines()[0],
+                             b"CATALOG 0000000000000")
             self.assertIn(b"FILE ", (root/CUE).read_bytes())
             self.assertIn(b"TRACK 02 AUDIO", (root/CUE).read_bytes())
             self.assertEqual((root/DATA).read_bytes()[:2], bytes([17,18]))
