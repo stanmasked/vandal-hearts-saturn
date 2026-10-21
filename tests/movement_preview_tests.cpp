@@ -28,6 +28,9 @@ void costs_and_invariants() {
     assert(!battle.preview_move(1, {-1, 5}).legal);
     assert(!battle.preview_move(999, {2, 5}).legal);
     assert(!battle.preview_move(3, {5, 1}).legal);
+    for (const vh::Pos candidate : battle.reachable(1)) {
+        assert(battle.preview_move(1, candidate).legal);
+    }
     for (int i = 0; i < 100; ++i) {
         assert(battle.preview_move(1, {2, 5}).path_cost == 2);
         assert(vh::battle_fingerprint(battle) == before);
@@ -44,6 +47,9 @@ void detours_and_cliffs() {
 
     battle.set_tile({1, 0}, {2, 1, true}); // impassable upward cliff
     assert(!battle.preview_move(1, {2, 1}).legal);
+    // Extreme authored heights must not overflow an int subtraction.
+    battle.set_tile({1, 0}, {std::numeric_limits<int>::min(), 1, true});
+    assert(!battle.preview_move(1, {2, 1}).legal);
 }
 
 void huge_budgets_must_not_teleport_or_overflow() {
@@ -56,12 +62,14 @@ void huge_budgets_must_not_teleport_or_overflow() {
     // high-budget actor to cross a completely blocked tile.
     assert(!battle.preview_move(1, {2, 0}).legal);
     assert(!battle.move(1, {2, 0}));
+    assert(battle.reachable(1).empty());
     assert((battle.find_unit(1)->pos == vh::Pos{0, 0}));
 
     battle.set_tile({1, 0}, {0, std::numeric_limits<int>::max(), true});
     assert(!battle.preview_move(1, {1, 0}).legal);
     assert(!battle.preview_move(1, {2, 0}).legal);
     assert(!battle.move(1, {2, 0})); // no signed-integer cost overflow
+    assert(battle.reachable(1).empty());
 
     battle.set_tile({1, 0}, {0, 1, true});
     const auto valid = battle.preview_move(1, {2, 0});
