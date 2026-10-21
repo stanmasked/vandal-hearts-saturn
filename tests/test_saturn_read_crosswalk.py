@@ -133,6 +133,14 @@ class SaturnReadCrosswalkTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     crosswalk(inventory(), t)
 
+    def test_large_iso_file_size_not_misread_as_a_sector_address(self):
+        data = inventory()
+        data["file_entries"].append({"name": "LARGE.DAT",
+                                     "lba": 70, "bytes": 24_000_000})
+        # Byte size and ISO sector address have different numeric bounds.
+        result = crosswalk(data, trace())
+        self.assertFalse(result["first_battle_map_identified"])
+
     def test_corrupted_iso_records_fail_closed(self):
         for change in (
             {"name": "../BAD.BIN"},
