@@ -14,7 +14,7 @@ class OriginalPrivateBootFrameContracts(unittest.TestCase):
     def test_bounded_user_chosen_frames_and_absolute_original_cd(self):
         self.assertEqual(MODE, "vh-private-frame-boot")
         self.assertIn('argc == 4 && strcmp(argv[1], "vh-private-frame-boot")', STAGE99_CONDITION)
-        self.assertIn("frames > 120", BOOT_CHECK)
+        self.assertIn("frames > 600", BOOT_CHECK)
         self.assertIn("frames < 1", BOOT_CHECK)
         self.assertIn("source_game.cdpath = argv[2];", BOOT_CHECK)
         self.assertIn("source_game.cdcoretype = CDCORE_ISO;", BOOT_CHECK)
@@ -39,6 +39,8 @@ class OriginalPrivateBootFrameContracts(unittest.TestCase):
         self.assertIn("TitanRender(pixels)", BOOT_CHECK)
         self.assertIn("lodepng::encode(pre_path", BOOT_CHECK)
         self.assertIn("lodepng::encode(post_path", BOOT_CHECK)
+        self.assertIn("progress % 120 == 0", BOOT_CHECK)
+        self.assertIn("frame-%03d.png", BOOT_CHECK)
         self.assertNotIn('puts("first battle', BOOT_CHECK.lower())
 
     def test_manual_gate_and_numeric_log_only(self):
