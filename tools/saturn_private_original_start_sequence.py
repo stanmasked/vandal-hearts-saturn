@@ -42,6 +42,8 @@ FRAME_STATS = re.compile(
     rb"STAGE99_WIDTH (0|[1-9][0-9]*)\n"
     rb"STAGE99_HEIGHT (0|[1-9][0-9]*)\n\Z"
 )
+SH2_LINE = re.compile(rb"VH_SH2 frame=(0|[1-9][0-9]*) pc=(0|[1-9][0-9]*) valid=(?:0|1)(?: [a-z0-9_]+=(?:0|[1-9][0-9]*))*\\Z")
+VIDEO_LINE = re.compile(rb"VH_VIDEO frame=(0|[1-9][0-9]*) pc=(0|[1-9][0-9]*)(?: [a-z0-9_]+=(?:0|[1-9][0-9]*))*\\Z")
 CONTROL_EVENTS = (
     f"VH_PAD mode=0 completed_frames={FRAME_COUNT}\n"
 ).encode("ascii")
@@ -122,7 +124,8 @@ def _frame(directory: Path, frame: int) -> tuple[tuple[int, int], bytes]:
 def _check_frames(directory: Path) -> tuple[int, tuple[int, int]]:
     expected = {f"frame-{n}.png" for n in range(120, FRAME_COUNT + 1, 120)}
     expected.update({"pre.png", "post.png", "frames.stats", "fad.vhcdlog",
-                     "pad-events.txt", "pad-state.txt"})
+                     "pad-events.txt", "pad-state.txt", "sh2-window.txt",
+                     "video-state.txt"})
     actual = {p.name for p in directory.iterdir()}
     if actual != expected:
         raise ValueError("private Stage112 output set incomplete or unexpected")
@@ -150,6 +153,24 @@ def _check_frames(directory: Path) -> tuple[int, tuple[int, int]]:
         dims = validate_png_file(_private_regular(directory / name, MAX_PNG_BYTES))
         if dims != final_dims:
             raise ValueError("private Stage112 pre/post framebuffer geometry mismatch")
+    expected_samples = [0] + list(range(120, FRAME_COUNT + 1, 120)) + [FRAME_COUNT]
+    for name, pattern, prefix in (
+        ("sh2-window.txt", SH2_LINE, b"VH_SH2 frame="),
+        ("video-state.txt", VIDEO_LINE, b"VH_VIDEO frame="),
+    ):
+        raw_log = _private_regular(directory / name, 1024 * 1024)
+        if not raw_log.endswith(b"\\n") or b"\\r" in raw_log or b"\\0" in raw_log:
+            raise ValueError("private Stage112 numeric diagnostic log is malformed")
+        lines = raw_log.splitlines()
+        if len(lines) != len(expected_samples):
+            raise ValueError("private Stage112 diagnostic sample count mismatch")
+        observed = []
+        for line in lines:
+            if not pattern.fullmatch(line):
+                raise ValueError("private Stage112 diagnostic line is not numeric-only")
+            observed.append(int(line.split(b" ", 2)[1].split(b"=", 1)[1]))
+        if observed != expected_samples or any(not line.startswith(prefix) for line in lines):
+            raise ValueError("private Stage112 diagnostic frame sequence mismatch")
     return FRAME_COUNT // 120, final_dims
 
 
