@@ -119,6 +119,10 @@ def audit_private_prologue_continue_third_c(double_c: Path, triple_c: Path) -> d
         raise ValueError("Stage117 checkpoint count mismatch")
     if double_dims != triple_dims:
         raise ValueError("Stage117 final framebuffer geometries differ")
+    if _private_regular(double_c / "pre.png", MAX_PNG_BYTES) != _private_regular(
+        triple_c / "pre.png", MAX_PNG_BYTES
+    ):
+        raise ValueError("Stage117 paired runs diverged before first START")
 
     for frame in PRE_FIRST_CHECKPOINTS:
         if not _equal_frame(double_c, triple_c, frame):
