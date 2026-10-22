@@ -45,7 +45,7 @@ POST_CAPTURE_END = (
     "         }\n"
 )
 FINAL_FREE_ANCHOR = "         free(pixels);\n         if (remove(gate_path) != 0)"
-SETUP_SECOND_PULSE = r'''         /* Stage112: optional second START pulse after the first menu opens. */
+SETUP_SECOND_PULSE = r'''         /* Stage112: optional second START pulse at a separately configured frame. */
          const char *vh112_at2 = getenv("VH_SATURN_START_AT_FRAME2");
          int vh112_start_at2 = -1;
          if (vh112_at2 && *vh112_at2)
@@ -60,47 +60,7 @@ SETUP_SECOND_PULSE = r'''         /* Stage112: optional second START pulse after
          }
 '''
 
-HELPERS = r'''/* Stage112: local-only numeric SH2 and Saturn video diagnostics. */
-static unsigned vh112_nonzero(const u8 *data, unsigned length)
-{
-   unsigned n = 0;
-   if (!data) return 0;
-   for (unsigned i = 0; i < length; ++i)
-      n += (data[i] != 0);
-   return n;
-}
-static unsigned vh112_rgb_pixels(const pixel_t *data, int width, int height)
-{
-   unsigned n = 0;
-   if (!data || width <= 0 || height <= 0 || width > 704 || height > 512)
-      return 0;
-   for (int i = 0; i < width * height; ++i)
-      n += ((((u32)data[i]) & 0x00ffffffU) != 0U);
-   return n;
-}
-static bool vh112_video_snapshot(FILE *out, int frame, const pixel_t *pixels,
-                                 int width, int height)
-{
-   if (!out || !Vdp1Regs || !Vdp2Regs || !Vdp1Ram ||
-       !Vdp2Ram || !Vdp2ColorRam || !MSH2)
-      return false;
-   sh2regs_struct sh2 = {0};
-   SH2GetRegisters(MSH2, &sh2);
-   return fprintf(out,
-      "VH_VIDEO frame=%d pc=%u tvmd=%u bgon=%u ramctl=%u "
-      "vdp1_tvmr=%u vdp1_ptmr=%u vdp1_edsr=%u "
-      "vdp1_nz=%u vdp2_nz=%u cram_nz=%u rgb_nz=%u "
-      "width=%d height=%d\n",
-      frame, (unsigned)sh2.PC, (unsigned)Vdp2Regs->TVMD,
-      (unsigned)Vdp2Regs->BGON, (unsigned)Vdp2Regs->RAMCTL,
-      (unsigned)Vdp1Regs->TVMR, (unsigned)Vdp1Regs->PTMR,
-      (unsigned)Vdp1Regs->EDSR,
-      vh112_nonzero(Vdp1Ram, 0x80000U),
-      vh112_nonzero(Vdp2Ram, 0x80000U),
-      vh112_nonzero(Vdp2ColorRam, 0x1000U),
-      vh112_rgb_pixels(pixels, width, height),
-      width, height) > 0 && fflush(out) == 0;
-}
+HELPERS = r'''/* Stage112: local-only numeric SH2 diagnostics. */
 static bool vh112_sh2_snapshot(FILE *out, int frame)
 {
    if (!out || !MSH2 || !MSH2->MappedMemoryReadWord) return false;
@@ -128,54 +88,54 @@ static bool vh112_sh2_snapshot(FILE *out, int frame)
 }
 '''
 
-PATH_EXTRA = r'''         char video_state_path[1024], sh2_path[1024];
-         FILE *video_state = NULL;
+PATH_EXTRA = r'''         char sh2_path[1024];
          FILE *sh2_window = NULL;
          if (!private_dir || !*private_dir ||
-             snprintf(video_state_path, sizeof(video_state_path),
-                      "%s/video-state.txt", private_dir) >=
-                      (int)sizeof(video_state_path) ||
              snprintf(sh2_path, sizeof(sh2_path),
                       "%s/sh2-window.txt", private_dir) >=
                       (int)sizeof(sh2_path))
             return 240;
 '''
-OPEN_DIAGNOSTICS = r'''         video_state = fopen(video_state_path, "wx");
-         sh2_window = fopen(sh2_path, "wx");
-         if (!video_state || !sh2_window ||
-             !vh112_video_snapshot(video_state, 0, pixels, width, height) ||
-             !vh112_sh2_snapshot(sh2_window, 0))
+OPEN_SH2_DIAGNOSTICS = r'''         sh2_window = fopen(sh2_path, "wx");
+         if (!sh2_window || !vh112_sh2_snapshot(sh2_window, 0))
          {
-            if (video_state) fclose(video_state);
             if (sh2_window) fclose(sh2_window);
+            if (video_state) fclose(video_state);
             free(pixels);
             YabauseDeInit();
             return 241;
          }
 '''
-CHECKPOINT_DIAGNOSTICS = r'''               if (!vh112_video_snapshot(video_state, progress, pixels, cw, ch) ||
-                   !vh112_sh2_snapshot(sh2_window, progress))
+CHECKPOINT_DIAGNOSTICS = r'''               if (!vh112_sh2_snapshot(sh2_window, progress))
                {
-                  fclose(video_state);
-                  fclose(sh2_window);
+                  if (video_state) fclose(video_state);
+                  if (sh2_window) fclose(sh2_window);
                   free(pixels);
                   YabauseDeInit();
                   return 242;
                }
 '''
 FINAL_DIAGNOSTICS = r'''         bool vh112_diagnostics_ok =
-             vh112_video_snapshot(video_state, progress, pixels, width, height) &&
              vh112_sh2_snapshot(sh2_window, progress);
-         int vh112_video_close = video_state ? fclose(video_state) : 1;
          int vh112_sh2_close = sh2_window ? fclose(sh2_window) : 1;
-         if (!vh112_diagnostics_ok || vh112_video_close != 0 ||
-             vh112_sh2_close != 0)
+         if (!vh112_diagnostics_ok || vh112_sh2_close != 0)
          {
             free(pixels);
             YabauseDeInit();
             return 243;
          }
 '''
+LOOP_START = "         for (int frame = 0; frame < frames; ++frame)\n         {\n"
+VIDEO_OPEN_ANCHOR = '         video_state = fopen(video_state_path, "wx");\n'
+VIDEO_CHECKPOINT_ANCHOR = (
+    "               if (!vh101_snapshot(video_state, progress, pixels,\n"
+    "                                   cw, ch))\n"
+)
+VIDEO_FINAL_ANCHOR = (
+    "         if (!vh101_snapshot(video_state, progress, pixels,\n"
+    "                             width, height) || fclose(video_state) != 0)\n"
+)
+CHECKPOINT_ENCODE_ANCHOR = "               if (lodepng::encode(checkpoint_path,\n"
 
 
 def instrument_private_start_sequence(raw: bytes) -> bytes:
@@ -233,41 +193,44 @@ def instrument_private_start_sequence(raw: bytes) -> bytes:
     if bound_count < 1:
         raise ValueError("no recognized Stage109 bounded frame maximum")
 
-    # Attach private diagnostic files to the same real guest run. All anchors
-    # are strict so the public build cannot silently omit a witness.
+    # Stage101 already records numeric VDP/Titan state. Reuse that stream and
+    # add only the missing SH2 window, avoiding duplicate opens of video-state.txt.
     for anchor, expected_count, label in (
         (PATH_ANCHOR, 1, "frame path declaration"),
         (PRE_CAPTURE_END, 1, "pre-frame capture"),
-        (CHECKPOINT_RENDER_ANCHOR, 1, "checkpoint render"),
         (POST_CAPTURE_END, 1, "post-frame capture"),
         (FINAL_FREE_ANCHOR, 1, "final diagnostic close"),
+        (LOOP_START, 1, "guest frame loop"),
+        (VIDEO_OPEN_ANCHOR, 1, "Stage101 initial video snapshot"),
+        (VIDEO_CHECKPOINT_ANCHOR, 1, "Stage101 checkpoint video snapshot"),
+        (VIDEO_FINAL_ANCHOR, 1, "Stage101 final video snapshot"),
+        (CHECKPOINT_ENCODE_ANCHOR, 1, "checkpoint PNG encoder"),
     ):
         if mode.count(anchor) != expected_count:
             raise ValueError("Stage112 diagnostic injection anchor differs: " + label)
+    if not (mode.index(VIDEO_OPEN_ANCHOR) < mode.index(LOOP_START) and
+            mode.index(VIDEO_CHECKPOINT_ANCHOR) < mode.index(CHECKPOINT_ENCODE_ANCHOR) and
+            mode.index(VIDEO_FINAL_ANCHOR) < mode.index(FINAL_FREE_ANCHOR)):
+        raise ValueError("Stage101 video witness order differs from the pinned runner")
     mode = mode.replace(PATH_ANCHOR, PATH_ANCHOR + PATH_EXTRA, 1)
-    mode = mode.replace(PRE_CAPTURE_END, PRE_CAPTURE_END + OPEN_DIAGNOSTICS, 1)
-    mode = mode.replace(
-        CHECKPOINT_RENDER_ANCHOR,
-        "               TitanRender(pixels);\n" + CHECKPOINT_DIAGNOSTICS +
-        "               if (lodepng::encode(checkpoint_path,\n",
-        1,
-    )
-    mode = mode.replace(POST_CAPTURE_END, POST_CAPTURE_END + FINAL_DIAGNOSTICS, 1)
-    mode = mode.replace(FINAL_FREE_ANCHOR, "         free(pixels);\n         if (remove(gate_path) != 0)", 1)
+    mode = mode.replace(LOOP_START, OPEN_SH2_DIAGNOSTICS + LOOP_START, 1)
+    mode = mode.replace(CHECKPOINT_ENCODE_ANCHOR,
+                        CHECKPOINT_DIAGNOSTICS + CHECKPOINT_ENCODE_ANCHOR, 1)
+    mode = mode.replace(FINAL_FREE_ANCHOR, FINAL_DIAGNOSTICS + FINAL_FREE_ANCHOR, 1)
 
     if (mode.count("VH_SATURN_START_AT_FRAME2") != 1 or
             mode.count("PerPadStartPressed(vh107_pad);") != 2 or
             mode.count("PerPadStartReleased(vh107_pad);") != 2 or
             mode.count("frames > 24000") < bound_count or
             mode.count("YabauseEmulate()") != 1 or
-            mode.count("vh112_video_snapshot(") != 3 or
             mode.count("vh112_sh2_snapshot(") != 3 or
             mode.count("video-state.txt") != 1 or
-            mode.count("sh2-window.txt") != 1):
+            mode.count("sh2-window.txt") != 1 or
+            mode.count('video_state = fopen(video_state_path, "wx");') != 1):
         raise ValueError("incomplete Stage112 dual-pulse or diagnostic instrumentation")
     source = source[:start] + mode + source[end:]
-    if source.count("vh112_video_snapshot(") != 4 or source.count("vh112_sh2_snapshot(") != 4:
-        raise ValueError("Stage112 diagnostic helper or call coverage incomplete")
+    if source.count("vh112_sh2_snapshot(") != 4:
+        raise ValueError("Stage112 SH2 helper or call coverage incomplete")
     return source.encode("utf-8")
 
 
