@@ -67,14 +67,20 @@ def _run_one(
     executable: Path, cue: Path, directory: Path, *, press_start: bool,
     seconds: int,
 ) -> None:
-    # Never inherit an unintended previous private capture environment.
-    env = {k: v for k, v in os.environ.items() if not k.startswith("VH_SATURN_")}
-    env.update({
+    # Allowlist the environment. In particular, do not inherit dynamic
+    # loader hooks, Python injection paths, display/session state, or stale
+    # VH_SATURN_* overrides from the caller.
+    env = {
         "HOME": str(directory),
+        "TMPDIR": str(directory),
+        "PATH": os.defpath,
+        "LANG": "C",
+        "LC_ALL": "C",
+        "TZ": "UTC",
         "VH_SATURN_CAPTURE_GATE": str(directory / "gate"),
         "VH_SATURN_FAD_LOG": str(directory / "fad.vhcdlog"),
         "VH_SATURN_PRIVATE_FRAMES_DIR": str(directory),
-    })
+    }
     if press_start:
         env["VH_SATURN_START_AT_FRAME"] = str(START_FRAME)
     cmd = [str(executable), "vh-private-frame-boot", str(cue), str(FRAME_COUNT)]
@@ -133,9 +139,27 @@ def _verified_frame_stats(directory: Path) -> tuple[int, int]:
     return dimensions
 
 
+def _validate_frame_series(directory: Path) -> int:
+    expected = {f"frame-{n}.png" for n in range(120, FRAME_COUNT + 1, 120)}
+    actual = {p.name for p in directory.iterdir()
+              if p.name.startswith("frame-") and p.name.endswith(".png")}
+    if actual != expected:
+        raise ValueError("private Yabause checkpoint frame sequence is incomplete or unexpected")
+    for n in range(120, FRAME_COUNT + 1, 120):
+        raw = _private_regular(directory / f"frame-{n}.png", MAX_PNG_BYTES)
+        width, height = validate_png_file(raw)
+        if not (64 <= width <= 704 and 64 <= height <= 512):
+            raise ValueError("invalid private checkpoint framebuffer geometry")
+    return len(expected)
+
+
 def audit_joint_evidence(control: Path, pressed: Path) -> dict:
     """Stage108-like pre-input PNG baseline plus Stage109 native padbit proof."""
     report = audit_native_padbit_ab(control, pressed)
+    control_checkpoints = _validate_frame_series(control)
+    pressed_checkpoints = _validate_frame_series(pressed)
+    if control_checkpoints != FRAME_COUNT // 120 or pressed_checkpoints != FRAME_COUNT // 120:
+        raise ValueError("private Yabause checkpoint count is not complete")
     control_geometry = _verified_frame_stats(control)
     pressed_geometry = _verified_frame_stats(pressed)
     if control_geometry != pressed_geometry:
@@ -155,6 +179,9 @@ def audit_joint_evidence(control: Path, pressed: Path) -> dict:
         "kind": "STAGE110_PRIVATE_ORIGINAL_START_AB_INTEGRITY_ONLY",
         "emulator_frame_stats_verified_in_both_processes": True,
         "completed_frames_from_both_emulator_stats": FRAME_COUNT,
+        "checkpoint_png_count_per_process": FRAME_COUNT // 120,
+        "all_checkpoint_pngs_valid_and_sequential": True,
+        "subprocess_environment_allowlisted": True,
         "final_frame_dimensions_crosschecked_to_both_stats": True,
         "pre_start_png_checkpoints_match": True,
         "pre_start_frames_compared": list(PRE_INPUT_FRAMES),
