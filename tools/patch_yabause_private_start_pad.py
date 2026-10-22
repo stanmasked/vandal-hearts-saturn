@@ -102,7 +102,8 @@ def instrument_gamepad_start(raw: bytes) -> bytes:
         '         return 0;\n      }'
     )
     if (source.count(mode_start) != 1 or source.count(mode_end) != 1 or
-            "vh107_pad_log" in source or source.count(HEADER) != 1):
+            "vh107_pad_log" in source or source.count(HEADER) != 2 or
+            source.count('#include "../peripheral.h"\n') != 1):
         raise ValueError("pinned Stage106 original-game command branch differs")
     start = source.index(mode_start)
     end = source.index(mode_end, start) + len(mode_end)
@@ -121,7 +122,6 @@ def instrument_gamepad_start(raw: bytes) -> bytes:
     if mode.index(AFTER) > mode.index('getenv("VH_SATURN_START_AT_FRAME")'):
         raise ValueError("START window checked before valid frame limit was parsed")
     source = source[:start] + mode + source[end:]
-    source = source.replace(HEADER, HEADER + '#include "../peripheral.h"\n', 1)
     for token in (
         "PerPadAdd(&PORTDATA1)", "PerPadStartPressed(vh107_pad)",
         "PerPadStartReleased(vh107_pad)", "VH_SATURN_START_AT_FRAME",
