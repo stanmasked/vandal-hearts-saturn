@@ -169,7 +169,7 @@ def _run_one(executable: Path, cue: Path, directory: Path, *, second_c: bool, se
     process = subprocess.Popen(
         [str(executable), "vh-private-frame-boot", str(cue), str(FRAME_COUNT)],
         cwd=directory, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL, start_new_session=True, preexec_fn=lambda: os.umask(0o077),
+        stderr=subprocess.DEVNULL, start_new_session=True, umask=0o077,
     )
     try:
         status = process.wait(timeout=seconds)
