@@ -73,7 +73,10 @@ class Stage116PrivateDialogueAuditTests(unittest.TestCase):
         self.assertEqual(report["second_C_press_frame"], CONFIRM2_PRESS)
         self.assertEqual(report["second_C_release_frame"], CONFIRM2_RELEASE)
         self.assertEqual(report["pre_second_checkpoint_equal_count"], 259)
+        self.assertEqual(report["pre_second_checkpoint_total"], 259)
+        self.assertTrue(report["all_pre_second_C_checkpoints_match"])
         self.assertEqual(report["first_post_second_C_framebuffer_divergence_by_36000"], 31320)
+        self.assertEqual(report["first_post_second_C_framebuffer_divergence_through_48000"], 31320)
         self.assertTrue(report["frame_32400_differs_after_second_C"])
         self.assertFalse(report["first_battle_or_player_control_verified"])
         self.assertFalse(report["original_media_or_frame_hashes_exported"])
@@ -81,6 +84,13 @@ class Stage116PrivateDialogueAuditTests(unittest.TestCase):
     def test_rejects_divergence_before_first_c(self):
         _write(self.double_c, "frame-12120.png", _png((1, 2, 3)))
         with self.assertRaisesRegex(ValueError, "before first C confirm"):
+            audit_private_prologue_continue(self.single_c, self.double_c)
+
+    def test_rejects_pre_second_c_divergence(self):
+        # The only intended intervention after the first C is at frame 31200.
+        # Any earlier A/B difference invalidates attribution to the second C.
+        _write(self.double_c, "frame-30000.png", _png((1, 2, 3)))
+        with self.assertRaisesRegex(ValueError, "diverged before second C confirm"):
             audit_private_prologue_continue(self.single_c, self.double_c)
 
     def test_rejects_no_post_second_c_effect(self):
