@@ -121,10 +121,15 @@ def _frame(directory: Path, frame: int) -> tuple[tuple[int, int], bytes]:
 
 def _check_frames(directory: Path) -> tuple[int, tuple[int, int]]:
     expected = {f"frame-{n}.png" for n in range(120, FRAME_COUNT + 1, 120)}
-    actual = {p.name for p in directory.iterdir()
-              if p.name.startswith("frame-") and p.name.endswith(".png")}
+    expected.update({"pre.png", "post.png", "frames.stats", "fad.vhcdlog",
+                     "pad-events.txt", "pad-state.txt"})
+    actual = {p.name for p in directory.iterdir()}
     if actual != expected:
-        raise ValueError("private Stage112 checkpoint sequence incomplete")
+        raise ValueError("private Stage112 output set incomplete or unexpected")
+    for name in expected:
+        entry = directory / name
+        if entry.is_symlink() or not entry.is_file():
+            raise ValueError("private Stage112 output contains a non-regular file")
     for n in range(120, FRAME_COUNT + 1, 120):
         dims = validate_png_file(_private_regular(directory / f"frame-{n}.png", MAX_PNG_BYTES))
         if not (64 <= dims[0] <= 704 and 64 <= dims[1] <= 512):
@@ -141,7 +146,11 @@ def _check_frames(directory: Path) -> tuple[int, tuple[int, int]]:
     final_dims, _ = _frame(directory, FRAME_COUNT)
     if final_dims != (width, height):
         raise ValueError("private Stage112 final PNG disagrees with frame statistics")
-    return len(expected), final_dims
+    for name in ("pre.png", "post.png"):
+        dims = validate_png_file(_private_regular(directory / name, MAX_PNG_BYTES))
+        if dims != final_dims:
+            raise ValueError("private Stage112 pre/post framebuffer geometry mismatch")
+    return FRAME_COUNT // 120, final_dims
 
 
 def audit_private_start_sequence(control: Path, intervention: Path) -> dict:
