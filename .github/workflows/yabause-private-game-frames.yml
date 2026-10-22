@@ -262,7 +262,7 @@ jobs:
           trap 'rm -rf "$workdir"' EXIT
           # No original game CD is present on CI and no boot is attempted.
           if (cd "$workdir" && "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" \
-               vh-private-frame-boot) >/dev/null 2>&1; then
+               vh-private-frame-boot /nonexistent/test.cue 0) >/dev/null 2>&1; then
             echo 'Stage99 should refuse a missing privately pinned CUE' >&2
             exit 1
           fi
