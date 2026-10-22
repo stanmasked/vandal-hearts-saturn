@@ -68,7 +68,12 @@ class Stage116FollowupCSourceTests(unittest.TestCase):
             instrument_private_followup_c(unbounded)
 
     def test_full_pipeline_composes_stage115_then_followup(self):
-        expected = b"VH_SATURN_FOLLOWUP_C_AT_FRAME frames > 48000 PerPadCReleased(vh107_pad);"
+        expected = (
+            b"VH_SATURN_START_AT_FRAME VH_SATURN_CONFIRM_AT_FRAME "
+            b"VH_SATURN_CONFIRM_BUTTON VH_SATURN_FOLLOWUP_C_AT_FRAME "
+            b"PerPadCPressed(vh107_pad); PerPadCReleased(vh107_pad); "
+            b"frames > 48000 frames.stats video-state.txt sh2-window.txt pad-state.txt"
+        )
         with (
             patch(
                 "tools.patch_yabause_private_followup_c.instrument_full_private_long_window",
