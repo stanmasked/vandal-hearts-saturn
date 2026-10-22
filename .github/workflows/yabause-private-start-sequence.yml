@@ -119,6 +119,10 @@ jobs:
           test ! -e "Vandal Hearts - Ushinawareta Kodai Bunmei (English v1.1).cue"
           test ! -e original-saturn.bin
           echo STAGE112_PUBLIC_RUNNER_FAIL_CLOSED_PASS
+      - name: Record executable SHA-256 for private artifact verification
+        run: |
+          set -euo pipefail
+          sha256sum build-yabause/src/runner/yabause
       - name: Upload only the public GPL Yabause executable
         uses: actions/upload-artifact@v4
         with:
