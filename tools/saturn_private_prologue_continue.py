@@ -164,8 +164,10 @@ def _run_one(executable: Path, cue: Path, directory: Path, *, second_c: bool, se
         "VH_SATURN_CONFIRM_AT_FRAME": str(CONFIRM_PRESS),
         "VH_SATURN_CONFIRM_BUTTON": "C",
     }
-    if second_c:
-        env["VH_SATURN_CONFIRM_AT_FRAME2"] = str(CONFIRM2_PRESS)
+    # Both cold boots receive the same scheduled frame; only the enable bit differs.
+    # This avoids treating the presence/absence of an environment variable as part of the intervention.
+    env["VH_SATURN_CONFIRM_AT_FRAME2"] = str(CONFIRM2_PRESS)
+    env["VH_SATURN_CONFIRM2_ENABLED"] = "1" if second_c else "0"
     process = subprocess.Popen(
         [str(executable), "vh-private-frame-boot", str(cue), str(FRAME_COUNT)],
         cwd=directory, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
