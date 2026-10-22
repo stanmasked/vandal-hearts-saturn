@@ -73,7 +73,7 @@ def instrument_private_start_sequence(raw: bytes) -> bytes:
 
     second_press = press_block.replace("vh107_start_at", "vh112_start_at2")
     second_release = release_block.replace("vh107_start_at", "vh112_start_at2")
-    if second_press.count("vh112_start_at2") != 1 or second_release.count("vh112_start_at2") != 2:
+    if second_press.count("vh112_start_at2") != 2 or second_release.count("vh112_start_at2") != 2:
         raise ValueError("second-pulse loop did not remain frame-indexed")
     # The new checks run before YabauseEmulate, exactly like the first pulse.
     mode = mode[:emulate_pos] + second_press + second_release + mode[emulate_pos:]
