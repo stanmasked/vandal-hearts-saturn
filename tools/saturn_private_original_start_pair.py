@@ -169,7 +169,11 @@ def run_original_pair(
         finally:
             # Always check both the *bytes* and file identity, even after
             # timeouts, errors or a malicious media-modifying subprocess.
-            if _check_media(manifest, pins) != start_media:
+            try:
+                current_media = _check_media(manifest, pins)
+            except (OSError, ValueError) as exc:
+                raise ValueError("original Saturn source changed during execution") from exc
+            if current_media != start_media:
                 raise ValueError("original Saturn source changed during execution")
             if _fingerprint(executable) != start_runner:
                 raise ValueError("Yabause executable changed during execution")
