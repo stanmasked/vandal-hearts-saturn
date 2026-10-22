@@ -27,4 +27,14 @@ The schedule and all environment entries other than \`VH_SATURN_CONFIRM3_ENABLED
 - Require the first post-third-C divergence by frame 42,000, then privately inspect the relevant frames to determine whether the dialogue actually advanced.
 - Keep \`first_battle_or_player_control_verified\` false unless the original tactical HUD/turn state and a response to player input are independently observed.
 
+## Private Stage117 result
+
+The exact-head Clang runner was downloaded from the successful public CI artifact and its SHA-256 matched the build log. The privately held English v1.1 translation-patched media matched all three pinned size/SHA-256 pairs before execution and again afterward.
+
+The paired cold boots completed 48,000 frames and yielded 400 checkpoint PNGs and 402 ordered video/SH2 samples per run. A local integrity audit confirmed exact controller receipts, identical `pre.png`, byte-identical PNGs at all 299 checkpoints before the third C, and identical canonical CD/FAD logs with 34,850 events per run. The first post-intervention divergence was frame 36,120; frame 36,000 still matched between runs. At frame 37,200, the triple-C run displayed “Oh...that sparkle... This must be it!” in the 3D room while the control still showed “Hmm? What's that?”
+
+This verifies that the third C advances the prologue dialogue into the next line/room sequence. It does **not** verify a controllable tactical battle: the dialogue is still present, and no active turn HUD or player-input response has been established.
+
+The private run also exposed a legitimate PNG encoding case: early monochrome frames use 1-bit grayscale, while other frames use indexed color. The frame witness validator now accepts valid low-bit grayscale and indexed-color PNGs, checks indexed palettes, and keeps rejecting invalid bit-depth/color combinations. New regression tests cover these cases and are included in Stage117 CI.
+
 Public CI must use only synthetic media and may publish only the public GPL emulator executable. Original BIN/CUE, screenshots, raw CD traces, and frame hashes remain private.
