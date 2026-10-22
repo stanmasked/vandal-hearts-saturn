@@ -50,6 +50,8 @@ class Stage112PrivateAuditTests(unittest.TestCase):
         self._write(folder, "pad-state.txt",
                     START_STATE if intervention else CONTROL_STATE)
         self._write(folder, "fad.vhcdlog", b"VHCD_FAD 150\n")
+        self._write(folder, "pre.png", _png((25, 35, 45)))
+        self._write(folder, "post.png", _png((25, 35, 45) if not intervention else (80, 90, 100)))
         self._write(folder, "frames.stats",
                     b"STAGE99_FRAMES 24000\nSTAGE99_PC_BEFORE 100\n"
                     b"STAGE99_PC_AFTER 200\nSTAGE99_WIDTH 64\nSTAGE99_HEIGHT 64\n")
