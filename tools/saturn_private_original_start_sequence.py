@@ -42,8 +42,8 @@ FRAME_STATS = re.compile(
     rb"STAGE99_WIDTH (0|[1-9][0-9]*)\n"
     rb"STAGE99_HEIGHT (0|[1-9][0-9]*)\n\Z"
 )
-SH2_LINE = re.compile(rb"VH_SH2 frame=(0|[1-9][0-9]*) pc=(0|[1-9][0-9]*) valid=(?:0|1)(?: [a-z0-9_]+=(?:0|[1-9][0-9]*))*\\Z")
-VIDEO_LINE = re.compile(rb"VH_VIDEO frame=(0|[1-9][0-9]*) pc=(0|[1-9][0-9]*)(?: [a-z0-9_]+=(?:0|[1-9][0-9]*))*\\Z")
+SH2_LINE = re.compile(rb"VH_SH2 frame=(0|[1-9][0-9]*) pc=(0|[1-9][0-9]*) valid=(?:0|1)(?: [a-z0-9_]+=(?:0|[1-9][0-9]*))*\Z")
+VIDEO_LINE = re.compile(rb"VH_VIDEO frame=(0|[1-9][0-9]*) pc=(0|[1-9][0-9]*)(?: [a-z0-9_]+=(?:0|[1-9][0-9]*))*\Z")
 CONTROL_EVENTS = (
     f"VH_PAD mode=0 completed_frames={FRAME_COUNT}\n"
 ).encode("ascii")
@@ -159,7 +159,7 @@ def _check_frames(directory: Path) -> tuple[int, tuple[int, int]]:
         ("video-state.txt", VIDEO_LINE, b"VH_VIDEO frame="),
     ):
         raw_log = _private_regular(directory / name, 1024 * 1024)
-        if not raw_log.endswith(b"\\n") or b"\\r" in raw_log or b"\\0" in raw_log:
+        if not raw_log.endswith(b"\n") or b"\r" in raw_log or b"\0" in raw_log:
             raise ValueError("private Stage112 numeric diagnostic log is malformed")
         lines = raw_log.splitlines()
         if len(lines) != len(expected_samples):
