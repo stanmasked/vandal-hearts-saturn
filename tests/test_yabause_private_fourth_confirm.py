@@ -6,7 +6,7 @@ from test_yabause_private_third_confirm import _stage116_fixture
 from tools.patch_yabause_native_start_bit import MODE_END, MODE_START
 from tools.patch_yabause_private_third_confirm import instrument_private_third_confirm
 from tools.patch_yabause_private_fourth_confirm import (
-    CONFIRM4_PRESS, CONFIRM4_RELEASE, SETUP_CONFIRM4,
+    SETUP_CONFIRM4,
     instrument_full_private_fourth_confirm, instrument_private_fourth_confirm,
 )
 
@@ -47,7 +47,6 @@ class Stage118FourthConfirmSourceTests(unittest.TestCase):
         self.assertEqual(patched.count(b"vh102_snapshot("), stage117.count(b"vh102_snapshot("))
         self.assertIn("frame == vh118_confirm_at4", mode)
         self.assertIn("frame == vh118_confirm_at4 + 6", mode)
-        self.assertEqual(CONFIRM4_RELEASE, CONFIRM4_PRESS + 6)
 
     def test_fourth_c_requires_enabled_third_c_and_bounded_schedule(self):
         for token in (
