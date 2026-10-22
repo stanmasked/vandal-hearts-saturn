@@ -1,0 +1,56 @@
+name: Stage97 private Track1 split ZIP reassembly (invented bytes only)
+on:
+  push:
+    branches:
+      - "stage97/**"
+  pull_request:
+    branches:
+      - "stage96/**"
+permissions:
+  contents: read
+jobs:
+  split-zip:
+    name: ZIP chunks and exact final hash (${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Synthetic-only independent ZIP archives and reassembly regression
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_saturn_private_track1_split_zip.py -v
+          python -m unittest discover -s tests -p test_saturn_private_track1_range_retrieval.py -v
+          echo "STAGE97_FAKE_TRACK1_SPLIT_ZIP_SHA256_ROUNDTRIP_PASS"
+      - name: Check the optional user-authorized Colab notebook is valid offline Python
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path("notebooks/STAGE97_SPLIT_TRACK1_FROM_PRIVATE_DRIVE.ipynb")
+          document=json.loads(path.read_text(encoding="utf-8"))
+          assert document["nbformat"] == 4
+          code=[x for x in document["cells"] if x["cell_type"] == "code"]
+          assert len(code) == 2
+          for index,cell in enumerate(code):
+              compile("".join(cell["source"]),f"stage97-colab-cell-{index}","exec")
+          print("STAGE97_PRIVATE_COLAB_NOTEBOOK_SYNTAX_PASS")
+          PY
+      - name: Reject media and private archives from public repository
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          files=subprocess.check_output(["git","ls-files","-z"]).decode().split("\0")
+          forbidden={".bin",".cue",".iso",".chd",".rom",".zip",".7z"}
+          assert not any(Path(p).suffix.lower() in forbidden for p in files if p)
+          print("STAGE97_NO_PRIVATE_GAME_MEDIA_IN_GIT_PASS")
+          PY
