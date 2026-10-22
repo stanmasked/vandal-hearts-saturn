@@ -1,8 +1,5 @@
 name: Stage112 dual START runner (invented-only CI)
 on:
-  push:
-    branches:
-      - "stage112/**"
   pull_request:
     branches:
       - "stage110/**"
@@ -81,6 +78,7 @@ jobs:
           set -euo pipefail
           python3 -m py_compile tools/patch_yabause_private_start_sequence.py tests/test_yabause_private_start_sequence.py
           python3 -m unittest discover -s tests -p test_yabause_private_start_sequence.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_original_start_sequence.py -v
           python3 -m unittest discover -s tests -p test_yabause_native_start_bit.py -v
           python3 -m unittest discover -s tests -p test_yabause_private_start_pad.py -v
       - name: Configure real Yabause C68K software runner
