@@ -80,7 +80,7 @@ class Stage112PrivateAuditTests(unittest.TestCase):
         self.assertEqual(result["checkpoint_png_count_per_process"], 200)
         self.assertTrue(result["all_checkpoint_pngs_valid_and_sequential"])
         self.assertTrue(result["same_dimensions_and_pre_first_input_frames"])
-        self.assertTrue(result["title_to_menu_response_visible_in_12120_and_13200_ab_comparison"])
+        self.assertTrue(result["post_first_start_frame_files_differ_at_12120_and_13200"])
         self.assertTrue(result["both_active_low_start_press_and_release_pairs_verified"])
         self.assertFalse(result["first_tactical_battle_verified"])
         self.assertFalse(result["original_media_or_frame_hashes_exported"])
@@ -101,10 +101,10 @@ class Stage112PrivateAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "diverged before first input"):
             audit_private_start_sequence(self.control, self.intervention)
 
-    def test_missing_first_title_to_menu_change_is_rejected(self):
+    def test_missing_post_start_frame_difference_is_rejected(self):
         for frame in (12120, 13200):
             self._write(self.intervention, f"frame-{frame}.png", _png((25, 35, 45)))
-        with self.assertRaisesRegex(ValueError, "title-to-menu response"):
+        with self.assertRaisesRegex(ValueError, "post-first-START A/B frame difference"):
             audit_private_start_sequence(self.control, self.intervention)
 
 
