@@ -15,8 +15,6 @@ from tools.patch_yabause_native_start_bit import (
     MODE_START, MODE_END, instrument_native_start_bit_on_patched_source,
 )
 from tools.patch_yabause_original_title_12000 import instrument_original_title_12000
-from tools.patch_yabause_private_video_state import instrument_video_probe_on_patched_source
-from tools.patch_yabause_private_sh2_window import instrument_sh2_window_on_patched_source
 from tools.patch_yabause_private_start_pad import (
     SETUP, instrument_gamepad_start_on_patched_source,
 )
@@ -180,16 +178,14 @@ def instrument_private_start_sequence(raw: bytes) -> bytes:
 
 
 def instrument_full_private_start_sequence(raw: bytes) -> bytes:
-    """Compose the complete Stage101/102/107/109/112 chain from pinned upstream.
+    """Compose Stage106's inherited diagnostics with Stage107/109/112.
 
-    The public workflow must start from pristine upstream yui.cpp. Reusing the
-    prior patchers in order prevents Stage112 from assuming diagnostics that the
-    workflow never installed.
+    Stage106 is not a bare upstream file: its Stage103 C68K transformer already
+    applies Stage102, which itself installs Stage101. Reapplying those two
+    transformers here would correctly fail closed as duplicate instrumentation.
     """
     stage106 = instrument_original_title_12000(raw)
-    stage101 = instrument_video_probe_on_patched_source(stage106)
-    stage102 = instrument_sh2_window_on_patched_source(stage101)
-    stage107 = instrument_gamepad_start_on_patched_source(stage102)
+    stage107 = instrument_gamepad_start_on_patched_source(stage106)
     stage109 = instrument_native_start_bit_on_patched_source(stage107)
     stage112 = instrument_private_start_sequence(stage109)
     text = stage112.decode("utf-8")
