@@ -1,5 +1,8 @@
 name: Stage117 third C confirm (invented-only CI)
 on:
+  push:
+    branches:
+      - "stage117/**"
   pull_request:
     branches:
       - "stage116/**"
