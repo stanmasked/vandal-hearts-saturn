@@ -70,11 +70,11 @@ jobs:
           grep -Fq 'PerPadCPressed(vh107_pad)' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'frames > 48000' external-yabause/yabause/src/runner/yui.cpp
           echo STAGE117_THIRD_CONFIRM_SOURCE_READY
-      - name: Run synthetic-only Stage116 and inherited regressions
+      - name: Run synthetic-only Stage117 and inherited regressions
         run: |
           set -euo pipefail
           python3 -m py_compile \
-            tools/patch_yabause_private_second_confirm.py \
+            tools/patch_yabause_private_third_confirm.py \
             tools/saturn_private_third_dialogue.py \
             tests/test_yabause_private_third_confirm.py \
             tests/test_saturn_private_third_dialogue.py
