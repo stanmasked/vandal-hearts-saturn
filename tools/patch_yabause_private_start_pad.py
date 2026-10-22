@@ -15,7 +15,7 @@ from tools.patch_yabause_original_title_12000 import instrument_original_title_1
 BEFORE = "frames < 1 || frames > 12000 ||"
 AFTER = "frames < 1 || frames > 13200 ||"
 HEADER = '#include "../vdp2.h"\n'
-DECLARE = '         int progress = 0;'
+DECLARE = '         yabauseinit_struct source_game = { 0 };'
 AFTER_INIT = '''         if (!MSH2)
          {
             YabauseDeInit();
@@ -99,7 +99,7 @@ def instrument_gamepad_start(raw: bytes) -> bytes:
     replacements=[
         (BEFORE,AFTER),
         (HEADER,HEADER+'#include "../peripheral.h"\n'),
-        (DECLARE,DECLARE+"\n"+SETUP),
+        (DECLARE,SETUP+"\n"+DECLARE),
         (AFTER_INIT,AFTER_INIT+"\n"+CONNECT),
         (BEFORE_EMULATE,LOOP),
         (BEFORE_RETURN,FINALIZE+BEFORE_RETURN),
