@@ -108,6 +108,15 @@ def instrument_private_confirm_button(patched: bytes) -> bytes:
         raise ValueError("Stage109 native pad-state connect anchor differs")
     if mode.count(EMULATE_START) != 1:
         raise ValueError("Stage112 guest-frame execution anchor differs")
+    if (
+        mode.count("PerPadStartPressed(vh107_pad);") != 2
+        or mode.count("PerPadStartReleased(vh107_pad);") != 2
+        or mode.count("VH_PAD frame=%d button=START action=PRESS") != 2
+        or mode.count("VH_PAD frame=%d button=START action=RELEASE") != 2
+        or mode.count("VH_PADSTATE frame=%d start_bit=0") != 2
+        or mode.count("VH_PADSTATE frame=%d start_bit=1") != 2
+    ):
+        raise ValueError("Stage112 native START pulse blocks differ")
 
     mode = mode.replace(SETUP_SECOND_PULSE, SETUP_SECOND_PULSE + SETUP_CONFIRM, 1)
     mode = mode.replace(CONNECT_EXTRA, CONNECT_EXTRA + CONFIRM_INITIAL, 1)
