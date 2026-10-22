@@ -1,0 +1,42 @@
+name: Stage100 private FAD-to-ISO9660 file attribution (fabricated-only)
+on:
+  push:
+    branches:
+      - "stage100/**"
+  pull_request:
+    branches:
+      - "stage99/**"
+permissions:
+  contents: read
+jobs:
+  fad-files:
+    name: Actual callback FAD extent intersection test (${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Invented Saturn track ISO9660 FAD mapping and source pins
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_saturn_private_iso_fad_attribution.py -v
+          python -m unittest discover -s tests -p test_saturn_private_boot_readiness.py -v
+          python -m unittest discover -s tests -p test_saturn_iso.py -v
+          echo "STAGE100_PRIVATE_FAKE_FAD_FILE_EXTENT_ATTRIBUTION_PASS"
+      - name: Refuse tracked copyrighted game media or archives
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          files=subprocess.check_output(["git","ls-files","-z"]).decode().split("\0")
+          blocked={".bin",".cue",".iso",".chd",".rom",".zip",".7z",".001",".002"}
+          assert not any(Path(p).suffix.lower() in blocked for p in files if p)
+          print("STAGE100_NO_ORIGINAL_MEDIA_IN_CI_PASS")
+          PY
