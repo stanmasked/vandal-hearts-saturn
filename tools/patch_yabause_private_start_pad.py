@@ -118,6 +118,8 @@ def instrument_gamepad_start(raw: bytes) -> bytes:
         if mode.count(old) != 1:
             raise ValueError("pinned private branch changed: " + old[:32])
         mode = mode.replace(old, new, 1)
+    if mode.index(AFTER) > mode.index('getenv("VH_SATURN_START_AT_FRAME")'):
+        raise ValueError("START window checked before valid frame limit was parsed")
     source = source[:start] + mode + source[end:]
     source = source.replace(HEADER, HEADER + '#include "../peripheral.h"\n', 1)
     for token in (
