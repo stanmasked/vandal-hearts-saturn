@@ -59,7 +59,7 @@ def png_indexed_8bit(include_palette=True):
     return (b"\x89PNG\r\n\x1a\n" +
             chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 3, 0, 0, 0)) +
             palette +
-            chunk(b"IDAT", zlib.compress(bytes([0, 0])) +
+            chunk(b"IDAT", zlib.compress(bytes([0, 0]))) +
             chunk(b"IEND", b""))
 
 
