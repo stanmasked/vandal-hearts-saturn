@@ -84,6 +84,12 @@ class Stage112DualStartSourceTests(unittest.TestCase):
         self.assertIn("n2 > (long)frames - 8L", mode)
         self.assertIn("frames > 24000", mode)
         self.assertIn("VH_PAD mode=%d completed_frames=%d", mode)
+        self.assertIn("video-state.txt", mode)
+        self.assertIn("sh2-window.txt", mode)
+        self.assertEqual(mode.count("vh112_video_snapshot("), 3)
+        self.assertEqual(mode.count("vh112_sh2_snapshot("), 3)
+        self.assertIn("VH_VIDEO frame=%d pc=%u", source)
+        self.assertIn("VH_SH2 frame=%d pc=%u valid=1", source)
 
     def test_first_pulse_remains_compatible_and_second_pulse_is_optional(self):
         source = instrument_private_start_sequence(_stage109_instrumented_fixture()).decode()
@@ -107,6 +113,14 @@ class Stage112DualStartSourceTests(unittest.TestCase):
         ):
             with self.subTest(size=len(raw)), self.assertRaises(ValueError):
                 instrument_private_start_sequence(raw)
+
+    def test_rejects_missing_real_framebuffer_diagnostic_anchor(self):
+        raw = _stage109_instrumented_fixture().replace(
+            b"if (lodepng::encode(checkpoint_path,",
+            b"if (tampered_png_encoder(checkpoint_path,",
+        )
+        with self.assertRaisesRegex(ValueError, "checkpoint render"):
+            instrument_private_start_sequence(raw)
 
     def test_does_not_add_media_or_frame_export_logic(self):
         source = instrument_private_start_sequence(_stage109_instrumented_fixture()).decode()
