@@ -12,59 +12,69 @@ from tools.patch_yabause_private_start_sequence import EMULATE_START
 
 CONFIRM_SETUP_END = "            vh114_confirm_button = vh114_button_env[0];\n         }\n"
 
-SETUP_CONFIRM2 = r'''         /* Stage116: optional second C pulse for the opening dialogue. */
+SETUP_CONFIRM2 = r'''         /* Stage116: identical second-C schedule; enable it only in the intervention run. */
          const char *vh116_at2 = getenv("VH_SATURN_CONFIRM_AT_FRAME2");
+         const char *vh116_enable2 = getenv("VH_SATURN_CONFIRM2_ENABLED");
          int vh116_confirm_at2 = -1;
-         if (vh116_at2 != NULL)
-         {
-            if (!*vh116_at2 || vh114_confirm_at < 0 ||
-                vh114_confirm_button != 'C' || vh112_start_at2 >= 0)
-               return 250;
-            char *endptr116 = NULL;
-            long n116 = strtol(vh116_at2, &endptr116, 10);
-            if (endptr116 == vh116_at2 || *endptr116 != '\0' ||
-                n116 < (long)vh114_confirm_at + 12L ||
-                n116 > (long)frames - 8L)
-               return 251;
-            vh116_confirm_at2 = (int)n116;
-         }
+         int vh116_confirm2_enabled = -1;
+         if (vh116_at2 == NULL || vh116_enable2 == NULL || !*vh116_at2 ||
+             vh114_confirm_at < 0 || vh114_confirm_button != 'C' ||
+             vh112_start_at2 >= 0)
+            return 250;
+         char *endptr116 = NULL;
+         long n116 = strtol(vh116_at2, &endptr116, 10);
+         if (endptr116 == vh116_at2 || *endptr116 != '\0' ||
+             n116 < (long)vh114_confirm_at + 12L ||
+             n116 > (long)frames - 8L)
+            return 251;
+         if (vh116_enable2[1] != '\0' ||
+             (vh116_enable2[0] != '0' && vh116_enable2[0] != '1'))
+            return 252;
+         vh116_confirm_at2 = (int)n116;
+         vh116_confirm2_enabled = (vh116_enable2[0] == '1') ? 1 : 0;
 '''
 
 CONFIRM2_PRESS = r'''            if (vh116_confirm_at2 >= 0 && frame == vh116_confirm_at2)
             {
-               const unsigned char vh116_mask = 0x02U;
-               if ((vh107_pad->padbits[0] & vh116_mask) == 0U)
-                  return 252;
-               PerPadCPressed(vh107_pad);
-               if ((vh107_pad->padbits[0] & vh116_mask) != 0U)
-                  return 253;
-               if (fprintf(vh107_pad_log,
-                   "VH_PAD frame=%d button=%c action=PRESS\n",
-                   frame, 'C') <= 0)
-                  return 254;
-               if (fprintf(vh109_state_log,
-                   "VH_PADSTATE frame=%d button=%c active_low_bit=0\n",
-                   frame, 'C') <= 0)
-                  return 255;
+               if (vh116_confirm2_enabled)
+               {
+                  const unsigned char vh116_mask = 0x02U;
+                  if ((vh107_pad->padbits[0] & vh116_mask) == 0U)
+                     return 253;
+                  PerPadCPressed(vh107_pad);
+                  if ((vh107_pad->padbits[0] & vh116_mask) != 0U)
+                     return 254;
+                  if (fprintf(vh107_pad_log,
+                      "VH_PAD frame=%d button=%c action=PRESS\n",
+                      frame, 'C') <= 0)
+                     return 255;
+                  if (fprintf(vh109_state_log,
+                      "VH_PADSTATE frame=%d button=%c active_low_bit=0\n",
+                      frame, 'C') <= 0)
+                     return 256;
+               }
             }
 '''
 
 CONFIRM2_RELEASE = r'''            if (vh116_confirm_at2 >= 0 && frame == vh116_confirm_at2 + 6)
             {
-               const unsigned char vh116_mask = 0x02U;
-               if ((vh107_pad->padbits[0] & vh116_mask) != 0U)
-                  return 256;
-               PerPadCReleased(vh107_pad);
-               if ((vh107_pad->padbits[0] & vh116_mask) == 0U)
-                  return 257;
-               if (fprintf(vh107_pad_log,
-                   "VH_PAD frame=%d button=%c action=RELEASE\n",
-                   frame, 'C') <= 0)
-                  return 258;
-               if (fprintf(vh109_state_log,
-                   "VH_PADSTATE frame=%d button=%c active_low_bit=1\n",
-                   frame, 'C') <= 0)
-                  return 259;
+               if (vh116_confirm2_enabled)
+               {
+                  const unsigned char vh116_mask = 0x02U;
+                  if ((vh107_pad->padbits[0] & vh116_mask) != 0U)
+                     return 257;
+                  PerPadCReleased(vh107_pad);
+                  if ((vh107_pad->padbits[0] & vh116_mask) == 0U)
+                     return 258;
+                  if (fprintf(vh107_pad_log,
+                      "VH_PAD frame=%d button=%c action=RELEASE\n",
+                      frame, 'C') <= 0)
+                     return 259;
+                  if (fprintf(vh109_state_log,
+                      "VH_PADSTATE frame=%d button=%c active_low_bit=1\n",
+                      frame, 'C') <= 0)
+                     return 260;
+               }
             }
 '''
 
@@ -89,7 +99,9 @@ def instrument_private_second_confirm(patched: bytes) -> bytes:
     mode = mode.replace(EMULATE_START, CONFIRM2_PRESS + CONFIRM2_RELEASE + EMULATE_START, 1)
     required_once = (
         ("VH_SATURN_CONFIRM_AT_FRAME2", 1),
+        ("VH_SATURN_CONFIRM2_ENABLED", 1),
         ("vh116_confirm_at2", 6),
+        ("vh116_confirm2_enabled", 4),
         ("PerPadCPressed(vh107_pad);", 2),
         ("PerPadCReleased(vh107_pad);", 2),
         ("VH_PAD frame=%d button=%c action=PRESS", 2),
