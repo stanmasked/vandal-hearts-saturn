@@ -65,7 +65,7 @@ class Stage115LongWindowSourceTests(unittest.TestCase):
         expected = (
             b"VH_SATURN_START_AT_FRAME VH_SATURN_CONFIRM_AT_FRAME "
             b"VH_SATURN_CONFIRM_BUTTON PerPadCPressed(vh107_pad); "
-            b"frames > 48000 video-state.txt sh2-window.txt pad-state.txt"
+            b"frames > 48000 frames.stats video-state.txt sh2-window.txt pad-state.txt"
         )
         with (
             patch(
