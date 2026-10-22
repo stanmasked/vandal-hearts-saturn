@@ -2,7 +2,7 @@
 
 ## Observation motivating this stage
 
-Stage115's private START+C run reached the Magnus dialogue “Ah... a hidden room.” by frame 26400. The same line remained on screen through at least frame 32400 while character animation continued. This suggests the dialogue is waiting for player confirmation. Stage115's one-C 48,000-frame pair is still being audited; it does not claim that the first battle is playable.
+Stage115's private START+C run completed 48,000 frames with all integrity checks passing: each run produced the exact 408-file output set, 400 valid PNG checkpoints and 402 ordered video/SH2 samples; source media and runner hashes remained pinned. The C run reached Magnus's “Ah... a hidden room.” dialogue by frame 26400, and the same line remained through frame 48000. This strongly suggests the prologue is waiting for another confirm input. The first controllable battle is still not verified.
 
 ## Controlled comparison
 
