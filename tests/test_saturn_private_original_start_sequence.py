@@ -58,12 +58,12 @@ class Stage112PrivateAuditTests(unittest.TestCase):
         samples = [0] + list(range(120, FRAME_COUNT + 1, 120)) + [FRAME_COUNT]
         sh2 = "".join(
             f"VH_SH2 frame={n} pc=1 valid=1 sr=0 pr=0 gbr=0 r0=0 r1=0 r2=0 "
-            f"r3=0 r4=0 r5=0 r15=0 m8=0 m6=0 m4=0 m2=0 op0=0 p2=0 p4=0 p6=0 p8=0\\n"
+            f"r3=0 r4=0 r5=0 r15=0 m8=0 m6=0 m4=0 m2=0 op0=0 p2=0 p4=0 p6=0 p8=0\n"
             for n in samples
         ).encode("ascii")
         video = "".join(
             f"VH_VIDEO frame={n} pc=1 tvmd=0 bgon=0 ramctl=0 vdp1_tvmr=0 "
-            f"vdp1_ptmr=0 vdp1_edsr=0 vdp1_nz=0 vdp2_nz=0 cram_nz=0 rgb_nz=0 width=64 height=64\\n"
+            f"vdp1_ptmr=0 vdp1_edsr=0 vdp1_nz=0 vdp2_nz=0 cram_nz=0 rgb_nz=0 width=64 height=64\n"
             for n in samples
         ).encode("ascii")
         self._write(folder, "sh2-window.txt", sh2)
