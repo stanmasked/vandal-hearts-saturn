@@ -11,13 +11,17 @@ Use the same Stage116 GCC executable and original English v1.1 media for two sep
 - **Single-C control:** no later button input.
 - **Double-C test:** one additional C press at frame 31200, released at frame 31206.
 
-Both runs stop at frame 48000. The auditor validates 400 sequential PNG checkpoints and 402 ordered video/SH2 diagnostic samples per run, active-low pad receipts, exact output file sets, private permissions, frame stats, numeric-only CD/FAD logs, and unchanged source/runner identities. It requires the two runs to match before the first C press and records whether the second pulse produces a post-frame-31200 framebuffer divergence by frame 36000.
+Both runs receive the same second-C frame schedule (31200); the control sets its enable flag to 0 and the intervention sets it to 1. The input branch is evaluated at the scheduled frame, so the environment-variable presence itself is not the intervention.
+
+A preliminary private pair failed the strict pre-input equality gate at three early FMV checkpoints (6240, 9720 and 9960). That pair is not accepted as causal evidence. The cause of those early video differences is not yet established; the runner and harness have now been hardened so both processes parse the same scheduled-frame environment and differ only in the one-character enable flag before frame 31200.
+
+Both runs stop at frame 48000. The auditor validates 400 sequential PNG checkpoints and 402 ordered video/SH2 diagnostic samples per run, active-low pad receipts, exact output file sets, private permissions, frame stats, numeric-only CD/FAD logs, and unchanged source/runner identities. It requires the two runs to match at every checkpoint before the second C pulse and records whether the second pulse produces a post-frame-31200 framebuffer divergence by frame 36000.
 
 The private visual review must compare the dialogue at frames 30000/31080 and 32400/33600. A changed framebuffer is not by itself proof that the dialogue advanced; inspect the text and scene. Do not claim the first controllable tactical battle until the tactical HUD/turn state is active and player input is observed to change selection or movement.
 
 ## Private execution
 
-Download the GCC executable from the successful exact-head Stage116 Actions run and use the SHA-256 printed by that same job. Create two empty 0700 directories. Keep the original BIN/CUE files, outputs and captures outside the Git checkout.
+Download the GCC or Clang executable from a successful exact-head Stage116 Actions run and use the SHA-256 printed by that same job. Create two empty 0700 directories. Keep the original BIN/CUE files, outputs and captures outside the Git checkout.
 
     python3 -m tools.saturn_private_prologue_continue \
       --cue "/private/VH/Vandal Hearts - Ushinawareta Kodai Bunmei (English v1.1).cue" \
