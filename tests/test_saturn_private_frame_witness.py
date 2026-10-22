@@ -39,7 +39,30 @@ def png(r, g, b):
             chunk(b"IEND", b""))
 
 
+def png_gray_1bit(sample=0):
+    scanline = bytes([0, (sample & 1) << 7])
+    return (b"\x89PNG\r\n\x1a\n" +
+            chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 1, 0, 0, 0, 0)) +
+            chunk(b"IDAT", zlib.compress(scanline)) +
+            chunk(b"IEND", b""))
+
+
+def png_truecolor_1bit():
+    return (b"\x89PNG\r\n\x1a\n" +
+            chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 1, 2, 0, 0, 0)) +
+            chunk(b"IDAT", zlib.compress(bytes([0, 0, 0, 0]))) +
+            chunk(b"IEND", b""))
+
+
 class FrameWitnessIntegrityTests(unittest.TestCase):
+    def test_valid_low_bit_depth_grayscale_png_is_accepted(self):
+        self.assertEqual(validate_png_file(png_gray_1bit()), (1, 1))
+        self.assertEqual(validate_png_file(png_gray_1bit(1)), (1, 1))
+
+    def test_low_bit_depth_truecolor_png_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "unsupported PNG frame shape"):
+            validate_png_file(png_truecolor_1bit())
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
