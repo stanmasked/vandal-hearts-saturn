@@ -64,7 +64,7 @@ CONNECT = r'''         /* Both control and intervention runs register an identic
 
 LOOP = r'''         for (int frame = 0; frame < frames; ++frame)
          {
-            /* Set guest pad state BEFORE the frame's YabauseEmulate(). */
+            /* Set guest pad state immediately before the guest frame step. */
             if (vh107_start_at >= 0 && frame == vh107_start_at)
             {
                PerPadStartPressed(vh107_pad);
