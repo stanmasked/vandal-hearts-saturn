@@ -33,6 +33,31 @@ Also upload **track1-private-parts.json**, generated last. That private
 manifest stores the original Track1 filename, total size, Stage02 SHA-256
 and expected size/SHA-256 of each ZIP and its contained raw part.
 
+## Alternative: do it inside your existing private Google Drive
+
+If the original 621,755,904-byte file is **only** in Google Drive, use
+the optional prepared notebook:
+
+[Stage97 private Drive Colab notebook](../notebooks/STAGE97_SPLIT_TRACK1_FROM_PRIVATE_DRIVE.ipynb)
+
+Open it in your **own** Google Colab session, review the notebook code,
+then explicitly authorize Drive mount. The notebook scans your private
+`MyDrive/VH-Saturn` folder for exactly one file with the Stage02 Track1
+size, verifies its *complete* Stage02 SHA-256, splits it on Colab's
+temporary filesystem and copies each ZIP to `VH-Saturn/Track1-parts`.
+It verifies every uploaded ZIP's digest and copies the manifest last.
+
+The original Track1 remains unchanged in Drive. No local download/upload
+through your own computer is needed, although the notebook must still
+read the file inside your authorized Drive mount. This notebook has
+**not** been executed against the original image here; Drive-mount
+filesystem behavior may require adjustment in your Colab session.
+
+**Privacy:** Mounting Drive grants the Colab notebook broad access to
+files in the account. Only run reviewed code in your own trusted
+session; do not share auth tokens, private output, or Colab notebooks
+with mounted Drive access publicly.
+
 ## Procedure on a trusted local computer
 
 Have the **already owned original Track1** available as a readable local
