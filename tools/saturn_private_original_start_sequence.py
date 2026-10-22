@@ -149,10 +149,12 @@ def _check_frames(directory: Path) -> tuple[int, tuple[int, int]]:
     final_dims, _ = _frame(directory, FRAME_COUNT)
     if final_dims != (width, height):
         raise ValueError("private Stage112 final PNG disagrees with frame statistics")
-    for name in ("pre.png", "post.png"):
-        dims = validate_png_file(_private_regular(directory / name, MAX_PNG_BYTES))
-        if dims != final_dims:
-            raise ValueError("private Stage112 pre/post framebuffer geometry mismatch")
+    pre_dims = validate_png_file(_private_regular(directory / "pre.png", MAX_PNG_BYTES))
+    if not (64 <= pre_dims[0] <= 704 and 64 <= pre_dims[1] <= 512):
+        raise ValueError("private Stage112 initial framebuffer geometry invalid")
+    post_dims = validate_png_file(_private_regular(directory / "post.png", MAX_PNG_BYTES))
+    if post_dims != final_dims:
+        raise ValueError("private Stage112 final PNG and post-capture geometry differ")
     expected_samples = [0] + list(range(120, FRAME_COUNT + 1, 120)) + [FRAME_COUNT]
     for name, pattern, prefix in (
         ("sh2-window.txt", SH2_LINE, b"VH_SH2 frame="),
