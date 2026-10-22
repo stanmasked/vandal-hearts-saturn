@@ -175,9 +175,10 @@ def _run_one(executable: Path, cue: Path, directory: Path, *, third_c: bool, sec
         "VH_SATURN_CONFIRM_AT_FRAME2": str(CONFIRM2_PRESS),
         "VH_SATURN_CONFIRM2_ENABLED": "1",
     }
+    # Both cold boots receive the same scheduled third-C frame; only the
+    # enable bit differs, so the paired comparison isolates the intervention.
+    env["VH_SATURN_CONFIRM_AT_FRAME3"] = str(CONFIRM3_PRESS)
     env["VH_SATURN_CONFIRM3_ENABLED"] = "1" if third_c else "0"
-    if third_c:
-        env["VH_SATURN_CONFIRM_AT_FRAME3"] = str(CONFIRM3_PRESS)
     process = subprocess.Popen(
         [str(executable), "vh-private-frame-boot", str(cue), str(FRAME_COUNT)],
         cwd=directory, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
