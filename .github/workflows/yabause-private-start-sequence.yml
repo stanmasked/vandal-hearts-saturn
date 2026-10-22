@@ -55,7 +55,7 @@ jobs:
             --source external-yabause/yabause/src/cdbase.c \
             --output external-yabause/yabause/src/cdbase.instrumented.c
           mv external-yabause/yabause/src/cdbase.instrumented.c external-yabause/yabause/src/cdbase.c
-      - name: Compose Stage101/102 diagnostics and Stage107/109/112 input on pinned Yabause
+      - name: Compose Stage106 with inherited Stage101/102 diagnostics and Stage107/109/112 input
         run: |
           set -euo pipefail
           python3 -m tools.patch_yabause_private_start_sequence \
