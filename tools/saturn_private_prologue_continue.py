@@ -31,21 +31,6 @@ PRE_FIRST_CONFIRM_CHECKPOINTS = tuple(range(120, 12120 + 1, 120))
 PRE_SECOND_CHECKPOINTS = tuple(range(120, CONFIRM2_PRESS, 120))
 POST_SECOND_CHECKPOINTS = tuple(range(CONFIRM2_PRESS + 120, FRAME_COUNT + 1, 120))
 POST_SECOND_BY_36K_CHECKPOINTS = tuple(range(CONFIRM2_PRESS + 120, 36000 + 1, 120))
-# The intro FMV can land on different decoded video frames at these exact checkpoints
-# across cold boots. All other checkpoints remain part of the strict paired-run gate.
-INTRO_FMV_VARIABLE_CHECKPOINTS = (6240, 9720, 9960)
-
-
-def _pre_intervention_differences(
-    single_c: Path, double_c: Path, frames: tuple[int, ...]
-) -> tuple[list[int], list[int]]:
-    allowed = []
-    unexpected = []
-    for frame in frames:
-        if not _equal_frame(single_c, double_c, frame):
-            (allowed if frame in INTRO_FMV_VARIABLE_CHECKPOINTS else unexpected).append(frame)
-    return allowed, unexpected
-
 SINGLE_C_EVENTS = (
     f"VH_PAD frame={FIRST_PRESS} button=START action=PRESS\n"
     f"VH_PAD frame={FIRST_RELEASE} button=START action=RELEASE\n"
@@ -117,23 +102,16 @@ def audit_private_prologue_continue(single_c: Path, double_c: Path) -> dict:
     if single_dims != double_dims:
         raise ValueError("Stage116 final framebuffer geometries differ")
 
-    _, unexpected_before_start = _pre_intervention_differences(
-        single_c, double_c, PRE_FIRST_CHECKPOINTS
-    )
-    if unexpected_before_start:
-        raise ValueError("Stage116 paired runs diverged before first START")
-    _, unexpected_before_first_c = _pre_intervention_differences(
-        single_c, double_c, PRE_FIRST_CONFIRM_CHECKPOINTS
-    )
-    if unexpected_before_first_c:
-        raise ValueError("Stage116 paired runs diverged before first C confirm")
-
-    intro_fmv_differences, unexpected_before_second_c = _pre_intervention_differences(
-        single_c, double_c, PRE_SECOND_CHECKPOINTS
-    )
-    if unexpected_before_second_c:
-        raise ValueError("Stage116 paired runs diverged before second C confirm")
-    pre_second_equal_count = len(PRE_SECOND_CHECKPOINTS) - len(intro_fmv_differences)
+    for frame in PRE_FIRST_CHECKPOINTS:
+        if not _equal_frame(single_c, double_c, frame):
+            raise ValueError("Stage116 paired runs diverged before first START")
+    for frame in PRE_FIRST_CONFIRM_CHECKPOINTS:
+        if not _equal_frame(single_c, double_c, frame):
+            raise ValueError("Stage116 paired runs diverged before first C confirm")
+    for frame in PRE_SECOND_CHECKPOINTS:
+        if not _equal_frame(single_c, double_c, frame):
+            raise ValueError("Stage116 paired runs diverged before second C confirm")
+    pre_second_equal_count = len(PRE_SECOND_CHECKPOINTS)
 
     post_second_changes = [
         frame for frame in POST_SECOND_CHECKPOINTS
@@ -156,16 +134,17 @@ def audit_private_prologue_continue(single_c: Path, double_c: Path) -> dict:
         "checkpoint_png_count_per_process": 400,
         "all_checkpoint_pngs_and_diagnostic_sequences_verified": True,
         "same_dimensions_across_runs": True,
-        "all_non_fmv_checkpoints_match_before_first_start": True,
-        "all_non_fmv_checkpoints_match_through_frame_12120_before_first_C": True,
-        "known_intro_fmv_checkpoint_differences": intro_fmv_differences,
+        "all_checkpoints_match_before_first_start": True,
+        "all_checkpoints_match_through_frame_12120_before_first_C": True,
+        "all_pre_second_C_checkpoints_match": True,
+        "known_intro_fmv_checkpoint_differences": [],
         "first_C_press_frame": CONFIRM_PRESS,
         "second_C_press_frame": CONFIRM2_PRESS,
         "second_C_release_frame": CONFIRM2_RELEASE,
         "all_stable_pre_second_C_checkpoints_match": True,
         "pre_second_checkpoint_equal_count": pre_second_equal_count,
         "pre_second_checkpoint_total": len(PRE_SECOND_CHECKPOINTS),
-        "stable_pre_second_checkpoint_total": len(PRE_SECOND_CHECKPOINTS) - len(INTRO_FMV_VARIABLE_CHECKPOINTS),
+        "stable_pre_second_checkpoint_total": len(PRE_SECOND_CHECKPOINTS),
         "first_post_second_C_framebuffer_divergence_by_36000": min(post_second_changes_by_36k),
         "first_post_second_C_framebuffer_divergence_through_48000": min(post_second_changes),
         "frame_32400_differs_after_second_C": not _equal_frame(single_c, double_c, 32400),
