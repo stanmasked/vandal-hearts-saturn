@@ -17,10 +17,10 @@ def instrument_private_48000_frame_window(patched: bytes) -> bytes:
     start = source.index(MODE_START)
     end = source.index(MODE_END, start) + len(MODE_END)
     mode = source[start:end]
-    if mode.count("frames > 24000") != 1:
-        raise ValueError("Stage114 24,000-frame fail-closed bound differs")
     if "frames > 48000" in mode:
         raise ValueError("Stage115 48,000-frame bound already applied")
+    if mode.count("frames > 24000") != 1:
+        raise ValueError("Stage114 24,000-frame fail-closed bound differs")
     mode = mode.replace("frames > 24000", "frames > 48000", 1)
     required = (
         "frames > 48000",
