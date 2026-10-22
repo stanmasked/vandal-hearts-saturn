@@ -89,7 +89,7 @@ def instrument_private_second_confirm(patched: bytes) -> bytes:
     mode = mode.replace(EMULATE_START, CONFIRM2_PRESS + CONFIRM2_RELEASE + EMULATE_START, 1)
     required_once = (
         ("VH_SATURN_CONFIRM_AT_FRAME2", 1),
-        ("vh116_confirm_at2", 5),
+        ("vh116_confirm_at2", 4),
         ("PerPadCPressed(vh107_pad);", 2),
         ("PerPadCReleased(vh107_pad);", 2),
         ("VH_PAD frame=%d button=%c action=PRESS", 2),
