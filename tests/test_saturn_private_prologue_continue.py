@@ -1,13 +1,15 @@
 """Synthetic-only tests for Stage116's private second-C dialogue audit."""
 from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 
 from test_saturn_private_original_start_triple import _png, _write
 from tools.saturn_private_first_battle_window import FRAME_COUNT
 from tools.saturn_private_prologue_continue import (
     CONFIRM_PRESS, CONFIRM_RELEASE, CONFIRM2_PRESS, CONFIRM2_RELEASE,
     SINGLE_C_EVENTS, SINGLE_C_STATE, DOUBLE_C_EVENTS, DOUBLE_C_STATE,
-    audit_private_prologue_continue,
+    _run_one, audit_private_prologue_continue,
 )
 
 SAMPLES = [0] + list(range(120, FRAME_COUNT + 1, 120)) + [FRAME_COUNT]
@@ -53,6 +55,48 @@ def _populate(folder, double_c):
 
 
 class Stage116PrivateDialogueAuditTests(unittest.TestCase):
+    def test_paired_runs_receive_same_schedule_environment(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            root.chmod(0o700)
+            single = root / "single"
+            double = root / "double"
+            single.mkdir(mode=0o700)
+            double.mkdir(mode=0o700)
+            captured = []
+
+            class FakeProcess:
+                pid = 999999
+
+                def wait(self, timeout):
+                    return 0
+
+            def fake_popen(args, **kwargs):
+                captured.append(kwargs["env"])
+                return FakeProcess()
+
+            with patch(
+                "tools.saturn_private_prologue_continue.subprocess.Popen",
+                side_effect=fake_popen,
+            ):
+                _run_one(Path("/bin/true"), root / "unused.cue", single,
+                         second_c=False, seconds=5)
+                _run_one(Path("/bin/true"), root / "unused.cue", double,
+                         second_c=True, seconds=5)
+
+            self.assertEqual(len(captured), 2)
+            self.assertEqual(set(captured[0]), set(captured[1]))
+            self.assertEqual(captured[0]["VH_SATURN_CONFIRM_AT_FRAME2"], "31200")
+            self.assertEqual(captured[1]["VH_SATURN_CONFIRM_AT_FRAME2"], "31200")
+            self.assertEqual(captured[0]["VH_SATURN_CONFIRM2_ENABLED"], "0")
+            self.assertEqual(captured[1]["VH_SATURN_CONFIRM2_ENABLED"], "1")
+            for key in (
+                "VH_SATURN_START_AT_FRAME",
+                "VH_SATURN_CONFIRM_AT_FRAME",
+                "VH_SATURN_CONFIRM_BUTTON",
+            ):
+                self.assertEqual(captured[0][key], captured[1][key])
+
     def setUp(self):
         import tempfile
         temp = tempfile.TemporaryDirectory()
