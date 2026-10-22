@@ -1,0 +1,36 @@
+name: Stage110 two protected private original-disc runs (invented CI only)
+on:
+  push:
+    branches:
+      - "stage110/**"
+  pull_request:
+    branches:
+      - "stage109/**"
+permissions:
+  contents: read
+
+jobs:
+  invented-private-execution:
+    name: Two isolated invented Saturn runner processes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile launcher and strict evidence auditors
+        run: |
+          python3 -m py_compile \
+            tools/saturn_private_original_start_pair.py \
+            tools/saturn_private_start_bit_ab.py \
+            tools/saturn_private_start_ab.py \
+            tests/test_saturn_private_original_start_pair.py
+      - name: Execute two fake subprocesses and all negative protection tests
+        run: |
+          python3 -m unittest discover -s tests -p test_saturn_private_original_start_pair.py -v
+          python3 -m unittest discover -s tests -p test_yabause_native_start_bit.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_start_ab.py -v
+      - name: Prove original Saturn media absent from public CI
+        run: |
+          test ! -e "Vandal Hearts - Ushinawareta Kodai Bunmei (English v1.1).cue"
+          test ! -e original-saturn.cue
+          test ! -e original-saturn.bin
+          echo STAGE110_PUBLIC_INVENTED_ONLY_PAIR_LAUNCH_TESTS_PASS
