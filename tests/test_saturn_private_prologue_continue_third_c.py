@@ -83,6 +83,12 @@ class Stage117PrivateDialogueAuditTests(unittest.TestCase):
         self.assertFalse(report["first_battle_or_player_control_verified"])
         self.assertFalse(report["original_media_or_frame_hashes_exported"])
 
+    def test_rejects_unequal_output_path_shape(self):
+        with self.assertRaisesRegex(ValueError, "equal length"):
+            audit_private_prologue_continue_third_c(
+                self.double_c, self.root / "longer-triple-control"
+            )
+
     def test_rejects_initial_pre_frame_divergence(self):
         _write(self.triple_c, "pre.png", _png((1, 2, 3)))
         with self.assertRaisesRegex(ValueError, "diverged before first START"):
@@ -126,8 +132,8 @@ class Stage117PairedRunScheduleTests(unittest.TestCase):
         import tempfile
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            control = root / "control"
-            triple = root / "triple"
+            control = root / "double-c"
+            triple = root / "triple-c"
             control.mkdir(mode=0o700)
             triple.mkdir(mode=0o700)
             envs = []
@@ -168,9 +174,14 @@ class Stage117PairedRunScheduleTests(unittest.TestCase):
                 {key: envs[1][key] for key in input_schedule},
             )
             self.assertNotEqual(envs[0]["HOME"], envs[1]["HOME"])
+            self.assertEqual(len(envs[0]["HOME"]), len(envs[1]["HOME"]))
             self.assertNotEqual(
                 envs[0]["VH_SATURN_PRIVATE_FRAMES_DIR"],
                 envs[1]["VH_SATURN_PRIVATE_FRAMES_DIR"],
+            )
+            self.assertEqual(
+                len(envs[0]["VH_SATURN_PRIVATE_FRAMES_DIR"]),
+                len(envs[1]["VH_SATURN_PRIVATE_FRAMES_DIR"]),
             )
 
 
