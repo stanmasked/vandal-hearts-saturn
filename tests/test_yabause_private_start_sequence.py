@@ -22,11 +22,49 @@ def _stage109_instrumented_fixture():
         "               PerPadStartReleased(vh107_pad);\n" + RELEASE_EXTRA,
     )
     mode = (
-        MODE_START + "\n         if (frames < 1 || frames > 13200 || invalid) return 1;\n" +
-        setup + "\n" + connect + "\n" + loop + "\n" +
-        FINALIZE_EXTRA + FINALIZE + "\n         YabauseDeInit();\n" + MODE_END
+        MODE_START + "\n"
+        "         if (frames < 1 || frames > 13200 || invalid) return 1;\n"
+        "         char pre_path[1024], post_path[1024], stats_path[1024];\n"
+        "         pixel_t *pixels = NULL;\n"
+        "         int width = 64, height = 64, progress = 0;\n"
+        "         TitanRender(pixels);\n"
+        "         if (lodepng::encode(pre_path, (unsigned char*)pixels,\n"
+        "                             width, height) != 0)\n"
+        "         {\n"
+        "            free(pixels);\n"
+        "            YabauseDeInit();\n"
+        "            return 207;\n"
+        "         }\n"
+        + setup + "\n" + connect + "\n" + loop + "\n"
+        "            { return 1; }\n"
+        "            progress++;\n"
+        "            if (progress % 120 == 0)\n"
+        "            {\n"
+        "               int cw = 64, ch = 64;\n"
+        "               char checkpoint_path[1024];\n"
+        "               TitanRender(pixels);\n"
+        "               if (lodepng::encode(checkpoint_path,\n"
+        "                                   (unsigned char*)pixels, cw, ch) != 0)\n"
+        "                  return 1;\n"
+        "            }\n"
+        "         }\n"
+        "         TitanRender(pixels);\n"
+        "         if (lodepng::encode(post_path, (unsigned char*)pixels,\n"
+        "                             width, height) != 0)\n"
+        "         {\n"
+        "            free(pixels);\n"
+        "            YabauseDeInit();\n"
+        "            return 210;\n"
+        "         }\n"
+        "         free(pixels);\n"
+        "         if (remove(gate_path) != 0) return 1;\n"
+        + FINALIZE_EXTRA + FINALIZE + "\n         YabauseDeInit();\n" + MODE_END
     )
-    return b"int fake_pinned_yui_source(void) {\n" + mode.encode() + b"\nreturn 0;\n}\n"
+    return (
+        '#include <stdio.h>\nextern "C"\n{\n}\n'
+        "int main(int argc, char *argv[])\n{\n" +
+        mode + "\nreturn 0;\n}\n"
+    ).encode()
 
 
 class Stage112DualStartSourceTests(unittest.TestCase):
