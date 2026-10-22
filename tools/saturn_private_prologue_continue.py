@@ -70,11 +70,21 @@ DOUBLE_C_STATE = (
 ).encode("ascii")
 
 
+def _validate_pair_path_shape(single_c: Path, double_c: Path) -> None:
+    single_resolved = single_c.resolve()
+    double_resolved = double_c.resolve()
+    if single_resolved.parent != double_resolved.parent:
+        raise ValueError("Stage116 paired output directories must share one parent")
+    if len(str(single_resolved)) != len(str(double_resolved)):
+        raise ValueError("Stage116 paired output paths must have equal length for matched environment shape")
+
+
 def audit_private_prologue_continue(single_c: Path, double_c: Path) -> dict:
     if not single_c.is_absolute() or not double_c.is_absolute():
         raise ValueError("absolute private Stage116 output paths required")
     if single_c.resolve() == double_c.resolve():
         raise ValueError("two distinct Stage116 output directories required")
+    _validate_pair_path_shape(single_c, double_c)
     _private_directory(single_c)
     _private_directory(double_c)
     if _private_regular(single_c / "pad-events.txt", 2048) != SINGLE_C_EVENTS:
@@ -210,6 +220,7 @@ def run_private_prologue_continue(
         raise ValueError("absolute private Stage116 output paths required")
     if single_c.resolve() == double_c.resolve():
         raise ValueError("two distinct Stage116 output directories required")
+    _validate_pair_path_shape(single_c, double_c)
     for directory in outputs:
         _private_directory(directory)
         if any(directory.iterdir()):
