@@ -42,12 +42,13 @@ static bool vh102_snapshot(FILE *out, int frame)
 '''
 
 
-def instrument_sh2_window(raw: bytes) -> bytes:
-    s=instrument_video_probe(raw).decode("utf-8")
-    if s.count(MAIN_ANCHOR)!=1 or "vh102_snapshot" in s:
+def instrument_sh2_window_on_patched_source(patched: bytes) -> bytes:
+    """Add Stage102 SH2 logging to a source that already has Stage101 logging."""
+    s = patched.decode("utf-8")
+    if s.count(MAIN_ANCHOR) != 1 or "vh102_snapshot" in s:
         raise ValueError("Stage101 pinned source does not match expectations")
-    s=s.replace(MAIN_ANCHOR, HELPER+"\n"+MAIN_ANCHOR,1)
-    changes=[
+    s = s.replace(MAIN_ANCHOR, HELPER + "\n" + MAIN_ANCHOR, 1)
+    changes = [
       ('         char video_state_path[1024];',
        '         char video_state_path[1024];\n'
        '         char sh2_path[1024];\n'
@@ -86,13 +87,18 @@ def instrument_sh2_window(raw: bytes) -> bytes:
        '         }\n'
        '         free(pixels);\n         if (remove(gate_path) != 0)'),
     ]
-    for old,new in changes:
-        if s.count(old)!=1:
+    for old, new in changes:
+        if s.count(old) != 1:
             raise ValueError("Stage101 SH2 instrumentation anchor modified")
-        s=s.replace(old,new,1)
-    if s.count("vh102_snapshot(")!=4:
+        s = s.replace(old, new, 1)
+    if s.count("vh102_snapshot(") != 4:
         raise ValueError("SH2 snapshot callback coverage incomplete")
     return s.encode("utf-8")
+
+
+def instrument_sh2_window(raw: bytes) -> bytes:
+    """Build Stage102 from the pinned Stage99 base for its standalone workflow."""
+    return instrument_sh2_window_on_patched_source(instrument_video_probe(raw))
 
 
 def main():
