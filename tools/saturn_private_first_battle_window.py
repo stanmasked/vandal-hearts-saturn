@@ -135,35 +135,7 @@ def _equal_frame(a: Path, b: Path, frame: int) -> bool:
     return a_hash == b_hash
 
 
-def _expected_followup_receipts(followup_c_frame: int | None) -> tuple[bytes, bytes]:
-    if followup_c_frame is None:
-        return CONFIRM_EVENTS, CONFIRM_STATE
-    if type(followup_c_frame) is not int or not (
-        CONFIRM_RELEASE + 6 <= followup_c_frame <= FRAME_COUNT - 8
-    ):
-        raise ValueError("invalid bounded Stage116 follow-up C frame")
-    event_tail = f"VH_PAD mode=1 completed_frames={FRAME_COUNT}\n".encode("ascii")
-    state_tail = f"VH_PADSTATE mode=1 completed_frames={FRAME_COUNT}\n".encode("ascii")
-    events = CONFIRM_EVENTS.replace(
-        event_tail,
-        (
-            f"VH_PAD frame={followup_c_frame} button=C action=PRESS\n"
-            f"VH_PAD frame={followup_c_frame + 6} button=C action=RELEASE\n"
-        ).encode("ascii") + event_tail,
-    )
-    state = CONFIRM_STATE.replace(
-        state_tail,
-        (
-            f"VH_PADSTATE frame={followup_c_frame} button=C active_low_bit=0\n"
-            f"VH_PADSTATE frame={followup_c_frame + 6} button=C active_low_bit=1\n"
-        ).encode("ascii") + state_tail,
-    )
-    return events, state
-
-
-def audit_private_first_battle_window(
-    first_only: Path, confirm_c: Path, followup_c_frame: int | None = None
-) -> dict:
+def audit_private_first_battle_window(first_only: Path, confirm_c: Path) -> dict:
     if not first_only.is_absolute() or not confirm_c.is_absolute():
         raise ValueError("absolute private Stage115 output paths required")
     if first_only.resolve() == confirm_c.resolve():
@@ -174,13 +146,10 @@ def audit_private_first_battle_window(
         raise ValueError("Stage115 first-only controller receipt mismatch")
     if _private_regular(first_only / "pad-state.txt", 2048) != FIRST_ONLY_STATE:
         raise ValueError("Stage115 first-only active-low receipt mismatch")
-    expected_confirm_events, expected_confirm_state = _expected_followup_receipts(
-        followup_c_frame
-    )
-    if _private_regular(confirm_c / "pad-events.txt", 2048) != expected_confirm_events:
-        raise ValueError("Stage115/116 C-confirm controller receipt mismatch")
-    if _private_regular(confirm_c / "pad-state.txt", 2048) != expected_confirm_state:
-        raise ValueError("Stage115/116 C-confirm active-low receipt mismatch")
+    if _private_regular(confirm_c / "pad-events.txt", 2048) != CONFIRM_EVENTS:
+        raise ValueError("Stage115 C-confirm controller receipt mismatch")
+    if _private_regular(confirm_c / "pad-state.txt", 2048) != CONFIRM_STATE:
+        raise ValueError("Stage115 C-confirm active-low receipt mismatch")
 
     first_count, first_dims = _check_long_frames(first_only)
     confirm_count, confirm_dims = _check_long_frames(confirm_c)
@@ -211,13 +180,7 @@ def audit_private_first_battle_window(
     confirm_cd, confirm_cd_hash = _count_canonical_fads(confirm_c)
     return {
         "schema_version": 1,
-        "kind": (
-            "STAGE116_PRIVATE_FOLLOWUP_C_WINDOW_INTEGRITY_ONLY"
-            if followup_c_frame is not None
-            else "STAGE115_PRIVATE_FIRST_BATTLE_WINDOW_INTEGRITY_ONLY"
-        ),
-        "followup_c_frame": followup_c_frame,
-        "followup_c_input_receipt_verified": followup_c_frame is not None,
+        "kind": "STAGE115_PRIVATE_FIRST_BATTLE_WINDOW_INTEGRITY_ONLY",
         "frames_per_process": FRAME_COUNT,
         "independent_cold_boot_processes": 2,
         "checkpoint_png_count_per_process": 400,
@@ -241,10 +204,7 @@ def audit_private_first_battle_window(
     }
 
 
-def _run_one(
-    executable: Path, cue: Path, directory: Path, *, confirm: bool,
-    seconds: int, followup_c_frame: int | None = None,
-) -> None:
+def _run_one(executable: Path, cue: Path, directory: Path, *, confirm: bool, seconds: int) -> None:
     env = {
         "HOME": str(directory),
         "TMPDIR": str(directory),
@@ -260,8 +220,6 @@ def _run_one(
     if confirm:
         env["VH_SATURN_CONFIRM_AT_FRAME"] = str(CONFIRM_PRESS)
         env["VH_SATURN_CONFIRM_BUTTON"] = "C"
-        if followup_c_frame is not None:
-            env["VH_SATURN_FOLLOWUP_C_AT_FRAME"] = str(followup_c_frame)
     process = subprocess.Popen(
         [str(executable), "vh-private-frame-boot", str(cue), str(FRAME_COUNT)],
         cwd=directory, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
@@ -286,13 +244,11 @@ def run_private_first_battle_window(
     cue: Path, track1: Path, track2: Path, executable: Path,
     expected_runner_sha256: str, first_only: Path, confirm_c: Path,
     *, seconds: int = 7200, pins: dict = PINNED,
-    followup_c_frame: int | None = None,
 ) -> dict:
     if not isinstance(expected_runner_sha256, str) or not SHA256.fullmatch(expected_runner_sha256):
         raise ValueError("independent lowercase SHA-256 of public runner required")
     if type(seconds) is not int or not (1 <= seconds <= MAX_SECONDS):
         raise ValueError("invalid bounded private process timeout")
-    _expected_followup_receipts(followup_c_frame)
     if not executable.is_absolute() or executable.is_symlink():
         raise ValueError("absolute nonsymlinked public Yabause executable required")
     _not_in_checkout(executable)
@@ -324,14 +280,8 @@ def run_private_first_battle_window(
     try:
         with ThreadPoolExecutor(max_workers=2) as pool:
             futures = (
-                pool.submit(
-                    _run_one, executable, cue, first_only, confirm=False,
-                    seconds=seconds, followup_c_frame=None,
-                ),
-                pool.submit(
-                    _run_one, executable, cue, confirm_c, confirm=True,
-                    seconds=seconds, followup_c_frame=followup_c_frame,
-                ),
+                pool.submit(_run_one, executable, cue, first_only, confirm=False, seconds=seconds),
+                pool.submit(_run_one, executable, cue, confirm_c, confirm=True, seconds=seconds),
             )
             for future in futures:
                 future.result()
@@ -343,7 +293,7 @@ def run_private_first_battle_window(
             raise ValueError("original Saturn source changed during Stage115") from exc
         if _fingerprint(executable) != initial_runner:
             raise ValueError("public Yabause executable changed during Stage115")
-    report = audit_private_first_battle_window(first_only, confirm_c, followup_c_frame)
+    report = audit_private_first_battle_window(first_only, confirm_c)
     report.update({
         "same_pinned_original_media_before_and_after_both_processes": True,
         "same_public_runner_file_identity_and_digest_before_and_after": True,
@@ -360,13 +310,12 @@ def main() -> int:
         parser.add_argument("--" + flag, type=Path, required=True)
     parser.add_argument("--expected-runner-sha256", required=True)
     parser.add_argument("--timeout", type=int, default=7200)
-    parser.add_argument("--followup-c-frame", type=int, default=None)
     args = parser.parse_args()
     try:
         report = run_private_first_battle_window(
             args.cue, args.track1, args.track2, args.executable,
             args.expected_runner_sha256, args.first_only, args.confirm_c,
-            seconds=args.timeout, followup_c_frame=args.followup_c_frame,
+            seconds=args.timeout,
         )
     except (OSError, ValueError, TypeError, subprocess.SubprocessError):
         print("STAGE115_PRIVATE_BATTLE_WINDOW_REJECTED", file=sys.stderr)
