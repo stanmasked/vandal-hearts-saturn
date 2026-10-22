@@ -116,6 +116,7 @@ class Stage113TripleStartAuditTests(unittest.TestCase):
         self.assertEqual(report["first_only_and_dual_identical_through_frame"], 12120)
         self.assertTrue(report["first_start_menu_difference_verified_at_12120_and_13200"])
         self.assertEqual(report["second_start_first_measurable_frame_difference"], 12360)
+        self.assertEqual(len(report["second_start_post_input_frames_compared"]), 98)
         self.assertFalse(report["first_tactical_battle_verified"])
         self.assertFalse(report["original_media_or_frame_hashes_exported"])
 
@@ -134,7 +135,7 @@ class Stage113TripleStartAuditTests(unittest.TestCase):
             )
 
     def test_rejects_second_start_without_any_post_input_difference(self):
-        for frame in (12360, 13200, 18000, 24000):
+        for frame in range(12360, FRAME_COUNT + 1, 120):
             _write(
                 self.dual_start,
                 f"frame-{frame}.png",
