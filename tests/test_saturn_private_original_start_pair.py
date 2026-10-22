@@ -31,6 +31,10 @@ assert len(sys.argv)==4 and sys.argv[1]=="vh-private-frame-boot"
 assert sys.argv[3]=="13200"
 directory=Path(os.environ["VH_SATURN_PRIVATE_FRAMES_DIR"])
 assert directory==Path.cwd()
+assert not any(k in os.environ for k in ("LD_PRELOAD","LD_LIBRARY_PATH",
+                                         "DYLD_INSERT_LIBRARIES","PYTHONPATH",
+                                         "DISPLAY","VH_SATURN_START_AT_FRAME")
+               if k != "VH_SATURN_START_AT_FRAME" or not os.environ.get("VH_SATURN_START_AT_FRAME"))
 pressed=os.environ.get("VH_SATURN_START_AT_FRAME")
 assert pressed in (None,"12060")
 assert Path(sys.argv[2]).is_file()
@@ -53,7 +57,7 @@ else:
     p.write_text("VH_PAD mode=0 completed_frames=13200\n")
     s.write_text("VH_PADSTATE initial_start_bit=1\n"
                  "VH_PADSTATE mode=0 completed_frames=13200\n")
-for n in (11880,12000,12120,13200):
+for n in range(120,13201,120):
     different=bool(os.environ.get("STAGE110_FAKE_PRE_DIVERGE")) and pressed and n==12000
     colour=(1,9,3) if different else (12,13,14) if n<=12000 else (3,4,5) if pressed else (6,7,8)
     (directory/f"frame-{n}.png").write_bytes(png(colour))
@@ -115,6 +119,9 @@ class PrivatePairTests(unittest.TestCase):
         self.assertTrue(report["emulator_frame_stats_verified_in_both_processes"])
         self.assertTrue(report["final_frame_dimensions_crosschecked_to_both_stats"])
         self.assertEqual(report["completed_frames_from_both_emulator_stats"],13200)
+        self.assertEqual(report["checkpoint_png_count_per_process"],110)
+        self.assertTrue(report["all_checkpoint_pngs_valid_and_sequential"])
+        self.assertTrue(report["subprocess_environment_allowlisted"])
         self.assertTrue(report["post_start_12120_png_files_differ"])
         self.assertTrue(report["post_start_13200_png_files_differ"])
         self.assertTrue(report["start_press_seen_in_host_padbits_as_active_low_zero"])
@@ -212,6 +219,24 @@ class PrivatePairTests(unittest.TestCase):
         path.write_bytes(path.read_bytes()+b"STAGE99_FRAMES 13200\n")
         path.chmod(0o600)
         with self.assertRaisesRegex(ValueError,"malformed"):
+            audit_joint_evidence(self.control,self.pressed)
+
+    def test_inherited_loader_python_and_display_hooks_are_removed(self):
+        hostile = {
+            "LD_PRELOAD": "/tmp/untrusted-preload.so",
+            "LD_LIBRARY_PATH": "/tmp/untrusted-libs",
+            "DYLD_INSERT_LIBRARIES": "/tmp/untrusted.dylib",
+            "PYTHONPATH": "/tmp/untrusted-python",
+            "DISPLAY": ":999",
+        }
+        with patch.dict(os.environ,hostile):
+            report=self.run_pair()
+        self.assertTrue(report["subprocess_environment_allowlisted"])
+
+    def test_missing_intermediate_checkpoint_png_rejected(self):
+        self.run_pair()
+        (self.control/"frame-600.png").unlink()
+        with self.assertRaisesRegex(ValueError,"sequence is incomplete"):
             audit_joint_evidence(self.control,self.pressed)
 
     def test_bad_disc_hash_rejected_before_execution(self):
