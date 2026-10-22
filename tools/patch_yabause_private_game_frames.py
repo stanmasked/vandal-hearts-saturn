@@ -17,7 +17,7 @@ MODE = "vh-private-frame-boot"
 PASS = "STAGE99_REAL_YABAUSE_BOUND_FRAMES_PASS"
 STAGE99_CONDITION = STAGE98_CONDITION.replace(
     'strcmp(argv[1], "vh-private-disc-probe") == 0)))',
-    'strcmp(argv[1], "vh-private-disc-probe") == 0))) || '
+    'strcmp(argv[1], "vh-private-disc-probe") == 0)) || '
     '(argc == 4 && strcmp(argv[1], "vh-private-frame-boot") == 0))',
 )
 
