@@ -78,6 +78,8 @@ def _check_long_frames(directory: Path) -> tuple[int, tuple[int, int]]:
     dimensions = None
     for frame in CHECKPOINTS:
         dims, _ = _frame(directory, frame)
+        if not (64 <= dims[0] <= 704 and 64 <= dims[1] <= 512):
+            raise ValueError("Stage115 checkpoint dimensions invalid")
         if dimensions is None:
             dimensions = dims
         elif dims != dimensions:
@@ -86,20 +88,27 @@ def _check_long_frames(directory: Path) -> tuple[int, tuple[int, int]]:
         raise ValueError("Stage115 checkpoints missing")
 
     pre_dims = validate_png_file(_private_regular(directory / "pre.png", MAX_PNG_BYTES))
+    if not (64 <= pre_dims[0] <= 704 and 64 <= pre_dims[1] <= 512):
+        raise ValueError("Stage115 initial framebuffer geometry invalid")
     post_dims = validate_png_file(_private_regular(directory / "post.png", MAX_PNG_BYTES))
-    if pre_dims != dimensions or post_dims != dimensions:
-        raise ValueError("Stage115 pre/post framebuffer dimensions differ")
+    if post_dims != dimensions:
+        raise ValueError("Stage115 final PNG and post-capture geometry differ")
 
-    stats = _private_regular(directory / "frames.stats", 2048)
+    stats = _private_regular(directory / "frames.stats", 256)
     match = FRAME_STATS.fullmatch(stats)
-    if not match or int(match.group(1)) != FRAME_COUNT:
-        raise ValueError("Stage115 frame statistics mismatch")
-    if (int(match.group(4)), int(match.group(5))) != dimensions:
-        raise ValueError("Stage115 frame-stat dimensions mismatch")
+    if not match:
+        raise ValueError("Stage115 frame statistics malformed")
+    completed, pc_before, pc_after, width, height = map(int, match.groups())
+    if completed != FRAME_COUNT or pc_before > 0xFFFFFFFF or pc_after > 0xFFFFFFFF:
+        raise ValueError("Stage115 frame counter mismatch")
+    if not (64 <= width <= 704 and 64 <= height <= 512):
+        raise ValueError("Stage115 final framebuffer dimensions invalid")
+    if (width, height) != dimensions:
+        raise ValueError("Stage115 final PNG disagrees with frame statistics")
 
     expected_samples = [0] + list(CHECKPOINTS) + [FRAME_COUNT]
     for name, pattern in (("sh2-window.txt", SH2_LINE), ("video-state.txt", VIDEO_LINE)):
-        raw = _private_regular(directory / name, 2 * 1024 * 1024)
+        raw = _private_regular(directory / name, 1024 * 1024)
         if not raw.endswith(b"\n") or b"\r" in raw or b"\x00" in raw:
             raise ValueError("Stage115 diagnostic log is not canonical")
         lines = raw.splitlines()
