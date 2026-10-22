@@ -52,8 +52,12 @@ def validate_png_file(raw: bytes) -> tuple[int, int]:
             width, height, depth, color, compress, filt, interlace = struct.unpack(
                 ">IIBBBBB", chunk
             )
+            # Yabause/lodepng may encode an all-black early framebuffer as
+            # low-bit-depth grayscale. Those are valid PNGs; truecolor and
+            # alpha-bearing formats still require 8- or 16-bit samples.
+            valid_depths = (1, 2, 4, 8, 16) if color == 0 else (8, 16)
             if (not 1 <= width <= 4096 or not 1 <= height <= 4096 or
-                    depth not in (8, 16) or color not in (0, 2, 4, 6) or
+                    depth not in valid_depths or color not in (0, 2, 4, 6) or
                     compress != 0 or filt != 0 or interlace not in (0, 1)):
                 raise ValueError("unsupported PNG frame shape")
             saw_ihdr = True
