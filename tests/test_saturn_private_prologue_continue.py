@@ -125,6 +125,12 @@ class Stage116PrivateDialogueAuditTests(unittest.TestCase):
         self.assertFalse(report["first_battle_or_player_control_verified"])
         self.assertFalse(report["original_media_or_frame_hashes_exported"])
 
+    def test_rejects_unequal_output_path_shape(self):
+        with self.assertRaisesRegex(ValueError, "equal length"):
+            audit_private_prologue_continue(
+                self.root / "short", self.root / "longer-control"
+            )
+
     def test_rejects_divergence_before_first_c(self):
         _write(self.double_c, "frame-12120.png", _png((1, 2, 3)))
         with self.assertRaisesRegex(ValueError, "before first C confirm"):
