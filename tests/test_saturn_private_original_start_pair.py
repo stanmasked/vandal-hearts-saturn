@@ -33,8 +33,7 @@ directory=Path(os.environ["VH_SATURN_PRIVATE_FRAMES_DIR"])
 assert directory==Path.cwd()
 assert not any(k in os.environ for k in ("LD_PRELOAD","LD_LIBRARY_PATH",
                                          "DYLD_INSERT_LIBRARIES","PYTHONPATH",
-                                         "DISPLAY","VH_SATURN_START_AT_FRAME")
-               if k != "VH_SATURN_START_AT_FRAME" or not os.environ.get("VH_SATURN_START_AT_FRAME"))
+                                         "DISPLAY"))
 pressed=os.environ.get("VH_SATURN_START_AT_FRAME")
 assert pressed in (None,"12060")
 assert Path(sys.argv[2]).is_file()
