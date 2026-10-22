@@ -96,20 +96,30 @@ FINALIZE = r'''         if (vh107_pad_log)
 
 def instrument_gamepad_start(raw: bytes) -> bytes:
     source = instrument_original_title_12000(raw).decode("utf-8")
-    replacements=[
-        (BEFORE,AFTER),
-        (HEADER,HEADER+'#include "../peripheral.h"\n'),
-        (DECLARE,SETUP+"\n"+DECLARE),
-        (AFTER_INIT,AFTER_INIT+"\n"+CONNECT),
-        (BEFORE_EMULATE,LOOP),
-        (BEFORE_RETURN,FINALIZE+BEFORE_RETURN),
+    mode_start = '      if (strcmp(argv[1], "vh-private-frame-boot") == 0)\n      {'
+    mode_end = (
+        '         puts("STAGE99_REAL_YABAUSE_BOUND_FRAMES_PASS");\n'
+        '         return 0;\n      }'
+    )
+    if (source.count(mode_start) != 1 or source.count(mode_end) != 1 or
+            "vh107_pad_log" in source or source.count(HEADER) != 1):
+        raise ValueError("pinned Stage106 original-game command branch differs")
+    start = source.index(mode_start)
+    end = source.index(mode_end, start) + len(mode_end)
+    mode = source[start:end]
+    replacements = [
+        (BEFORE, AFTER),
+        (DECLARE, SETUP + "\n" + DECLARE),
+        (AFTER_INIT, AFTER_INIT + "\n" + CONNECT),
+        (BEFORE_EMULATE, LOOP),
+        (BEFORE_RETURN, FINALIZE + BEFORE_RETURN),
     ]
-    if "vh107_pad_log" in source:
-        raise ValueError("already patched original mode")
-    for old,new in replacements:
-        if source.count(old)!=1:
-            raise ValueError("pinned Stage106 Yabause source shape changed: "+old[:24])
-        source=source.replace(old,new,1)
+    for old, new in replacements:
+        if mode.count(old) != 1:
+            raise ValueError("pinned private branch changed: " + old[:32])
+        mode = mode.replace(old, new, 1)
+    source = source[:start] + mode + source[end:]
+    source = source.replace(HEADER, HEADER + '#include "../peripheral.h"\n', 1)
     for token in (
         "PerPadAdd(&PORTDATA1)", "PerPadStartPressed(vh107_pad)",
         "PerPadStartReleased(vh107_pad)", "VH_SATURN_START_AT_FRAME",
