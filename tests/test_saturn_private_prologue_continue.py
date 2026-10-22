@@ -118,9 +118,9 @@ class Stage116PrivateDialogueAuditTests(unittest.TestCase):
         self.assertEqual(report["second_C_release_frame"], CONFIRM2_RELEASE)
         self.assertEqual(report["pre_second_checkpoint_equal_count"], 259)
         self.assertEqual(report["pre_second_checkpoint_total"], 259)
-        self.assertEqual(report["stable_pre_second_checkpoint_total"], 256)
+        self.assertEqual(report["stable_pre_second_checkpoint_total"], 259)
         self.assertEqual(report["known_intro_fmv_checkpoint_differences"], [])
-        self.assertTrue(report["all_stable_pre_second_C_checkpoints_match"])
+        self.assertTrue(report["all_pre_second_C_checkpoints_match"])
         self.assertEqual(report["first_post_second_C_framebuffer_divergence_by_36000"], 31320)
         self.assertEqual(report["first_post_second_C_framebuffer_divergence_through_48000"], 31320)
         self.assertTrue(report["frame_32400_differs_after_second_C"])
@@ -145,17 +145,10 @@ class Stage116PrivateDialogueAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "diverged before second C confirm"):
             audit_private_prologue_continue(self.single_c, self.double_c)
 
-    def test_allows_only_the_three_reviewed_intro_fmv_checkpoints(self):
-        for frame in (6240, 9720, 9960):
-            _write(self.double_c, f"frame-{frame}.png", _png((1, 2, 3)))
-        report = audit_private_prologue_continue(self.single_c, self.double_c)
-        self.assertEqual(
-            report["known_intro_fmv_checkpoint_differences"],
-            [6240, 9720, 9960],
-        )
-        self.assertEqual(report["pre_second_checkpoint_equal_count"], 256)
-        self.assertEqual(report["stable_pre_second_checkpoint_total"], 256)
-        self.assertTrue(report["all_stable_pre_second_C_checkpoints_match"])
+    def test_rejects_intro_fmv_difference_before_first_start(self):
+        _write(self.double_c, "frame-6240.png", _png((1, 2, 3)))
+        with self.assertRaisesRegex(ValueError, "diverged before first START"):
+            audit_private_prologue_continue(self.single_c, self.double_c)
 
     def test_rejects_unreviewed_pre_start_difference(self):
         _write(self.double_c, "frame-6000.png", _png((1, 2, 3)))
