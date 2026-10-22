@@ -25,6 +25,33 @@ program binaries as temporary artifacts. No original game BIN/CUE,
 screenshots, private SHA-256 records, SH2 instruction words, CD callback
 trace or copyrighted game resource is committed.
 
+## Actual original-disc private progression (22 October 2026)
+
+The public-only **GCC Stage104 Yabause** built successfully in pinned
+GCC/Clang CI. A private 3600-frame session on the Stage02 full-hash
+original English-v1.1 Track1/Track2/CUE completed successfully:
+Yabause returned 0 with the exact PASS marker, logged **5891 real
+numeric ISOCD callbacks (5821 distinct)** and saved 30 locally
+protected 120-frame PNG checkpoints, of which **24 had different
+full-file checksums**.
+
+Actual frames privately decoded and inspected:
+
+| Guest frame | Visible original-content evidence |
+| ---: | --- |
+| 600 | Genuine KONAMI splash |
+| 1200 | KONAMI Computer Entertainment Nagoya logo |
+| 1800 | Original 3D-style forest intro cinematic with a character |
+| 2400 | Subsequent cinematic scene |
+| 3600 | Intro scene with a sword before a tree |
+
+The movie progression plus thousands of naturally generated CD reads
+confirms substantially more authentic original Saturn code/video
+execution than the earlier manually requested Stage98 ISOCD probes.
+This is **not yet** a demonstrated title/menu or first tactical battle.
+All 30 image captures, full numerical callback lists, game media and
+private SH2 opcode windows were kept outside GitHub/Actions.
+
 A private long run should document whether the game leaves the KONAMI
 splash, whether a genuinely identifiable title/menu appears, and at
 which emulator frame it first becomes visible. A visible title alone
