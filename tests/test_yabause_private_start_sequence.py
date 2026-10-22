@@ -37,6 +37,7 @@ class Stage112DualStartSourceTests(unittest.TestCase):
         mode = source[start:end]
         self.assertEqual(mode.count("PerPadStartPressed(vh107_pad);"), 2)
         self.assertEqual(mode.count("PerPadStartReleased(vh107_pad);"), 2)
+        self.assertEqual(mode.count("vh112_start_at2"), 2)
         self.assertEqual(mode.count("VH_PADSTATE frame=%d start_bit=0"), 2)
         self.assertEqual(mode.count("VH_PADSTATE frame=%d start_bit=1"), 2)
         self.assertIn('getenv("VH_SATURN_START_AT_FRAME2")', mode)
