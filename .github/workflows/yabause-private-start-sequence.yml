@@ -55,14 +55,7 @@ jobs:
             --source external-yabause/yabause/src/cdbase.c \
             --output external-yabause/yabause/src/cdbase.instrumented.c
           mv external-yabause/yabause/src/cdbase.instrumented.c external-yabause/yabause/src/cdbase.c
-      - name: Apply Stage109 native pad bit to real Yabause
-        run: |
-          set -euo pipefail
-          python3 -m tools.patch_yabause_native_start_bit \
-            --source external-yabause/yabause/src/runner/yui.cpp \
-            --output external-yabause/yabause/src/runner/yui.instrumented.cpp
-          mv external-yabause/yabause/src/runner/yui.instrumented.cpp external-yabause/yabause/src/runner/yui.cpp
-      - name: Apply Stage112 second START pulse and 24000-frame bound
+      - name: Compose Stage101/102 diagnostics and Stage107/109/112 input on pinned Yabause
         run: |
           set -euo pipefail
           python3 -m tools.patch_yabause_private_start_sequence \
@@ -71,6 +64,9 @@ jobs:
           mv external-yabause/yabause/src/runner/yui.stage112.cpp external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_START_AT_FRAME2' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'frames > 24000' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'video-state.txt' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'sh2-window.txt' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'pad-state.txt' external-yabause/yabause/src/runner/yui.cpp
           test "$(grep -Fc 'PerPadStartPressed(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -ge 2
           echo STAGE112_PINNED_DUAL_START_SOURCE_READY
       - name: Run source-contract and negative tests with invented text only
