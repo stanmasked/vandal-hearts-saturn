@@ -64,7 +64,7 @@ jobs:
           python3 -m tools.patch_yabause_private_fourth_confirm \
             --source external-yabause/yabause/src/runner/yui.cpp \
             --output external-yabause/yabause/src/runner/yui.stage118.cpp
-          mv external-yabause/yabause/src/runner/yui.stage117.cpp external-yabause/yabause/src/runner/yui.cpp
+          mv external-yabause/yabause/src/runner/yui.stage118.cpp external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_START_AT_FRAME' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME2' external-yabause/yabause/src/runner/yui.cpp
@@ -72,15 +72,15 @@ jobs:
           grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME3' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_CONFIRM3_ENABLED' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_CONFIRM_BUTTON' external-yabause/yabause/src/runner/yui.cpp
-          test "$(grep -Fc 'PerPadCPressed(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 3
-          test "$(grep -Fc 'PerPadCReleased(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 3
+          test "$(grep -Fc 'PerPadCPressed(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 4
+          test "$(grep -Fc 'PerPadCReleased(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 4
           grep -Fq 'frames > 48000' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME4' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_CONFIRM4_ENABLED' external-yabause/yabause/src/runner/yui.cpp
           test "$(grep -Fc 'PerPadCPressed(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 4
           test "$(grep -Fc 'PerPadCReleased(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 4
           echo STAGE118_FOURTH_CONFIRM_SOURCE_READY
-      - name: Run synthetic-only Stage117 and inherited regressions
+      - name: Run synthetic-only Stage118 and inherited regressions
         run: |
           set -euo pipefail
           python3 -m py_compile \
