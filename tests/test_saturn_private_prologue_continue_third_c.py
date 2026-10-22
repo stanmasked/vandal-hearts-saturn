@@ -150,11 +150,22 @@ class Stage117PairedRunScheduleTests(unittest.TestCase):
             self.assertEqual(envs[1]["VH_SATURN_CONFIRM2_ENABLED"], "1")
             self.assertEqual(envs[0]["VH_SATURN_CONFIRM3_ENABLED"], "0")
             self.assertEqual(envs[1]["VH_SATURN_CONFIRM3_ENABLED"], "1")
+            input_schedule = (
+                "VH_SATURN_START_AT_FRAME",
+                "VH_SATURN_CONFIRM_AT_FRAME",
+                "VH_SATURN_CONFIRM_BUTTON",
+                "VH_SATURN_CONFIRM_AT_FRAME2",
+                "VH_SATURN_CONFIRM2_ENABLED",
+                "VH_SATURN_CONFIRM_AT_FRAME3",
+            )
             self.assertEqual(
-                {key: value for key, value in envs[0].items()
-                 if key != "VH_SATURN_CONFIRM3_ENABLED"},
-                {key: value for key, value in envs[1].items()
-                 if key != "VH_SATURN_CONFIRM3_ENABLED"},
+                {key: envs[0][key] for key in input_schedule},
+                {key: envs[1][key] for key in input_schedule},
+            )
+            self.assertNotEqual(envs[0]["HOME"], envs[1]["HOME"])
+            self.assertNotEqual(
+                envs[0]["VH_SATURN_PRIVATE_FRAMES_DIR"],
+                envs[1]["VH_SATURN_PRIVATE_FRAMES_DIR"],
             )
 
 
