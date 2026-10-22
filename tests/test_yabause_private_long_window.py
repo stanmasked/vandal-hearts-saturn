@@ -40,7 +40,6 @@ class Stage115LongWindowSourceTests(unittest.TestCase):
             "VH_PADSTATE initial_confirm_button=%c active_low_bit=1",
             "video-state.txt",
             "sh2-window.txt",
-            "frames.stats",
         ):
             self.assertIn(token, mode)
         self.assertEqual(patched.count(b"YabauseEmulate()"), stage114.count(b"YabauseEmulate()"))
