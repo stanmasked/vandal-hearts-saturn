@@ -56,6 +56,7 @@ def instrument_full_private_long_window(raw: bytes) -> bytes:
         "VH_SATURN_CONFIRM_BUTTON",
         "PerPadCPressed(vh107_pad);",
         "frames > 48000",
+        "frames.stats",
         "video-state.txt",
         "sh2-window.txt",
         "pad-state.txt",
