@@ -1,5 +1,6 @@
 """Stage112 source-only tests: dual START pulses, bounded long window, no media."""
 import unittest
+from unittest.mock import patch
 
 from tools.patch_yabause_native_start_bit import (
     MODE_START, MODE_END, SETUP_EXTRA, CONNECT_EXTRA, PRESS_EXTRA,
@@ -8,7 +9,9 @@ from tools.patch_yabause_native_start_bit import (
 from tools.patch_yabause_private_start_pad import (
     SETUP, CONNECT, LOOP, FINALIZE,
 )
-from tools.patch_yabause_private_start_sequence import instrument_private_start_sequence
+from tools.patch_yabause_private_start_sequence import (
+    instrument_private_start_sequence, instrument_full_private_start_sequence,
+)
 
 
 def _stage109_instrumented_fixture():
@@ -129,6 +132,29 @@ def _stage109_instrumented_fixture():
 
 
 class Stage112DualStartSourceTests(unittest.TestCase):
+    def test_full_pipeline_composes_prior_stages_in_order(self):
+        complete = (
+            b"vh101_snapshot( vh102_snapshot( vh107_start_at vh109_state_log "
+            b"VH_SATURN_START_AT_FRAME2 video-state.txt sh2-window.txt "
+            b"pad-state.txt frames > 24000"
+        )
+        with (
+            patch("tools.patch_yabause_private_start_sequence.instrument_sh2_window",
+                  return_value=b"stage102") as stage102,
+            patch("tools.patch_yabause_private_start_sequence.instrument_gamepad_start_on_patched_source",
+                  return_value=b"stage107") as stage107,
+            patch("tools.patch_yabause_private_start_sequence.instrument_native_start_bit_on_patched_source",
+                  return_value=b"stage109") as stage109,
+            patch("tools.patch_yabause_private_start_sequence.instrument_private_start_sequence",
+                  return_value=complete) as stage112,
+        ):
+            result = instrument_full_private_start_sequence(b"pinned-upstream")
+        self.assertEqual(result, complete)
+        stage102.assert_called_once_with(b"pinned-upstream")
+        stage107.assert_called_once_with(b"stage102")
+        stage109.assert_called_once_with(b"stage107")
+        stage112.assert_called_once_with(b"stage109")
+
     def test_adds_two_separate_native_press_release_blocks(self):
         source = instrument_private_start_sequence(_stage109_instrumented_fixture()).decode()
         start = source.index(MODE_START)
