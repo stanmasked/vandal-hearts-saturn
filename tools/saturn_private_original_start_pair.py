@@ -106,9 +106,40 @@ def _frame(directory: Path, n: int) -> tuple[tuple[int, int], bytes]:
     return dimensions, hashlib.sha256(raw).digest()
 
 
+FRAME_STATS = re.compile(
+    rb"STAGE99_FRAMES (0|[1-9][0-9]*)\n"
+    rb"STAGE99_PC_BEFORE (0|[1-9][0-9]*)\n"
+    rb"STAGE99_PC_AFTER (0|[1-9][0-9]*)\n"
+    rb"STAGE99_WIDTH (0|[1-9][0-9]*)\n"
+    rb"STAGE99_HEIGHT (0|[1-9][0-9]*)\n"
+    rb"\Z"
+)
+
+
+def _verified_frame_stats(directory: Path) -> tuple[int, int]:
+    """Bind Yabause's final frame accounting to the protected final PNG."""
+    raw = _private_regular(directory / "frames.stats", 256)
+    match = FRAME_STATS.fullmatch(raw)
+    if not match:
+        raise ValueError("private Yabause final frame accounting is malformed")
+    completed, pc_before, pc_after, width, height = map(int, match.groups())
+    if (completed != FRAME_COUNT or
+            pc_before > 0xFFFFFFFF or pc_after > 0xFFFFFFFF or
+            not (64 <= width <= 704 and 64 <= height <= 512)):
+        raise ValueError("private Yabause did not finish the required frame contract")
+    dimensions, _ = _frame(directory, FRAME_COUNT)
+    if dimensions != (width, height):
+        raise ValueError("Yabause final PNG dimensions differ from frame accounting")
+    return dimensions
+
+
 def audit_joint_evidence(control: Path, pressed: Path) -> dict:
     """Stage108-like pre-input PNG baseline plus Stage109 native padbit proof."""
     report = audit_native_padbit_ab(control, pressed)
+    control_geometry = _verified_frame_stats(control)
+    pressed_geometry = _verified_frame_stats(pressed)
+    if control_geometry != pressed_geometry:
+        raise ValueError("A/B Yabause final frame accounting dimensions differ")
     agreement = {}
     for n in PRE_INPUT_FRAMES + POST_INPUT_FRAMES:
         a_shape, a_hash = _frame(control, n)
@@ -122,6 +153,9 @@ def audit_joint_evidence(control: Path, pressed: Path) -> dict:
         **report,
         "schema_version": 3,
         "kind": "STAGE110_PRIVATE_ORIGINAL_START_AB_INTEGRITY_ONLY",
+        "emulator_frame_stats_verified_in_both_processes": True,
+        "completed_frames_from_both_emulator_stats": FRAME_COUNT,
+        "final_frame_dimensions_crosschecked_to_both_stats": True,
         "pre_start_png_checkpoints_match": True,
         "pre_start_frames_compared": list(PRE_INPUT_FRAMES),
         "post_start_frames_compared": list(POST_INPUT_FRAMES),
