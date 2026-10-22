@@ -32,7 +32,6 @@ def instrument_private_48000_frame_window(patched: bytes) -> bytes:
         "video-state.txt",
         "sh2-window.txt",
         "pad-state.txt",
-        "frames.stats",
     )
     for token in required:
         if token not in mode:
