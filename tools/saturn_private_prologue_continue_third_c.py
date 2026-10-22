@@ -17,7 +17,7 @@ from tools.saturn_private_original_start_pair import _build_manifest, _check_med
 from tools.saturn_private_original_start_sequence import (
     FIRST_PRESS, FIRST_RELEASE, MAX_SECONDS, SHA256,
 )
-from tools.saturn_private_start_ab import _count_canonical_fads
+from tools.saturn_private_start_ab import MAX_PNG_BYTES, _count_canonical_fads
 from tools.saturn_private_frame_witness import validate_png_file
 from tools.saturn_private_first_battle_window import (
     CHECKPOINTS, FRAME_COUNT, _check_long_frames, _equal_frame,
