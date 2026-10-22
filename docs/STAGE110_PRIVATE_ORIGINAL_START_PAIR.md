@@ -59,10 +59,16 @@ inside a Git checkout.
 First process: 13200 frames, same real standard Saturn pad but no
 button events. Second process: 13200 frames, same executable and disc,
 one six-frame START pulse at 12060/12066. Inputs are sandboxed by
-the protected subprocess working directories, private umask and
-restricted environment variables. Any nonzero process status, closed
-gate failure, failed media/binary hash or missing private receipts is
-fatal.
+the protected subprocess working directories, private umask and a strict
+allowlist environment (`HOME`, `TMPDIR`, `PATH`, `LANG`, `LC_ALL`,
+`TZ`, and the three private capture parameters). Dynamic-loader hooks,
+Python injection paths, display/session variables and inherited
+`VH_SATURN_*` overrides are not inherited. Every one of the 110 expected
+checkpoint PNGs (frames 120 through 13200 in 120-frame steps) must exist,
+be a protected regular file and pass PNG validation; missing or unexpected
+checkpoint names are rejected. Any nonzero process status, open gate,
+failed media/binary hash, malformed frame statistics or missing private
+receipts is fatal.
 
 The final integrated audit checks both Stage109 native pad bit
 receipts and Stage107 numeric CD/PNG evidence. It also parses the
