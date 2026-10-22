@@ -3,7 +3,8 @@ import unittest
 from unittest.mock import patch
 
 from test_yabause_private_start_sequence import _stage109_instrumented_fixture
-from tools.patch_yabause_private_confirm_pad import instrument_full_private_confirm_sequence
+from tools.patch_yabause_private_confirm_pad import instrument_private_confirm_button
+from tools.patch_yabause_private_start_sequence import instrument_private_start_sequence
 from tools.patch_yabause_private_long_window import (
     instrument_full_private_long_window,
     instrument_private_48000_frame_window,
@@ -12,7 +13,8 @@ from tools.patch_yabause_native_start_bit import MODE_END, MODE_START
 
 
 def _stage114_fixture():
-    return instrument_full_private_confirm_sequence(_stage109_instrumented_fixture())
+    stage112 = instrument_private_start_sequence(_stage109_instrumented_fixture())
+    return instrument_private_confirm_button(stage112)
 
 
 def _mode(source):
