@@ -69,8 +69,9 @@ FINALIZE_EXTRA = r'''         if (!vh109_state_log ||
 '''
 
 
-def instrument_native_start_bit(raw: bytes) -> bytes:
-    source = instrument_gamepad_start(raw).decode("utf-8")
+def instrument_native_start_bit_on_patched_source(patched: bytes) -> bytes:
+    """Add Stage109's native pad-bit witness without rebuilding earlier stages."""
+    source = patched.decode("utf-8")
     if source.count(MODE_START) != 1 or source.count(MODE_END) != 1:
         raise ValueError("unpinned original Saturn command branch")
     start = source.index(MODE_START)
@@ -96,6 +97,13 @@ def instrument_native_start_bit(raw: bytes) -> bytes:
             source.count("YabauseEmulate()") != 2):
         raise ValueError("incomplete native active-low START bit witness")
     return source.encode("utf-8")
+
+
+def instrument_native_start_bit(raw: bytes) -> bytes:
+    """Build the historical Stage109 chain from the pinned original source."""
+    return instrument_native_start_bit_on_patched_source(
+        instrument_gamepad_start(raw)
+    )
 
 
 def main() -> int:
