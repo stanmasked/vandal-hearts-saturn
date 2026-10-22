@@ -11,7 +11,7 @@ Stage99 introduces a new opt-in `vh-private-frame-boot` mode into the
 ## What changes
 
 The new mode requires a privately staged real CUE, a positive integer
-number of frames (maximum 120) and protected local paths for the gated
+number of frames (maximum 600) and protected local paths for the gated
 numeric CD-read log and frame files. It deinitializes the Stage82 dummy
 test core, initializes a new Yabause instance with
 `CDCORE_ISO`, `SH2CORE_INTERPRETER`, `VIDCORE_SOFT`,
@@ -23,6 +23,30 @@ and attempts to render two **private** framebuffer images:
 strictly numerical `frames.stats` with frame count, PC-before, PC-after
 and framebuffer dimensions and uses the Stage79 real gated CD callback
 for `VHCD_FAD` numeric reads.
+
+The instrumented frontend saves an additional private PNG checkpoint at
+every 120th frame (120, 240, 360, 480 and 600 when reached). These
+checkpoints allow pixel-level comparisons as the Saturn title changes video
+modes without treating black pixels as a successfully observed title screen.
+
+### First private original-disc results
+
+A public-only GCC Yabause runner artifact was executed locally, after
+verifying the original Track1/Track2/CUE Stage02 SHA-256 pins:
+- **12 frames, exit 0**, 53 numeric CD reads, SH2 program counter changed,
+  320×224 PNGs completely black.
+- **120 frames, exit 0**, 305 numeric CD reads (279 distinct) over physical
+  FAD 150–2664, SH2 PC changed, video resolution 352×240 and both
+  screenshots entirely black.
+- None of those 305 automatically recorded physical CD reads overlapped
+  the source filesystem candidate ranges BATL1PRG.BIN (2479–2598) or
+  MAP_1_1C.BIN (76486–76527), or Track2 CDDA. The Stage98 diagnostic
+  *deliberately* read these addresses and must not be misclassified as
+  a real game-loader access.
+
+This confirms an actual original-media-backed emulator frame loop but
+**not a visible game/menu/first battle**, and establishes a concrete reason
+to probe longer runs and rendering behavior.
 
 The build remains pinned to the historical Yabause and LodePNG public
 commits. Synthetic GCC and Clang CI run inherited Stage81–91 tests and
