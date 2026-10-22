@@ -85,11 +85,11 @@ def instrument_private_followup_c(patched: bytes) -> bytes:
         ("VH_SATURN_FOLLOWUP_C_AT_FRAME", 1),
         ("PerPadCPressed(vh107_pad);", 2),
         ("PerPadCReleased(vh107_pad);", 2),
-        ("VH_PAD frame=%d button=C action=PRESS", 2),
-        ("VH_PAD frame=%d button=C action=RELEASE", 2),
+        ("VH_PAD frame=%d button=C action=PRESS", 1),
+        ("VH_PAD frame=%d button=C action=RELEASE", 1),
         ("frames > 48000", 1),
-        ("VH_PADSTATE frame=%d button=C active_low_bit=0", 2),
-        ("VH_PADSTATE frame=%d button=C active_low_bit=1", 2),
+        ("VH_PADSTATE frame=%d button=C active_low_bit=0", 1),
+        ("VH_PADSTATE frame=%d button=C active_low_bit=1", 1),
     )
     for token, count in required_once:
         if mode.count(token) != count:
