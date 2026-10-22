@@ -20,7 +20,7 @@ from tools.saturn_private_frame_witness import validate_png_file
 
 FAD = re.compile(rb"VHCD_FAD (0|[1-9][0-9]*)\Z")
 FRAME_COUNT = 13200
-PRESS_AT = 12000
+PRESS_AT = 12060
 RELEASE_AT = PRESS_AT + 6
 MAX_FAD_BYTES = 4 * 1024 * 1024
 MAX_PNG_BYTES = 8 * 1024 * 1024
