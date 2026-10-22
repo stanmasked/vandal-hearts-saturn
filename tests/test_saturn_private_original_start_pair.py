@@ -110,6 +110,14 @@ class PrivatePairTests(unittest.TestCase):
                                  self.sha if runner_sha is None else runner_sha,
                                  self.control,self.pressed,seconds=15,pins=self.pins)
 
+    def set_fake_runner_behavior(self, old, new):
+        source=self.runner.read_text()
+        if source.count(old)!=1:
+            raise AssertionError("synthetic fault-injection anchor is not unique")
+        self.runner.write_text(source.replace(old,new))
+        self.runner.chmod(0o700)
+        self.sha=hashlib.sha256(self.runner.read_bytes()).hexdigest()
+
     def test_two_actual_independent_fake_subprocesses_pass_integrity(self):
         report=self.run_pair()
         self.assertTrue(report["same_stage02_full_media_digest_before_and_after_both_processes"])
@@ -137,20 +145,29 @@ class PrivatePairTests(unittest.TestCase):
         self.assertEqual(list(self.control.iterdir()),[])
 
     def test_pre_start_difference_rejected(self):
-        with patch.dict(os.environ,{"STAGE110_FAKE_PRE_DIVERGE":"1"}):
-            with self.assertRaisesRegex(ValueError, "before START"):
-                self.run_pair()
+        self.set_fake_runner_behavior(
+            'different=bool(os.environ.get("STAGE110_FAKE_PRE_DIVERGE")) and pressed and n==12000',
+            'different=bool(pressed) and n==12000',
+        )
+        with self.assertRaisesRegex(ValueError, "before START"):
+            self.run_pair()
 
     def test_original_media_mutation_detected_immediately(self):
-        with patch.dict(os.environ,{"STAGE110_FAKE_MUTATE":"1"}):
-            with self.assertRaisesRegex(ValueError, "source changed"):
-                self.run_pair()
+        self.set_fake_runner_behavior(
+            'if os.environ.get("STAGE110_FAKE_MUTATE"):',
+            'if True:',
+        )
+        with self.assertRaisesRegex(ValueError, "source changed"):
+            self.run_pair()
         self.assertEqual(self.t1.read_bytes(),b"CHANGED")
 
     def test_runner_failure_has_no_success_receipt(self):
-        with patch.dict(os.environ,{"STAGE110_FAKE_FAIL":"1"}):
-            with self.assertRaisesRegex(ValueError, "runner returned an error"):
-                self.run_pair()
+        self.set_fake_runner_behavior(
+            'if os.environ.get("STAGE110_FAKE_FAIL"):',
+            'if True:',
+        )
+        with self.assertRaisesRegex(ValueError, "runner returned an error"):
+            self.run_pair()
 
     def test_inherited_start_variable_cannot_contaminate_control(self):
         with patch.dict(os.environ,{"VH_SATURN_START_AT_FRAME":"12060",
