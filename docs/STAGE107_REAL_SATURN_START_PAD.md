@@ -71,6 +71,31 @@ These are illustrative placeholders, not the user's actual paths.
 Execute with `umask 077`; never export source assets or frame images
 through GitHub Actions.
 
+## Independent private evidence comparison
+
+`tools/saturn_private_start_ab.py` compares two privately stored
+13,200-frame captures after all source/runner identities are checked
+by the capture operator. It requires separate 0700 directories,
+protected 0600 `pad-events.txt`, `fad.vhcdlog` and
+`frame-13200.png` files, exact no-input or **frame 12060/12066**
+START press/release receipts and canonical numeric-only FAD lines.
+The PNGs must have valid framing, dimensions and chunk CRCs.
+
+A local comparison can be invoked using:
+
+```bash
+python3 -m tools.saturn_private_start_ab \
+  --control /private/no-start \
+  --start /private/with-start
+```
+
+The sanitized report gives only read counts and whether FAD logs
+or final screenshots differ; it does **not** print private screenshot
+hashes, original images, source paths, game sectors or input payloads.
+Identical screenshots or CD logs are a permissible **inconclusive**
+outcome, not an automatic failure. Conversely, differing images
+alone cannot prove that the game entered the main menu.
+
 The experiment passes the controller-integrity test if:
 - Both processes finish on the same original-game media;
 - The no-START control has `VH_PAD mode=0` and no button events;
