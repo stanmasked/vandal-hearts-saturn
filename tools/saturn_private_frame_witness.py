@@ -34,8 +34,8 @@ ALLOWED_STAGES = ("before_gate", "after_gate")
 def validate_png_file(raw: bytes) -> tuple[int, int]:
     if not raw.startswith(PNG_MAGIC) or len(raw) < 8 + 12 + 13:
         raise ValueError("not a PNG byte stream")
-    pos, saw_ihdr, saw_idat, saw_iend = 8, False, False, False
-    width = height = 0
+    pos, saw_ihdr, saw_plte, saw_idat, saw_iend = 8, False, False, False, False
+    width = height = depth = color = 0
     while pos + 12 <= len(raw):
         n = struct.unpack(">I", raw[pos:pos+4])[0]
         kind = raw[pos+4:pos+8]
@@ -52,16 +52,32 @@ def validate_png_file(raw: bytes) -> tuple[int, int]:
             width, height, depth, color, compress, filt, interlace = struct.unpack(
                 ">IIBBBBB", chunk
             )
+            # Yabause/lodepng may use low-bit grayscale or indexed-color PNGs
+            # for early frames. Accept only legal PNG bit-depth/color pairs.
+            if color == 0:
+                valid_depths = (1, 2, 4, 8, 16)
+            elif color == 3:
+                valid_depths = (1, 2, 4, 8)
+            else:
+                valid_depths = (8, 16)
             if (not 1 <= width <= 4096 or not 1 <= height <= 4096 or
-                    depth not in (8, 16) or color not in (0, 2, 4, 6) or
+                    depth not in valid_depths or color not in (0, 2, 3, 4, 6) or
                     compress != 0 or filt != 0 or interlace not in (0, 1)):
                 raise ValueError("unsupported PNG frame shape")
             saw_ihdr = True
         elif kind == b"IHDR":
             raise ValueError("duplicate PNG header")
+        if kind == b"PLTE":
+            if (not saw_ihdr or saw_plte or saw_idat or color in (0, 4) or
+                    n == 0 or n > 768 or n % 3 != 0 or
+                    (color == 3 and n // 3 > (1 << depth))):
+                raise ValueError("invalid PNG palette")
+            saw_plte = True
         if kind == b"IDAT":
             if saw_iend:
                 raise ValueError("PNG data after IEND")
+            if color == 3 and not saw_plte:
+                raise ValueError("indexed PNG missing palette")
             saw_idat = True
         if kind == b"IEND":
             if n != 0 or not saw_idat or end != len(raw):
@@ -71,6 +87,8 @@ def validate_png_file(raw: bytes) -> tuple[int, int]:
         pos = end
     if not saw_ihdr or not saw_idat or not saw_iend:
         raise ValueError("incomplete PNG structure")
+    if color == 3 and not saw_plte:
+        raise ValueError("indexed PNG missing palette")
     return width, height
 
 
