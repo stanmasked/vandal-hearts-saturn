@@ -33,7 +33,7 @@ class Stage116SecondConfirmSourceTests(unittest.TestCase):
         mode = _mode(patched)
         self.assertEqual(mode.count("frames > 48000"), 1)
         self.assertEqual(mode.count("VH_SATURN_CONFIRM_AT_FRAME2"), 1)
-        self.assertEqual(mode.count("vh116_confirm_at2"), 4)
+        self.assertEqual(mode.count("vh116_confirm_at2"), 6)
         self.assertEqual(mode.count("PerPadCPressed(vh107_pad);"), 2)
         self.assertEqual(mode.count("PerPadCReleased(vh107_pad);"), 2)
         self.assertIn("vh114_confirm_button != 'C'", mode)
