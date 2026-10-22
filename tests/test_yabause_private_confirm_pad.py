@@ -16,7 +16,8 @@ def _stage112_fixture():
 
 class Stage114ConfirmPadSourceTests(unittest.TestCase):
     def test_adds_native_a_and_c_press_release_with_active_low_checks(self):
-        source = instrument_private_confirm_button(_stage112_fixture()).decode()
+        stage112_source = _stage112_fixture().decode()
+        source = instrument_private_confirm_button(stage112_source.encode()).decode()
         self.assertIn('getenv("VH_SATURN_CONFIRM_AT_FRAME")', source)
         self.assertIn('getenv("VH_SATURN_CONFIRM_BUTTON")', source)
         self.assertIn("PerPadAPressed(vh107_pad);", source)
@@ -30,7 +31,7 @@ class Stage114ConfirmPadSourceTests(unittest.TestCase):
         self.assertIn("VH_PADSTATE frame=%d button=%c active_low_bit=0", source)
         self.assertIn("VH_PADSTATE frame=%d button=%c active_low_bit=1", source)
         self.assertIn("frames > 24000", source)
-        self.assertEqual(source.count("YabauseEmulate()"), 2)
+        self.assertEqual(source.count("YabauseEmulate()"), stage112_source.count("YabauseEmulate()"))
         self.assertEqual(source.count("vh101_snapshot("), 4)
         self.assertEqual(source.count("vh102_snapshot("), 4)
 
