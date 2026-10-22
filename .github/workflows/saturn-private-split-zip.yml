@@ -1,0 +1,41 @@
+name: Stage97 private split ZIP reconstruction (fabricated fixtures only)
+on:
+  push:
+    branches:
+      - "stage97/**"
+  pull_request:
+    branches:
+      - "stage96/**"
+permissions:
+  contents: read
+jobs:
+  split-zip:
+    name: Reassemble invented two-volume ZIP (${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Exact-source private split ZIP archive boundaries
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_saturn_private_track1_splitzip_join.py -v
+          python -m unittest discover -s tests -p test_saturn_private_track1_range_retrieval.py -v
+          echo "STAGE97_SYNTHETIC_SPLIT_ZIP_CRC_SHA256_PASS"
+      - name: No original Saturn media in public repository
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          tracked=subprocess.check_output(["git","ls-files","-z"]).decode().split("\0")
+          forbidden={".bin",".cue",".iso",".chd",".rom",".zip",".7z",".001",".002"}
+          assert not any(Path(p).suffix.lower() in forbidden for p in tracked if p)
+          print("STAGE97_NO_PRIVATE_MEDIA_IN_GITHUB_PASS")
+          PY
