@@ -60,7 +60,8 @@ class Stage116SecondConfirmSourceTests(unittest.TestCase):
     def test_full_pipeline_composes_stage115_then_second_confirm(self):
         expected = (
             b"VH_SATURN_CONFIRM_AT_FRAME VH_SATURN_CONFIRM_AT_FRAME2 "
-            b"VH_SATURN_CONFIRM_BUTTON frames > 48000 frames.stats "
+            b"VH_SATURN_CONFIRM2_ENABLED VH_SATURN_CONFIRM_BUTTON "
+            b"frames > 48000 frames.stats "
             b"video-state.txt sh2-window.txt pad-state.txt"
         )
         with (
