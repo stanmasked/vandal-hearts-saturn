@@ -14,7 +14,9 @@ import sys
 from tools.patch_yabause_native_start_bit import (
     MODE_START, MODE_END, instrument_native_start_bit_on_patched_source,
 )
-from tools.patch_yabause_private_sh2_window import instrument_sh2_window
+from tools.patch_yabause_original_title_12000 import instrument_original_title_12000
+from tools.patch_yabause_private_video_state import instrument_video_probe_on_patched_source
+from tools.patch_yabause_private_sh2_window import instrument_sh2_window_on_patched_source
 from tools.patch_yabause_private_start_pad import (
     SETUP, instrument_gamepad_start_on_patched_source,
 )
@@ -184,7 +186,9 @@ def instrument_full_private_start_sequence(raw: bytes) -> bytes:
     prior patchers in order prevents Stage112 from assuming diagnostics that the
     workflow never installed.
     """
-    stage102 = instrument_sh2_window(raw)
+    stage106 = instrument_original_title_12000(raw)
+    stage101 = instrument_video_probe_on_patched_source(stage106)
+    stage102 = instrument_sh2_window_on_patched_source(stage101)
     stage107 = instrument_gamepad_start_on_patched_source(stage102)
     stage109 = instrument_native_start_bit_on_patched_source(stage107)
     stage112 = instrument_private_start_sequence(stage109)
