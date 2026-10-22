@@ -72,6 +72,42 @@ through public CI or GitHub issues. The audit deliberately keeps
 `frame_to_cd_reads_synchronized_verified=false` even when valid
 numeric records exist.
 
+## Real private original-disc results (22 October 2026)
+
+A complete private copy of the original English-v1.1 Track1, Track2 and
+CUE was reassembled from the user's uploaded split ZIP volumes in a
+0700 temporary workspace and **each file's full SHA-256 matched Stage02**.
+The pinned Stage101 public-only Clang Yabause executable, successfully
+built in GitHub Actions, ran the **actual original disc** for 600 frames
+and produced its local numeric state evidence and screenshots.
+
+| Sample | SH2 PC | VDP2 TVMD | BGON | nonzero VDP1 VRAM | nonzero VDP2 VRAM | nonzero color RAM | nonblack Titan RGB |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 0x06002E00 | 32768 | 1 | 0 | 0 | 0 | 0 |
+| 120 | 0x06026C08 | 33041 | 19 | 293 | 6151 | 19 | 0 |
+| 240 | 0x06034198 | 33041 | 19 | 293 | 6151 | 19 | 0 |
+| 360 | 0x06034198 | 33041 | 19 | 293 | 6151 | 19 | 0 |
+| 480 | 0x06034198 | 33041 | 19 | 293 | 6151 | 19 | 0 |
+| 600 | 0x06034198 | 33041 | 19 | 293 | 6151 | 19 | 0 |
+
+All 7 saved private PNGs (before, five checkpoints and after) had **zero
+nonblack RGB pixels**. Exactly 396 naturally generated CD FAD callbacks
+were recorded, with 370 distinct addresses.
+
+Separate real-disc processes at 120/240/360 frames reproduce that
+progression: **305 FADs at frame 120; 396 by frame 240; no further
+reads by frames 360 or 600**. The SH2 PC remains at
+`0x06034198` at the latter three sampling points.
+
+These findings rule out a completely empty VDP2 RAM and disabled VDP2
+TVMD display as the simple explanation. They do **not** isolate a
+renderer defect, because the game may be waiting on another emulated
+system or a video event. The next diagnostic must inspect the bounded
+SH2 instruction/register state near `0x06034198` privately, without
+publishing original game code, and distinguish repeated waiting loops
+from an emulation problem. Original screens and RAM contents stay only
+in the private workspace.
+
 ## Acceptance criteria
 
 1. GCC and Clang compile/link the pinned real Yabause source with the
