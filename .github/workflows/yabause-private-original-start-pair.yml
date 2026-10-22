@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# A push and the PR event share one branch-scoped queue; keep only the
+# latest synthetic-only validation for this branch active/pending.
+concurrency:
+  group: stage110-private-pair-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   invented-private-execution:
     name: Two isolated invented Saturn runner processes
