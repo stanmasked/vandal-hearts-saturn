@@ -1,0 +1,33 @@
+name: Stage108 original Saturn START baseline (invented-only)
+on:
+  push:
+    branches:
+      - "stage108/**"
+  pull_request:
+    branches:
+      - "stage107/**"
+permissions:
+  contents: read
+
+jobs:
+  fake-capture-contracts:
+    name: Protected PNG control/START A/B (no original disc)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile static public Python analysis
+        run: |
+          python3 -m py_compile tools/saturn_private_start_baseline.py \
+            tools/saturn_private_start_ab.py \
+            tests/test_saturn_private_start_baseline.py \
+            tests/test_saturn_private_start_ab.py
+      - name: Verify fabricated A/B witnesses and negative privacy tests
+        run: |
+          python3 -m unittest discover -s tests -p test_saturn_private_start_ab.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_start_baseline.py -v
+      - name: Confirm no original media in this workflow
+        run: |
+          test ! -e "Vandal Hearts - Ushinawareta Kodai Bunmei.cue"
+          test ! -e original-saturn.cue
+          echo "STAGE108_SYNTHETIC_ONLY_PRESTART_BASELINE_CHECK_PASS"
