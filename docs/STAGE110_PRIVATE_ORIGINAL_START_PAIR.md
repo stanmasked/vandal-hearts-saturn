@@ -65,7 +65,13 @@ gate failure, failed media/binary hash or missing private receipts is
 fatal.
 
 The final integrated audit checks both Stage109 native pad bit
-receipts and Stage107 numeric CD/PNG evidence, then verifies that
+receipts and Stage107 numeric CD/PNG evidence. It also parses the
+**actual Yabause frame accounting file** `frames.stats` from both
+processes, requiring exactly `STAGE99_FRAMES 13200`, well-formed
+32-bit SH2 PC counter metadata, and the final render width/height
+matching the private `frame-13200.png` geometry. A missing, altered,
+truncated, oversized or symlinked frame accounting file is rejected.
+It then verifies that
 private PNGs for frames **11880 and 12000** have identical source bytes
 between control and START (the Stage108 reproducibility gate). The
 same dimensions must hold at all compared frames. It then reports
