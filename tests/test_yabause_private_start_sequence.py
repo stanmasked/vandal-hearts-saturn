@@ -132,7 +132,7 @@ def _stage109_instrumented_fixture():
 
 
 class Stage112DualStartSourceTests(unittest.TestCase):
-    def test_full_pipeline_composes_prior_stages_in_order(self):
+    def test_full_pipeline_reuses_stage101_102_inherited_by_stage106(self):
         complete = (
             b"vh101_snapshot( vh102_snapshot( vh107_start_at vh109_state_log "
             b"VH_SATURN_START_AT_FRAME2 video-state.txt sh2-window.txt "
@@ -141,10 +141,6 @@ class Stage112DualStartSourceTests(unittest.TestCase):
         with (
             patch("tools.patch_yabause_private_start_sequence.instrument_original_title_12000",
                   return_value=b"stage106") as stage106,
-            patch("tools.patch_yabause_private_start_sequence.instrument_video_probe_on_patched_source",
-                  return_value=b"stage101") as stage101,
-            patch("tools.patch_yabause_private_start_sequence.instrument_sh2_window_on_patched_source",
-                  return_value=b"stage102") as stage102,
             patch("tools.patch_yabause_private_start_sequence.instrument_gamepad_start_on_patched_source",
                   return_value=b"stage107") as stage107,
             patch("tools.patch_yabause_private_start_sequence.instrument_native_start_bit_on_patched_source",
@@ -155,9 +151,7 @@ class Stage112DualStartSourceTests(unittest.TestCase):
             result = instrument_full_private_start_sequence(b"pinned-upstream")
         self.assertEqual(result, complete)
         stage106.assert_called_once_with(b"pinned-upstream")
-        stage101.assert_called_once_with(b"stage106")
-        stage102.assert_called_once_with(b"stage101")
-        stage107.assert_called_once_with(b"stage102")
+        stage107.assert_called_once_with(b"stage106")
         stage109.assert_called_once_with(b"stage107")
         stage112.assert_called_once_with(b"stage109")
 
