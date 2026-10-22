@@ -22,7 +22,7 @@ The schedule and all environment entries other than \`VH_SATURN_CONFIRM3_ENABLED
 
 - Verify the original media and public runner fingerprints before and after both processes.
 - Require exactly 400 valid 120-frame PNG checkpoints per process, plus canonical numeric video/SH2 logs and exact native pad receipts.
-- Require all checkpoints to match through frame 35,880 (299 checkpoints), including matching pre-START and pre-first-C ranges.
+- Require byte-identical `pre.png` files and all checkpoints to match through frame 35,880 (299 checkpoints), including matching pre-START and pre-first-C ranges.
 - Require the first post-third-C divergence by frame 42,000, then privately inspect the relevant frames to determine whether the dialogue actually advanced.
 - Keep \`first_battle_or_player_control_verified\` false unless the original tactical HUD/turn state and a response to player input are independently observed.
 
