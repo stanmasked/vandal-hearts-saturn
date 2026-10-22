@@ -83,6 +83,11 @@ class Stage117PrivateDialogueAuditTests(unittest.TestCase):
         self.assertFalse(report["first_battle_or_player_control_verified"])
         self.assertFalse(report["original_media_or_frame_hashes_exported"])
 
+    def test_rejects_initial_pre_frame_divergence(self):
+        _write(self.triple_c, "pre.png", _png((1, 2, 3)))
+        with self.assertRaisesRegex(ValueError, "diverged before first START"):
+            audit_private_prologue_continue_third_c(self.double_c, self.triple_c)
+
     def test_rejects_pre_third_c_divergence(self):
         _write(self.triple_c, "frame-30000.png", _png((1, 2, 3)))
         with self.assertRaisesRegex(ValueError, "diverged before third C confirm"):
