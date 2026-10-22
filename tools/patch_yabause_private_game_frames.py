@@ -38,7 +38,7 @@ BOOT_CHECK = r'''      if (strcmp(argv[1], "vh-private-frame-boot") == 0)
          if (argc != 4 || !gate_path || !*gate_path || !log_path ||
              !*log_path || !private_dir || !*private_dir ||
              sscanf(argv[3], "%d", &frames) != 1 ||
-             frames < 1 || frames > 120 ||
+             frames < 1 || frames > 600 ||
              snprintf(pre_path, sizeof(pre_path), "%s/pre.png", private_dir)
                  >= (int)sizeof(pre_path) ||
              snprintf(post_path, sizeof(post_path), "%s/post.png", private_dir)
@@ -113,6 +113,31 @@ BOOT_CHECK = r'''      if (strcmp(argv[1], "vh-private-frame-boot") == 0)
                return 208;
             }
             progress++;
+            /* Observe an actual intermediate framebuffer every 120 frames,
+               without exporting images or trusting stage/scene labels. */
+            if (progress % 120 == 0)
+            {
+               int cw = 0, ch = 0;
+               char checkpoint_path[1024];
+               TitanGetResolution(&cw, &ch);
+               if (cw <= 0 || ch <= 0 || cw > 704 || ch > 512 ||
+                   snprintf(checkpoint_path, sizeof(checkpoint_path),
+                            "%s/frame-%03d.png", private_dir, progress)
+                            >= (int)sizeof(checkpoint_path))
+               {
+                  free(pixels);
+                  YabauseDeInit();
+                  return 213;
+               }
+               TitanRender(pixels);
+               if (lodepng::encode(checkpoint_path,
+                                   (unsigned char*)pixels, cw, ch) != 0)
+               {
+                  free(pixels);
+                  YabauseDeInit();
+                  return 214;
+               }
+            }
          }
          SH2GetRegisters(MSH2, &after);
          TitanGetResolution(&width, &height);
