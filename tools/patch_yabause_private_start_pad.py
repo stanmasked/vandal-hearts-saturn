@@ -132,8 +132,10 @@ def main() -> int:
                 a.output.exists() or a.source.resolve()==a.output.resolve()):
             raise ValueError("unsafe public Yabause paths")
         with a.output.open("xb") as file:file.write(instrument_gamepad_start(a.source.read_bytes()))
-    except (ValueError,OSError,UnicodeError,TypeError):
-        print("STAGE107_PINNED_GAMEPAD_SOURCE_REJECTED",file=sys.stderr)
+    except (ValueError,OSError,UnicodeError,TypeError) as exc:
+        # The diagnostic names only public-code patch anchors, never game media.
+        print("STAGE107_PINNED_GAMEPAD_SOURCE_REJECTED",
+              type(exc).__name__, str(exc), file=sys.stderr)
         return 1
     print("STAGE107_PUBLIC_PINNED_SATURN_START_PAD_MODE_READY")
     return 0
