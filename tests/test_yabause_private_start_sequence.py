@@ -25,8 +25,14 @@ def _stage109_instrumented_fixture():
         MODE_START + "\n"
         "         if (frames < 1 || frames > 13200 || invalid) return 1;\n"
         "         char pre_path[1024], post_path[1024], stats_path[1024];\n"
+        "         char video_state_path[1024];\n"
+        "         FILE *video_state = NULL;\n"
+        '         if (snprintf(video_state_path, sizeof(video_state_path),\n'
+        '                      "%s/video-state.txt", private_dir) >=\n'
+        '                      (int)sizeof(video_state_path)) return 215;\n'
         "         pixel_t *pixels = NULL;\n"
         "         int width = 64, height = 64, progress = 0;\n"
+        + setup + "\n" + connect + "\n"
         "         TitanRender(pixels);\n"
         "         if (lodepng::encode(pre_path, (unsigned char*)pixels,\n"
         "                             width, height) != 0)\n"
@@ -35,7 +41,16 @@ def _stage109_instrumented_fixture():
         "            YabauseDeInit();\n"
         "            return 207;\n"
         "         }\n"
-        + setup + "\n" + connect + "\n" + loop + "\n"
+        '         video_state = fopen(video_state_path, "wx");\n'
+        "         if (!video_state ||\n"
+        "             !vh101_snapshot(video_state, 0, pixels, width, height))\n"
+        "         {\n"
+        "            if (video_state) fclose(video_state);\n"
+        "            free(pixels);\n"
+        "            YabauseDeInit();\n"
+        "            return 216;\n"
+        "         }\n"
+        + loop + "\n"
         "            { return 1; }\n"
         "            progress++;\n"
         "            if (progress % 120 == 0)\n"
@@ -43,6 +58,14 @@ def _stage109_instrumented_fixture():
         "               int cw = 64, ch = 64;\n"
         "               char checkpoint_path[1024];\n"
         "               TitanRender(pixels);\n"
+        "               if (!vh101_snapshot(video_state, progress, pixels,\n"
+        "                                   cw, ch))\n"
+        "               {\n"
+        "                  fclose(video_state);\n"
+        "                  free(pixels);\n"
+        "                  YabauseDeInit();\n"
+        "                  return 217;\n"
+        "               }\n"
         "               if (lodepng::encode(checkpoint_path,\n"
         "                                   (unsigned char*)pixels, cw, ch) != 0)\n"
         "                  return 1;\n"
@@ -55,6 +78,13 @@ def _stage109_instrumented_fixture():
         "            free(pixels);\n"
         "            YabauseDeInit();\n"
         "            return 210;\n"
+        "         }\n"
+        "         if (!vh101_snapshot(video_state, progress, pixels,\n"
+        "                             width, height) || fclose(video_state) != 0)\n"
+        "         {\n"
+        "            free(pixels);\n"
+        "            YabauseDeInit();\n"
+        "            return 218;\n"
         "         }\n"
         "         free(pixels);\n"
         "         if (remove(gate_path) != 0) return 1;\n"
@@ -86,9 +116,11 @@ class Stage112DualStartSourceTests(unittest.TestCase):
         self.assertIn("VH_PAD mode=%d completed_frames=%d", mode)
         self.assertIn("video-state.txt", mode)
         self.assertIn("sh2-window.txt", mode)
-        self.assertEqual(mode.count("vh112_video_snapshot("), 3)
         self.assertEqual(mode.count("vh112_sh2_snapshot("), 3)
-        self.assertIn("VH_VIDEO frame=%d pc=%u", source)
+        self.assertEqual(source.count("vh112_sh2_snapshot("), 4)
+        self.assertNotIn("vh112_video_snapshot(", source)
+        self.assertEqual(mode.count('video_state = fopen(video_state_path, "wx");'), 1)
+        self.assertIn("vh101_snapshot(video_state, progress, pixels", source)
         self.assertIn("VH_SH2 frame=%d pc=%u valid=1", source)
 
     def test_first_pulse_remains_compatible_and_second_pulse_is_optional(self):
@@ -119,7 +151,7 @@ class Stage112DualStartSourceTests(unittest.TestCase):
             b"if (lodepng::encode(checkpoint_path,",
             b"if (tampered_png_encoder(checkpoint_path,",
         )
-        with self.assertRaisesRegex(ValueError, "checkpoint render"):
+        with self.assertRaisesRegex(ValueError, "checkpoint PNG encoder"):
             instrument_private_start_sequence(raw)
 
     def test_does_not_add_media_or_frame_export_logic(self):
