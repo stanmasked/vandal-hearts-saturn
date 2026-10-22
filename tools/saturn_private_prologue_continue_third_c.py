@@ -18,6 +18,7 @@ from tools.saturn_private_original_start_sequence import (
     FIRST_PRESS, FIRST_RELEASE, MAX_SECONDS, SHA256,
 )
 from tools.saturn_private_start_ab import _count_canonical_fads
+from tools.saturn_private_frame_witness import validate_png_file
 from tools.saturn_private_first_battle_window import (
     CHECKPOINTS, FRAME_COUNT, _check_long_frames, _equal_frame,
 )
@@ -94,6 +95,13 @@ def audit_private_prologue_continue_third_c(double_c: Path, triple_c: Path) -> d
         raise ValueError("Stage117 triple-C controller receipt mismatch")
     if _private_regular(triple_c / "pad-state.txt", 2048) != TRIPLE_C_STATE:
         raise ValueError("Stage117 third-C active-low receipt mismatch")
+
+    double_pre = _private_regular(double_c / "pre.png", 16 * 1024 * 1024)
+    triple_pre = _private_regular(triple_c / "pre.png", 16 * 1024 * 1024)
+    double_pre_dims = validate_png_file(double_pre)
+    triple_pre_dims = validate_png_file(triple_pre)
+    if double_pre_dims != triple_pre_dims or double_pre != triple_pre:
+        raise ValueError("Stage117 paired runs diverged before first START")
 
     double_count, double_dims = _check_long_frames(double_c)
     triple_count, triple_dims = _check_long_frames(triple_c)
