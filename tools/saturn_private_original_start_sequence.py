@@ -208,7 +208,7 @@ def audit_private_start_sequence(control: Path, intervention: Path) -> dict:
     if not all(agreement[n] for n in PRE_INPUT_FRAMES):
         raise ValueError("private Stage112 control and intervention diverged before first input")
     if agreement[12120] or agreement[13200]:
-        raise ValueError("private Stage112 first title-to-menu response not present in A/B frames")
+        raise ValueError("private Stage112 first post-first-START A/B frame difference not present in A/B frames")
 
     control_fads, control_fad_hash = _count_canonical_fads(control)
     intervention_fads, intervention_fad_hash = _count_canonical_fads(intervention)
@@ -222,7 +222,7 @@ def audit_private_start_sequence(control: Path, intervention: Path) -> dict:
         "same_dimensions_and_pre_first_input_frames": True,
         "pre_first_input_frames_compared": list(PRE_INPUT_FRAMES),
         "post_input_frames_compared": list(POST_INPUT_FRAMES),
-        "title_to_menu_response_visible_in_12120_and_13200_ab_comparison": True,
+        "post_first_start_frame_files_differ_at_12120_and_13200": True,
         "post_input_frame_equalities": {str(n): agreement[n] for n in POST_INPUT_FRAMES},
         "first_start_frame": FIRST_PRESS,
         "first_release_frame": FIRST_RELEASE,
