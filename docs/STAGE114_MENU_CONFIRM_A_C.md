@@ -22,6 +22,15 @@ Only one confirm button is tested per run. The runner rejects an unknown button,
 - The confirm run must diverge from the first-START-only control at one or more checkpoints between 12360 and 13560. This is deliberately before the observed idle attract transition, which began around frame 13680. If there is no early divergence, the audit fails closed.
 - A passing numeric audit only proves a reproducible input-associated change. Review private frames to distinguish a New Game intro/mission from the attract demo; do not mark the first tactical battle verified based on a loading screen or battle-like image alone.
 
+## First private result (local only)
+
+Both 24,000-frame sessions completed with zero process status. The original Track 1, Track 2 and CUE, plus the exact public Stage114 GCC executable, matched their pins after the runs. Each output directory had the exact 208-file set, 200 valid sequential PNG checkpoints, 202 video/SH2 diagnostic samples, correct pad receipts, a closed capture gate and private permissions. No original media or capture data was uploaded.
+
+- **A at frame 12240:** the menu remained visible through frame 13560. The idle attract transition then began; this input did not confirm New Game.
+- **C at frame 12240:** the first checkpoint divergence from the first-START-only control was frame 12360. The opening story sequence was visible by frame 13200. At frame 24000 the screen showed a tactical grid map and a soldier's dialogue, while the first-START-only control was in the level-29 attract-demo battle. The C run recorded 34,850 numeric CD/FAD events versus 21,164 in the first-START-only control, consistent with the additional story/game loading path.
+
+**Interpretation:** C is the effective New Game confirmation input for this build. The tactical-map opening is now reached, but the active first battle is not yet claimed complete. Stage115 extends the frame window so the dialogue can advance and the first controllable battle state can be verified.
+
 ## Private command
 
 Download the GCC executable from the successful exact-head Stage114 workflow and use the SHA-256 printed by that same job. Create two empty 0700 output directories. Test A first; if it does not produce an early, visually meaningful transition, repeat the controlled pair with C using fresh directories.
