@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Stage112: add a second guarded START pulse to the pinned private Saturn runner.
+"""Stage112: compose the private Saturn boot/diagnostic/input patch chain.
 
-Stage101 already records numeric VDP/Titan state and Stage102 already records
-the SH2 window. This transformer preserves those witnesses and only changes
-the input schedule and bounded frame limit. Public CI uses invented media only.
+The CLI composes Stage101/102 diagnostics, Stage107/109 pad input and the
+second START pulse from pristine pinned upstream. Public CI uses no real media.
 """
 from __future__ import annotations
 
@@ -12,8 +11,13 @@ from pathlib import Path
 import re
 import sys
 
-from tools.patch_yabause_native_start_bit import MODE_START, MODE_END
-from tools.patch_yabause_private_start_pad import SETUP
+from tools.patch_yabause_native_start_bit import (
+    MODE_START, MODE_END, instrument_native_start_bit_on_patched_source,
+)
+from tools.patch_yabause_private_sh2_window import instrument_sh2_window
+from tools.patch_yabause_private_start_pad import (
+    SETUP, instrument_gamepad_start_on_patched_source,
+)
 
 MODE_MAX = re.compile(r"frames > (?:600|12000|13200)\b")
 PRESS_START = '            if (vh107_start_at >= 0 && frame == vh107_start_at)\n            {'
@@ -172,6 +176,31 @@ def instrument_private_start_sequence(raw: bytes) -> bytes:
     return source.encode("utf-8")
 
 
+
+def instrument_full_private_start_sequence(raw: bytes) -> bytes:
+    """Compose the complete Stage101/102/107/109/112 chain from pinned upstream.
+
+    The public workflow must start from pristine upstream yui.cpp. Reusing the
+    prior patchers in order prevents Stage112 from assuming diagnostics that the
+    workflow never installed.
+    """
+    stage102 = instrument_sh2_window(raw)
+    stage107 = instrument_gamepad_start_on_patched_source(stage102)
+    stage109 = instrument_native_start_bit_on_patched_source(stage107)
+    stage112 = instrument_private_start_sequence(stage109)
+    text = stage112.decode("utf-8")
+    required = (
+        "vh101_snapshot(", "vh102_snapshot(", "vh107_start_at",
+        "vh109_state_log", "VH_SATURN_START_AT_FRAME2",
+        "video-state.txt", "sh2-window.txt", "pad-state.txt",
+        "frames > 24000",
+    )
+    missing = [token for token in required if token not in text]
+    if missing:
+        raise ValueError("incomplete composed Stage112 pipeline: " + ", ".join(missing))
+    return stage112
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, required=True)
@@ -182,7 +211,7 @@ def main() -> int:
                 args.output.exists() or args.source.resolve() == args.output.resolve()):
             raise ValueError("unsafe pinned public Yabause source paths")
         with args.output.open("xb") as stream:
-            stream.write(instrument_private_start_sequence(args.source.read_bytes()))
+            stream.write(instrument_full_private_start_sequence(args.source.read_bytes()))
     except (OSError, ValueError, UnicodeError, TypeError) as exc:
         print("STAGE112_PRIVATE_START_SEQUENCE_PATCH_REJECTED",
               type(exc).__name__, str(exc), file=sys.stderr)
