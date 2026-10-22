@@ -284,7 +284,7 @@ def main() -> int:
             stream.write(instrument_private_start_sequence(args.source.read_bytes()))
     except (OSError, ValueError, UnicodeError, TypeError) as exc:
         print("STAGE112_PRIVATE_START_SEQUENCE_PATCH_REJECTED",
-              type(exc).__name__, file=sys.stderr)
+              type(exc).__name__, str(exc), file=sys.stderr)
         return 1
     print("STAGE112_PUBLIC_YABAUSE_DUAL_START_PATCH_READY")
     return 0
