@@ -131,7 +131,8 @@ static bool vh112_sh2_snapshot(FILE *out, int frame)
 PATH_EXTRA = r'''         char video_state_path[1024], sh2_path[1024];
          FILE *video_state = NULL;
          FILE *sh2_window = NULL;
-         if (snprintf(video_state_path, sizeof(video_state_path),
+         if (!private_dir || !*private_dir ||
+             snprintf(video_state_path, sizeof(video_state_path),
                       "%s/video-state.txt", private_dir) >=
                       (int)sizeof(video_state_path) ||
              snprintf(sh2_path, sizeof(sh2_path),
