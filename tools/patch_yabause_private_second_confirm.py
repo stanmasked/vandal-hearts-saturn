@@ -128,6 +128,7 @@ def instrument_full_private_second_confirm(raw: bytes) -> bytes:
     for token in (
         "VH_SATURN_CONFIRM_AT_FRAME",
         "VH_SATURN_CONFIRM_AT_FRAME2",
+        "VH_SATURN_CONFIRM2_ENABLED",
         "VH_SATURN_CONFIRM_BUTTON",
         "frames > 48000",
         "frames.stats",
