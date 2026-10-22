@@ -64,9 +64,10 @@ class SplitZipPrivateTests(unittest.TestCase):
     def test_one_or_missing_volume_rejected(self):
         with self.assertRaises(ValueError):
             self.join(parts=self.parts[:1])
-        self.parts[1].rename(self.parts_dir / "invented-track1.bin.zip.003")
+        missing_index = self.parts_dir / "invented-track1.bin.zip.003"
+        self.parts[1].rename(missing_index)
         with self.assertRaises(ValueError):
-            self.join()
+            self.join(parts=[self.parts[0], missing_index])
 
     def test_bad_volume_mismatch_or_duplicate_rejected(self):
         other = self.parts_dir / "another.zip.002"
