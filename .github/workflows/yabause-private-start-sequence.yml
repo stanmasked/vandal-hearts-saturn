@@ -113,9 +113,11 @@ jobs:
           trap 'rm -rf "$workdir"' EXIT
           (cd "$workdir" && timeout 15s "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause") > cli.txt 2>&1
           grep -Fq 'Not enough command line arguments.' cli.txt
-          if (cd "$workdir" && HOME="$workdir" env -u VH_SATURN_CAPTURE_GATE -u VH_SATURN_FAD_LOG \
-              timeout -k 5s 20s "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" \
-              vh-private-frame-boot /nonexistent/fabricated.cue 24000) > missing-cue.txt 2>&1; then
+          if (cd "$workdir" && env -i HOME="$workdir" TMPDIR="$workdir" PATH=/bin:/usr/bin LANG=C LC_ALL=C TZ=UTC \
+              VH_SATURN_CAPTURE_GATE="$workdir/gate" VH_SATURN_FAD_LOG="$workdir/fad.vhcdlog" \
+              VH_SATURN_PRIVATE_FRAMES_DIR="$workdir" timeout -k 5s 20s \
+              "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" \
+              vh-private-frame-boot "$workdir/nonexistent-fabricated.cue" 24000) > missing-cue.txt 2>&1; then
             echo 'missing fabricated CUE must fail closed' >&2
             exit 1
           fi
