@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 from pathlib import Path
@@ -267,17 +268,22 @@ def run_private_first_battle_window(
     if initial_runner[1] != expected_runner_sha256:
         raise ValueError("public Yabause executable did not match independent SHA-256")
 
-    for target, confirm in ((first_only, False), (confirm_c, True)):
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = (
+                pool.submit(_run_one, executable, cue, first_only, confirm=False, seconds=seconds),
+                pool.submit(_run_one, executable, cue, confirm_c, confirm=True, seconds=seconds),
+            )
+            for future in futures:
+                future.result()
+    finally:
         try:
-            _run_one(executable, cue, target, confirm=confirm, seconds=seconds)
-        finally:
-            try:
-                if _check_media(manifest, pins) != initial_media:
-                    raise ValueError("original Saturn source changed during Stage115")
-            except (OSError, ValueError) as exc:
-                raise ValueError("original Saturn source changed during Stage115") from exc
-            if _fingerprint(executable) != initial_runner:
-                raise ValueError("public Yabause executable changed during Stage115")
+            if _check_media(manifest, pins) != initial_media:
+                raise ValueError("original Saturn source changed during Stage115")
+        except (OSError, ValueError) as exc:
+            raise ValueError("original Saturn source changed during Stage115") from exc
+        if _fingerprint(executable) != initial_runner:
+            raise ValueError("public Yabause executable changed during Stage115")
     report = audit_private_first_battle_window(first_only, confirm_c)
     report.update({
         "same_pinned_original_media_before_and_after_both_processes": True,
