@@ -48,8 +48,8 @@ class ControlStartABTests(unittest.TestCase):
 
     def test_good_invented_control_and_start_have_two_distinct_receipts(self):
         report=audit_start_ab(self.control,self.start)
-        self.assertEqual(report["intervention_start_press_frame"],12000)
-        self.assertEqual(report["intervention_start_release_frame"],12006)
+        self.assertEqual(report["intervention_start_press_frame"],12060)
+        self.assertEqual(report["intervention_start_release_frame"],12066)
         self.assertEqual(report["control_fad_events"],1)
         self.assertEqual(report["intervention_fad_events"],2)
         self.assertTrue(report["numeric_cd_logs_differ"])
@@ -70,8 +70,8 @@ class ControlStartABTests(unittest.TestCase):
     def test_wrong_controller_event_order_or_frame_is_rejected(self):
         file=self.start/"pad-events.txt"
         for payload in (
-            CONTROL, START.replace(b"frame=12000",b"frame=11999"),
-            START.replace(b"frame=12006",b"frame=12007"),
+            CONTROL, START.replace(b"frame=12060",b"frame=12059"),
+            START.replace(b"frame=12066",b"frame=12067"),
             START.splitlines(keepends=True)[0],
             START+b"VH_PAD frame=12012 button=START action=PRESS\n",
         ):
