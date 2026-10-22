@@ -19,7 +19,7 @@ Every run is bounded to 24,000 emulated frames. The private auditor verifies the
 - All three runs must have identical checkpoint images from frame 120 through 12000, before the first START pulse.
 - The first-START-only and dual-START runs must remain byte-identical through frame 12120, before the second pulse.
 - The no-input and first-START-only runs must visibly diverge at checkpoints 12120 and 13200, consistent with the verified title-to-menu transition.
-- The first-START-only and dual-START runs must show at least one framebuffer difference at checkpoints 12360, 13200, 18000 or 24000. Otherwise the audit fails closed and does not claim the second pulse had an observable effect.
+- The first-START-only and dual-START runs are compared at every one of the 98 checkpoints from frame 12360 through 24000. At least one must differ; otherwise the audit fails closed and does not claim the second pulse had an observable effect. This full sweep also reports the earliest measurable divergence.
 - A framebuffer difference is not by itself proof of a tactical battle. Inspect the protected local images and correlate any scene transition with numeric CD-read evidence before updating authenticity Issue #11.
 
 ## Private execution
