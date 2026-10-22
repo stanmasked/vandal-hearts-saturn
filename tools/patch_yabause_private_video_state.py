@@ -64,16 +64,30 @@ static bool vh101_snapshot(FILE *out, int frame, const pixel_t *pixels,
 }
 '''
 
-def instrument_video_probe(original: bytes) -> bytes:
-    code = instrument_boot_runner(original).decode("utf-8")
-    if (code.count(BOOT_CHECK) != 1 or code.count(HEADER_ANCHOR) != 1 or
-            code.count(MAIN_ANCHOR) != 1 or
+def instrument_video_probe_on_patched_source(patched: bytes) -> bytes:
+    """Add Stage101 diagnostics to an existing bounded Stage99/106 runner."""
+    code = patched.decode("utf-8")
+    mode_start = '      if (strcmp(argv[1], "vh-private-frame-boot") == 0)\n      {'
+    mode_end = (
+        '         puts("STAGE99_REAL_YABAUSE_BOUND_FRAMES_PASS");\n'
+        '         return 0;\n      }'
+    )
+    if (code.count(mode_start) != 1 or code.count(mode_end) != 1 or
+            code.count(HEADER_ANCHOR) != 1 or code.count(MAIN_ANCHOR) != 1 or
             "vh101_snapshot" in code):
-        raise ValueError("pinned Stage99 runner changed unexpectedly")
-    code = code.replace(HEADER_ANCHOR,
-                        HEADER_ANCHOR + '#include "../vdp2.h"\n', 1)
+        raise ValueError("pinned bounded Yabause runner changed unexpectedly")
+    vdp2_include = '#include "../vdp2.h"\n'
+    include_count = code.count(vdp2_include)
+    if include_count not in (1, 2):
+        raise ValueError("pinned VDP2 header count differs")
+    if include_count == 1:
+        code = code.replace(HEADER_ANCHOR,
+                            HEADER_ANCHOR + vdp2_include, 1)
     code = code.replace(MAIN_ANCHOR, HELPER + "\n" + MAIN_ANCHOR, 1)
-    boot = BOOT_CHECK
+
+    start = code.index(mode_start)
+    end = code.index(mode_end, start) + len(mode_end)
+    boot = code[start:end]
     changes = [
         (STATE_PATH_ANCHOR,
          STATE_PATH_ANCHOR +
@@ -115,14 +129,21 @@ def instrument_video_probe(original: bytes) -> bytes:
     ]
     for old, new in changes:
         if boot.count(old) != 1:
-            raise ValueError("Stage99 video probe injection anchor changed")
+            raise ValueError("Stage101 numeric-state injection anchor changed")
         boot = boot.replace(old, new, 1)
     if boot.count("vh101_snapshot(") != 3 or code.count(FINAL_ANCHOR) != 1:
         raise ValueError("Stage101 numeric-state snapshot coverage incomplete")
-    code = code.replace(BOOT_CHECK, boot, 1)
+    code = code[:start] + boot + code[end:]
     if code.count("vh101_snapshot(") != 4:
         raise ValueError("Stage101 helper injection incomplete")
     return code.encode("utf-8")
+
+
+def instrument_video_probe(original: bytes) -> bytes:
+    """Build Stage101 from the pinned Stage99 base for its standalone workflow."""
+    return instrument_video_probe_on_patched_source(
+        instrument_boot_runner(original)
+    )
 
 
 def main() -> int:

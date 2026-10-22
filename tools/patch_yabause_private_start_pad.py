@@ -94,8 +94,9 @@ FINALIZE = r'''         if (vh107_pad_log)
 '''
 
 
-def instrument_gamepad_start(raw: bytes) -> bytes:
-    source = instrument_original_title_12000(raw).decode("utf-8")
+def instrument_gamepad_start_on_patched_source(patched: bytes) -> bytes:
+    """Apply Stage107 controls to an already Stage99/101/102-instrumented source."""
+    source = patched.decode("utf-8")
     mode_start = '      if (strcmp(argv[1], "vh-private-frame-boot") == 0)\n      {'
     mode_end = (
         '         puts("STAGE99_REAL_YABAUSE_BOUND_FRAMES_PASS");\n'
@@ -127,11 +128,18 @@ def instrument_gamepad_start(raw: bytes) -> bytes:
         "PerPadStartReleased(vh107_pad)", "VH_SATURN_START_AT_FRAME",
         AFTER,
     ):
-        if mode.count(token)!=1:
+        if mode.count(token) != 1:
             raise ValueError("Stage107 private game-mode controller instrumentation incomplete: " + token)
     if source.count("YabauseEmulate()") != 2:
         raise ValueError("Stage107 changed the guest execution path")
     return source.encode("utf-8")
+
+
+def instrument_gamepad_start(raw: bytes) -> bytes:
+    """Build Stage107 directly from the pinned original source."""
+    return instrument_gamepad_start_on_patched_source(
+        instrument_original_title_12000(raw)
+    )
 
 
 def main() -> int:
