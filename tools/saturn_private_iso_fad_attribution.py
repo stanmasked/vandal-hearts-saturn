@@ -61,7 +61,7 @@ def attribute_fad_events(
     leadout_fad: int,
 ) -> dict:
     if (not isinstance(events, list) or not events or
-            any(type(x) is not int or x < 0 or x >= leadout_fad for x in events) or
+            any(type(x) is not int or x < 150 or x >= leadout_fad for x in events) or
             type(data_sector_count) is not int or data_sector_count <= 0 or
             not 150 + data_sector_count <= audio_index01_fad < leadout_fad):
         raise ValueError("invalid disc geometry or out-of-disc FAD")
