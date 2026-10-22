@@ -3,6 +3,7 @@
 ## Why the longer window is needed
 
 Stage114's private START+C run reached the story opening and a tactical grid map with soldier dialogue by frame 24000. The paired first-START-only control instead reached the title's level-29 attract-demo battle. The new-game path is therefore distinct, but the frame-24000 map/dialogue alone does not prove that the first battle has become controllable.
+The line “What is this place?” matches the opening Gillbaris Island / Castle Ruins prologue in published game-script transcriptions. Treat frame 24000 as a prologue scene, not the first mission or proof of player control. The 48,000-frame run is an extension window, not an assumed guarantee that the first battle will fit inside it.
 
 Stage115 changes only the pinned runner's fail-closed maximum from 24,000 to 48,000 frames. The same C68K core, exact ISOCD split-CUE path, START pulse, A/C native input hooks, video/SH2 instrumentation and numeric-only CD receipt remain in place.
 
