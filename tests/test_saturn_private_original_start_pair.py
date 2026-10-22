@@ -57,6 +57,12 @@ for n in (11880,12000,12120,13200):
     different=bool(os.environ.get("STAGE110_FAKE_PRE_DIVERGE")) and pressed and n==12000
     colour=(1,9,3) if different else (12,13,14) if n<=12000 else (3,4,5) if pressed else (6,7,8)
     (directory/f"frame-{n}.png").write_bytes(png(colour))
+(directory/"frames.stats").write_text(
+    "STAGE99_FRAMES 13200\n"
+    "STAGE99_PC_BEFORE 1000\n"
+    "STAGE99_PC_AFTER 2000\n"
+    "STAGE99_WIDTH 64\n"
+    "STAGE99_HEIGHT 64\n")
 gate.unlink()
 if os.environ.get("STAGE110_FAKE_MUTATE"):
     (Path(sys.argv[2]).parent/"invented-track1.bin").write_bytes(b"CHANGED")
@@ -106,6 +112,9 @@ class PrivatePairTests(unittest.TestCase):
         self.assertTrue(report["same_stage02_full_media_digest_before_and_after_both_processes"])
         self.assertTrue(report["two_processes_returned_zero_status"])
         self.assertTrue(report["pre_start_png_checkpoints_match"])
+        self.assertTrue(report["emulator_frame_stats_verified_in_both_processes"])
+        self.assertTrue(report["final_frame_dimensions_crosschecked_to_both_stats"])
+        self.assertEqual(report["completed_frames_from_both_emulator_stats"],13200)
         self.assertTrue(report["post_start_12120_png_files_differ"])
         self.assertTrue(report["post_start_13200_png_files_differ"])
         self.assertTrue(report["start_press_seen_in_host_padbits_as_active_low_zero"])
@@ -172,6 +181,38 @@ class PrivatePairTests(unittest.TestCase):
             run_original_pair(self.cue,self.t1,self.t2,self.runner,
                               self.sha,self.control,self.control,
                               seconds=15,pins=self.pins)
+
+    def test_missing_emulator_final_stats_rejected(self):
+        self.run_pair()
+        (self.pressed/"frames.stats").unlink()
+        with self.assertRaises((OSError,ValueError)):
+            audit_joint_evidence(self.control,self.pressed)
+
+    def test_forged_incomplete_emulator_frame_count_rejected(self):
+        self.run_pair()
+        path=self.pressed/"frames.stats"
+        path.write_bytes(path.read_bytes().replace(b"STAGE99_FRAMES 13200",
+                                                  b"STAGE99_FRAMES 13199"))
+        path.chmod(0o600)
+        with self.assertRaisesRegex(ValueError,"frame contract"):
+            audit_joint_evidence(self.control,self.pressed)
+
+    def test_valid_final_png_rejected_if_stats_geometry_disagrees(self):
+        self.run_pair()
+        path=self.control/"frames.stats"
+        path.write_bytes(path.read_bytes().replace(b"STAGE99_WIDTH 64",
+                                                  b"STAGE99_WIDTH 320"))
+        path.chmod(0o600)
+        with self.assertRaisesRegex(ValueError,"dimensions differ"):
+            audit_joint_evidence(self.control,self.pressed)
+
+    def test_extra_junk_in_emulator_frame_stats_rejected(self):
+        self.run_pair()
+        path=self.control/"frames.stats"
+        path.write_bytes(path.read_bytes()+b"STAGE99_FRAMES 13200\n")
+        path.chmod(0o600)
+        with self.assertRaisesRegex(ValueError,"malformed"):
+            audit_joint_evidence(self.control,self.pressed)
 
     def test_bad_disc_hash_rejected_before_execution(self):
         bad={**self.pins,"track1":(4096,"0"*64)}
