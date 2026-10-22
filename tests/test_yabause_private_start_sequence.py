@@ -139,7 +139,11 @@ class Stage112DualStartSourceTests(unittest.TestCase):
             b"pad-state.txt frames > 24000"
         )
         with (
-            patch("tools.patch_yabause_private_start_sequence.instrument_sh2_window",
+            patch("tools.patch_yabause_private_start_sequence.instrument_original_title_12000",
+                  return_value=b"stage106") as stage106,
+            patch("tools.patch_yabause_private_start_sequence.instrument_video_probe_on_patched_source",
+                  return_value=b"stage101") as stage101,
+            patch("tools.patch_yabause_private_start_sequence.instrument_sh2_window_on_patched_source",
                   return_value=b"stage102") as stage102,
             patch("tools.patch_yabause_private_start_sequence.instrument_gamepad_start_on_patched_source",
                   return_value=b"stage107") as stage107,
@@ -150,7 +154,9 @@ class Stage112DualStartSourceTests(unittest.TestCase):
         ):
             result = instrument_full_private_start_sequence(b"pinned-upstream")
         self.assertEqual(result, complete)
-        stage102.assert_called_once_with(b"pinned-upstream")
+        stage106.assert_called_once_with(b"pinned-upstream")
+        stage101.assert_called_once_with(b"stage106")
+        stage102.assert_called_once_with(b"stage101")
         stage107.assert_called_once_with(b"stage102")
         stage109.assert_called_once_with(b"stage107")
         stage112.assert_called_once_with(b"stage109")
