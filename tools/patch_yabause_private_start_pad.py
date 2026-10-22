@@ -127,8 +127,8 @@ def instrument_gamepad_start(raw: bytes) -> bytes:
         "PerPadStartReleased(vh107_pad)", "VH_SATURN_START_AT_FRAME",
         AFTER,
     ):
-        if source.count(token)!=1:
-            raise ValueError("Stage107 original controller instrumentation incomplete")
+        if mode.count(token)!=1:
+            raise ValueError("Stage107 private game-mode controller instrumentation incomplete: " + token)
     if source.count("YabauseEmulate()") != 2:
         raise ValueError("Stage107 changed the guest execution path")
     return source.encode("utf-8")
