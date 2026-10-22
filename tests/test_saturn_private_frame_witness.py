@@ -54,6 +54,15 @@ def png_truecolor_1bit():
             chunk(b"IEND", b""))
 
 
+def png_indexed_8bit(include_palette=True):
+    palette = chunk(b"PLTE", bytes([0, 0, 0, 255, 255, 255])) if include_palette else b""
+    return (b"\x89PNG\r\n\x1a\n" +
+            chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 3, 0, 0, 0)) +
+            palette +
+            chunk(b"IDAT", zlib.compress(bytes([0, 0])) +
+            chunk(b"IEND", b""))
+
+
 class FrameWitnessIntegrityTests(unittest.TestCase):
     def test_valid_low_bit_depth_grayscale_png_is_accepted(self):
         self.assertEqual(validate_png_file(png_gray_1bit()), (1, 1))
@@ -62,6 +71,13 @@ class FrameWitnessIntegrityTests(unittest.TestCase):
     def test_low_bit_depth_truecolor_png_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "unsupported PNG frame shape"):
             validate_png_file(png_truecolor_1bit())
+
+    def test_valid_indexed_png_is_accepted(self):
+        self.assertEqual(validate_png_file(png_indexed_8bit()), (1, 1))
+
+    def test_indexed_png_without_palette_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "missing palette"):
+            validate_png_file(png_indexed_8bit(include_palette=False))
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
