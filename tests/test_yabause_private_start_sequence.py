@@ -26,6 +26,11 @@ def _stage109_instrumented_fixture():
         "         if (frames < 1 || frames > 13200 || invalid) return 1;\n"
         "         char pre_path[1024], post_path[1024], stats_path[1024];\n"
         "         char video_state_path[1024];\n"
+        "         char sh2_path[1024];\n"
+        "         FILE *sh2_window = NULL;\n"
+        '         if (snprintf(sh2_path, sizeof(sh2_path),\n'
+        '                      "%s/sh2-window.txt", private_dir) >=\n'
+        '                      (int)sizeof(sh2_path)) return 219;\n'
         "         FILE *video_state = NULL;\n"
         '         if (snprintf(video_state_path, sizeof(video_state_path),\n'
         '                      "%s/video-state.txt", private_dir) >=\n'
@@ -50,6 +55,15 @@ def _stage109_instrumented_fixture():
         "            YabauseDeInit();\n"
         "            return 216;\n"
         "         }\n"
+        '         sh2_window = fopen(sh2_path, "wx");\n'
+        "         if (!sh2_window || !vh102_snapshot(sh2_window, 0))\n"
+        "         {\n"
+        "            if (sh2_window) fclose(sh2_window);\n"
+        "            fclose(video_state);\n"
+        "            free(pixels);\n"
+        "            YabauseDeInit();\n"
+        "            return 220;\n"
+        "         }\n"
         + loop + "\n"
         "            { return 1; }\n"
         "            progress++;\n"
@@ -65,6 +79,14 @@ def _stage109_instrumented_fixture():
         "                  free(pixels);\n"
         "                  YabauseDeInit();\n"
         "                  return 217;\n"
+        "               }\n"
+        "               if (!vh102_snapshot(sh2_window, progress))\n"
+        "               {\n"
+        "                  fclose(sh2_window);\n"
+        "                  fclose(video_state);\n"
+        "                  free(pixels);\n"
+        "                  YabauseDeInit();\n"
+        "                  return 221;\n"
         "               }\n"
         "               if (lodepng::encode(checkpoint_path,\n"
         "                                   (unsigned char*)pixels, cw, ch) != 0)\n"
@@ -86,12 +108,21 @@ def _stage109_instrumented_fixture():
         "            YabauseDeInit();\n"
         "            return 218;\n"
         "         }\n"
+        "         if (!vh102_snapshot(sh2_window, progress) ||\n"
+        "             fclose(sh2_window) != 0)\n"
+        "         {\n"
+        "            free(pixels);\n"
+        "            YabauseDeInit();\n"
+        "            return 222;\n"
+        "         }\n"
         "         free(pixels);\n"
         "         if (remove(gate_path) != 0) return 1;\n"
         + FINALIZE_EXTRA + FINALIZE + "\n         YabauseDeInit();\n" + MODE_END
     )
     return (
         '#include <stdio.h>\nextern "C"\n{\n}\n'
+        'static bool vh101_snapshot(FILE *out, int frame, const void *pixels, int width, int height) { return fprintf(out, "VH_VIDEO frame=%d pc=%u\\n", frame, 1U) > 0; }\n'
+        'static bool vh102_snapshot(FILE *out, int frame) { return fprintf(out, "VH_SH2 frame=%d pc=%u valid=1 sr=0\\n", frame, 1U) > 0; }\n'
         "int main(int argc, char *argv[])\n{\n" +
         mode + "\nreturn 0;\n}\n"
     ).encode()
@@ -116,11 +147,15 @@ class Stage112DualStartSourceTests(unittest.TestCase):
         self.assertIn("VH_PAD mode=%d completed_frames=%d", mode)
         self.assertIn("video-state.txt", mode)
         self.assertIn("sh2-window.txt", mode)
-        self.assertEqual(mode.count("vh112_sh2_snapshot("), 3)
-        self.assertEqual(source.count("vh112_sh2_snapshot("), 4)
+        self.assertEqual(mode.count("vh101_snapshot("), 3)
+        self.assertEqual(source.count("vh101_snapshot("), 4)
+        self.assertEqual(mode.count("vh102_snapshot("), 3)
+        self.assertEqual(source.count("vh102_snapshot("), 4)
+        self.assertNotIn("vh112_sh2_snapshot(", source)
         self.assertNotIn("vh112_video_snapshot(", source)
         self.assertEqual(mode.count('video_state = fopen(video_state_path, "wx");'), 1)
-        self.assertIn("vh101_snapshot(video_state, progress, pixels", source)
+        self.assertEqual(mode.count('sh2_window = fopen(sh2_path, "wx");'), 1)
+        self.assertIn("VH_VIDEO frame=%d pc=%u", source)
         self.assertIn("VH_SH2 frame=%d pc=%u valid=1", source)
 
     def test_first_pulse_remains_compatible_and_second_pulse_is_optional(self):
