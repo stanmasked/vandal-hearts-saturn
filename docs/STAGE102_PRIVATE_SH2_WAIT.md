@@ -23,6 +23,41 @@ Beyond 240 frames the video state/PC and CD read count stop changing.
 These observations are consistent with an SH2 wait loop but do **not**
 prove a loop or its specific condition. This is the next constraint.
 
+## Real private results — loop classified, not a frozen guest
+
+A pinned **public-only GCC Stage102 Yabause executable** passed the
+entire synthetic CI suite and was run on the Stage02 SHA-256-matched
+original private disc for 240 and 600 frames. The instrumented
+`sh2-window.txt` remained 0600/private; actual original opcode words
+and contents were **not** published.
+
+At PC `0x06034198` the local control-flow class is an SH-2
+**decrement-and-test instruction (DT R0)** followed by a conditional
+**BF back edge** that returns to the test. That is a timed inner
+loop, not a halted CPU instruction. Independent checkpoint values of
+the loop counter **change**:
+
+| Frame | Private register R0 count |
+| ---: | ---: |
+| 240 | 21 |
+| 360 | 7 |
+| 480 | 42 |
+| 600 | 28 |
+
+This demonstrates continuing execution through a software delay/wait
+sequence even though the checkpoint PC matches across frames. The
+CD callback count remains at 396 from frame 240 through 600 and
+all private framebuffer pixels remain black.
+
+It is **not established** that the loop is blocked forever or that
+the renderer is defective. Notably, the existing Stage99 HLE runner
+explicitly configures **M68KCORE_DUMMY / SNDCORE_DUMMY**. The game
+may expect a response from the Saturn audio co-processor; this is
+only a testable hypothesis, not a confirmed explanation. A controlled
+next experiment should change exactly the M68K execution core and
+compare the same original-media PC/FAD/video trace. Do not publish
+original game instruction words.
+
 ## Stage102 instrumentation
 
 `tools/patch_yabause_private_sh2_window.py` layers a separate *local*
