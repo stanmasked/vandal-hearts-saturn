@@ -22,7 +22,8 @@ def _stage109_instrumented_fixture():
         "               PerPadStartReleased(vh107_pad);\n" + RELEASE_EXTRA,
     )
     mode = (
-        MODE_START + "\n" + setup + "\n" + connect + "\n" + loop + "\n" +
+        MODE_START + "\n         if (frames < 1 || frames > 13200 || invalid) return 1;\n" +
+        setup + "\n" + connect + "\n" + loop + "\n" +
         FINALIZE_EXTRA + FINALIZE + "\n         YabauseDeInit();\n" + MODE_END
     )
     return b"int fake_pinned_yui_source(void) {\n" + mode.encode() + b"\nreturn 0;\n}\n"
