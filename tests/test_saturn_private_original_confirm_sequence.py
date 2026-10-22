@@ -72,12 +72,10 @@ def _populate(folder, mode, button=None):
             color = (25, 35, 45)
         elif frame <= 12240:
             color = (60, 70, 80)
-        elif mode == "first_only" or frame < 13680:
-            color = (60, 70, 80)
-        elif mode == "confirm":
-            color = (90, 100, 110)
+        elif mode == "first_only":
+            color = (60, 70, 80) if frame < 13680 else (15, 15, 15)
         else:
-            color = (15, 15, 15)
+            color = (90, 100, 110)
         _write(folder, f"frame-{frame}.png", _png(color))
 
 
