@@ -65,6 +65,7 @@ jobs:
           grep -Fq 'VH_SATURN_START_AT_FRAME' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME2' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM2_ENABLED' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_CONFIRM_BUTTON' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'PerPadCPressed(vh107_pad)' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'frames > 48000' external-yabause/yabause/src/runner/yui.cpp
