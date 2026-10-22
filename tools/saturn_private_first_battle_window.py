@@ -142,20 +142,20 @@ def _expected_followup_receipts(followup_c_frame: int | None) -> tuple[bytes, by
         CONFIRM_RELEASE + 6 <= followup_c_frame <= FRAME_COUNT - 8
     ):
         raise ValueError("invalid bounded Stage116 follow-up C frame")
-    event_tail = f"VH_PAD mode=1 completed_frames={FRAME_COUNT}\\n".encode("ascii")
-    state_tail = f"VH_PADSTATE mode=1 completed_frames={FRAME_COUNT}\\n".encode("ascii")
+    event_tail = f"VH_PAD mode=1 completed_frames={FRAME_COUNT}\n".encode("ascii")
+    state_tail = f"VH_PADSTATE mode=1 completed_frames={FRAME_COUNT}\n".encode("ascii")
     events = CONFIRM_EVENTS.replace(
         event_tail,
         (
-            f"VH_PAD frame={followup_c_frame} button=C action=PRESS\\n"
-            f"VH_PAD frame={followup_c_frame + 6} button=C action=RELEASE\\n"
+            f"VH_PAD frame={followup_c_frame} button=C action=PRESS\n"
+            f"VH_PAD frame={followup_c_frame + 6} button=C action=RELEASE\n"
         ).encode("ascii") + event_tail,
     )
     state = CONFIRM_STATE.replace(
         state_tail,
         (
-            f"VH_PADSTATE frame={followup_c_frame} button=C active_low_bit=0\\n"
-            f"VH_PADSTATE frame={followup_c_frame + 6} button=C active_low_bit=1\\n"
+            f"VH_PADSTATE frame={followup_c_frame} button=C active_low_bit=0\n"
+            f"VH_PADSTATE frame={followup_c_frame + 6} button=C active_low_bit=1\n"
         ).encode("ascii") + state_tail,
     )
     return events, state
