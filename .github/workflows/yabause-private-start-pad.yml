@@ -266,6 +266,7 @@ jobs:
           python3 -m unittest discover -s tests -p test_yabause_private_title_10800.py -v
           python3 -m unittest discover -s tests -p test_yabause_original_title_12000.py -v
           python3 -m unittest discover -s tests -p test_yabause_private_start_pad.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_start_ab.py -v
           workdir="$(mktemp -d)"
           trap 'rm -rf "$workdir"' EXIT
           # No original game CD is present on CI and no boot is attempted.
