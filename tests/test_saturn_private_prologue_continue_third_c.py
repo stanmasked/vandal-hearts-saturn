@@ -1,12 +1,14 @@
 """Synthetic-only tests for Stage117's private third-C dialogue audit."""
 from pathlib import Path
 import unittest
+from unittest.mock import Mock, patch
 
 from test_saturn_private_original_start_triple import _png, _write
 from tools.saturn_private_first_battle_window import FRAME_COUNT
 from tools.saturn_private_prologue_continue_third_c import (
     CONFIRM3_PRESS, CONFIRM3_RELEASE, DOUBLE_C_EVENTS, DOUBLE_C_STATE,
     TRIPLE_C_EVENTS, TRIPLE_C_STATE, audit_private_prologue_continue_third_c,
+    _run_one,
 )
 
 SAMPLES = [0] + list(range(120, FRAME_COUNT + 1, 120)) + [FRAME_COUNT]
@@ -112,6 +114,48 @@ class Stage117PrivateDialogueAuditTests(unittest.TestCase):
         (self.triple_c / "frame-48000.png").unlink()
         with self.assertRaisesRegex(ValueError, "file set mismatch"):
             audit_private_prologue_continue_third_c(self.double_c, self.triple_c)
+
+
+class Stage117PairedRunScheduleTests(unittest.TestCase):
+    def test_both_runs_receive_same_scheduled_third_c_frame(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            control = root / "control"
+            triple = root / "triple"
+            control.mkdir(mode=0o700)
+            triple.mkdir(mode=0o700)
+            envs = []
+            for folder, third_c in ((control, False), (triple, True)):
+                process = Mock()
+                process.wait.return_value = 0
+                with patch(
+                    "tools.saturn_private_prologue_continue_third_c.subprocess.Popen",
+                    return_value=process,
+                ) as popen:
+                    _run_one(
+                        Path("/private/yabause"),
+                        Path("/private/original.cue"),
+                        folder,
+                        third_c=third_c,
+                        seconds=5,
+                    )
+                envs.append(popen.call_args.kwargs["env"])
+            self.assertEqual(
+                envs[0]["VH_SATURN_CONFIRM_AT_FRAME3"],
+                envs[1]["VH_SATURN_CONFIRM_AT_FRAME3"],
+            )
+            self.assertEqual(envs[0]["VH_SATURN_CONFIRM_AT_FRAME3"], str(CONFIRM3_PRESS))
+            self.assertEqual(envs[0]["VH_SATURN_CONFIRM2_ENABLED"], "1")
+            self.assertEqual(envs[1]["VH_SATURN_CONFIRM2_ENABLED"], "1")
+            self.assertEqual(envs[0]["VH_SATURN_CONFIRM3_ENABLED"], "0")
+            self.assertEqual(envs[1]["VH_SATURN_CONFIRM3_ENABLED"], "1")
+            self.assertEqual(
+                {key: value for key, value in envs[0].items()
+                 if key != "VH_SATURN_CONFIRM3_ENABLED"},
+                {key: value for key, value in envs[1].items()
+                 if key != "VH_SATURN_CONFIRM3_ENABLED"},
+            )
 
 
 if __name__ == "__main__":
