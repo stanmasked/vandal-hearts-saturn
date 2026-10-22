@@ -1,0 +1,275 @@
+name: Stage105 pinned real Yabause original title long-run (synthetic-only CI)
+on:
+  push:
+    branches:
+      - "stage105/**"
+  pull_request:
+    branches:
+      - "stage104/**"
+permissions:
+  contents: read
+jobs:
+  linked-runner:
+    name: Linked public Yabause runner (${{ matrix.compiler }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc
+            cxx: g++
+          - compiler: clang
+            cxx: clang++
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact public Yabause commit
+        env:
+          UPSTREAM_COMMIT: 7e38821dbac265490f115e163c523a939acda759
+        run: |
+          set -euo pipefail
+          git init -q external-yabause
+          git -C external-yabause remote add origin https://github.com/Yabause/yabause.git
+          git -C external-yabause fetch --quiet --depth 1 origin "${UPSTREAM_COMMIT}"
+          test "$(git -C external-yabause rev-parse FETCH_HEAD)" = "${UPSTREAM_COMMIT}"
+          git -C external-yabause checkout --quiet --detach FETCH_HEAD
+      - name: Fetch and verify pinned public runner PNG dependency
+        env:
+          LODEPNG_COMMIT: e584a8490db1b76b81bf298c11c09d3b55d9c270
+        run: |
+          set -euo pipefail
+          git init -q external-lodepng
+          git -C external-lodepng remote add origin https://github.com/lvandeve/lodepng.git
+          git -C external-lodepng fetch --quiet --depth 1 origin "${LODEPNG_COMMIT}"
+          test "$(git -C external-lodepng rev-parse FETCH_HEAD)" = "${LODEPNG_COMMIT}"
+          git -C external-lodepng checkout --quiet --detach FETCH_HEAD
+          test "$(git hash-object external-lodepng/lodepng.cpp)" = 4915ed7a1ddc827559eb42b8968924a61454f2e6
+          test "$(git hash-object external-lodepng/lodepng.h)" = 8f789b677668a495f641336cf62f3afe0b98a80d
+          mkdir -p external-yabause/yabause/src/runner/lodepng
+          cp external-lodepng/lodepng.cpp external-lodepng/lodepng.h external-yabause/yabause/src/runner/lodepng/
+      - name: Pin and patch real Yabause CD reader
+        run: |
+          set -euo pipefail
+          python3 -m tools.patch_yabause_strict_split_cue \
+            --source external-yabause/yabause/src/cdbase.c \
+            --output external-yabause/yabause/src/cdbase.instrumented.c
+          mv external-yabause/yabause/src/cdbase.instrumented.c external-yabause/yabause/src/cdbase.c
+          test "$(grep -c 'if (vh_primary_read == 1)' external-yabause/yabause/src/cdbase.c)" = 1
+      - name: Inject pinned synthetic SH2 and live ISO callback programs
+        run: |
+          set -euo pipefail
+          python3 -m tools.patch_yabause_private_title_10800 \
+            --source external-yabause/yabause/src/runner/yui.cpp \
+            --output external-yabause/yabause/src/runner/yui.instrumented.cpp
+          mv external-yabause/yabause/src/runner/yui.instrumented.cpp external-yabause/yabause/src/runner/yui.cpp
+      - name: Configure minimal real Yabause runner frontend
+        env:
+          CC: ${{ matrix.compiler }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          set -euo pipefail
+          cmake -S external-yabause/yabause -B build-yabause \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DYAB_WANT_OPENGL=OFF \
+            -DYAB_WANT_SDL=OFF \
+            -DYAB_WANT_OPENAL=OFF \
+            -DYAB_USE_SSF=OFF \
+            -DYAB_WANT_MUSASHI=OFF \
+            -DYAB_WANT_C68K=ON \
+            -DYAB_USE_PLAY_JIT=OFF \
+            -DYAB_WANT_MPEG=OFF \
+            -DYAB_PORTS=runner
+      - name: Link complete runner executable against real Yabause core
+        run: |
+          set -euo pipefail
+          cmake --build build-yabause --target yabause-runner --parallel 2
+          test -x build-yabause/src/runner/yabause
+      - name: Execute disc-free and BIOS-free CLI smoke
+        run: |
+          set -euo pipefail
+          env -u VH_SATURN_CAPTURE_GATE -u VH_SATURN_FAD_LOG \
+            timeout 15s build-yabause/src/runner/yabause > runner-cli.txt 2>&1
+          grep -Fq 'Not enough command line arguments.' runner-cli.txt
+          test ! -e vh-cd-capture.log
+          echo 'STAGE81_LINKED_YABAUSE_RUNNER_CLI_SMOKE_PASS'
+
+      - name: Actually initialize and teardown Saturn core without BIOS or disc
+        run: |
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+          if ! (cd "$workdir" && HOME="$workdir" env -u VH_SATURN_CAPTURE_GATE -u VH_SATURN_FAD_LOG \
+                timeout 20s "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" vh-no-media-init) > init-smoke.txt 2>&1; then
+            cat init-smoke.txt
+            exit 1
+          fi
+          cat init-smoke.txt
+          grep -Fxq "STAGE82_REAL_YABAUSE_INIT_NO_MEDIA_PASS" init-smoke.txt
+          test ! -e vh-cd-capture.log
+          echo "STAGE82_YABAUSE_INIT_REAL_PROCESS_PASS"
+
+      - name: Execute one emulated frame and verify invented SH2 instructions
+        run: |
+          set -euo pipefail
+          ulimit -c 0
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+          if ! (cd "$workdir" && HOME="$workdir" env -u VH_SATURN_CAPTURE_GATE -u VH_SATURN_FAD_LOG \
+                timeout -k 5s 20s "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" vh-synthetic-sh2-frame) > frame-smoke.txt 2>&1; then
+            cat frame-smoke.txt
+            exit 1
+          fi
+          cat frame-smoke.txt
+          grep -Fxq "STAGE83_REAL_YABAUSE_SYNTHETIC_SH2_FRAME_PASS" frame-smoke.txt
+          test ! -e vh-cd-capture.log
+          echo "STAGE83_GENUINE_SH2_INSTRUCTION_FRAME_PASS"
+
+      - name: Execute genuine ISOCD reads with strict manual FAD gate
+        run: |
+          set -euo pipefail
+          ulimit -c 0
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+          (cd "$workdir" && HOME="$workdir" \
+            VH_SATURN_CAPTURE_GATE="$workdir/control.gate" \
+            VH_SATURN_FAD_LOG="$workdir/real-iso.vhcdlog" \
+            timeout -k 5s 20s "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" vh-synthetic-iso-read) > iso-smoke.txt 2>&1 || { cat iso-smoke.txt; exit 1; }
+          cat iso-smoke.txt
+          grep -Fxq "STAGE84_REAL_YABAUSE_SYNTHETIC_ISO_CD_PASS" iso-smoke.txt
+          printf "VHCD_FAD 150\nVHCD_FAD 151\n" > expected-fad.txt
+          cmp expected-fad.txt "$workdir/real-iso.vhcdlog"
+          test ! -e "$workdir/control.gate"
+          test "$(stat -c %s "$workdir/vh_created_iso_fixture.iso")" = 4096
+          echo "STAGE84_GENUINE_YABAUSE_ISO_CALLBACK_PASS"
+
+      - name: Two independent isolated real-Yabause FAD captures must match
+        run: |
+          set -euo pipefail
+          ulimit -c 0
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+          timeout -k 5s 60s python3 -m tools.verify_yabause_cd_replay \
+            --executable "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" \
+            --workspace "$workdir" > replay-receipt.jsonl
+          grep -Fxq "STAGE85_TWO_ISOLATED_REAL_YABAUSE_ISO_REPLAYS_PASS" replay-receipt.jsonl
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          lines=Path("replay-receipt.jsonl").read_text().splitlines()
+          assert len(lines)==2, "unexpected receipt output"
+          receipt=json.loads(lines[0])
+          assert receipt["stage"]==85
+          assert receipt["actual_independent_processes"]==2
+          assert receipt["record_count_per_run"]==2
+          assert receipt["matches_between_runs"] is True
+          assert receipt["private_game_media_used"] is False
+          assert receipt["authentic_game_boot_observed"] is False
+          print("STAGE85_PINNED_REAL_YABAUSE_FAD_REPLAY_CONFIRMED")
+          PY
+
+      - name: Stage88 CUE/BIN actually opened through real Yabause and Stage87 private wrapper
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_yabause_private_cue_bridge.py -v
+          timeout -k 5s 90s python3 -m tools.verify_yabause_private_cue_bridge \
+            --executable "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" > cue-receipt.jsonl
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          lines=Path("cue-receipt.jsonl").read_text().splitlines()
+          assert len(lines)==2, "invalid receipt lines"
+          x=json.loads(lines[0])
+          assert x["stage"] == 88
+          assert x["synthetic_cue_and_track1_opened_in_real_backend"] is True
+          assert x["negative_missing_bin_rejected"] is True
+          assert x["exact_numeric_fad_records"] == 2
+          assert x["private_wrapper_source_and_runner_pins_agree"] is True
+          assert x["original_game_boot_verified"] is False
+          assert x["real_game_media_used"] is False
+          assert lines[1] == "STAGE88_REAL_YABAUSE_PRIVATE_WRAPPER_CUE_OPEN_PASS"
+          print("STAGE88_REAL_YABAUSE_CUE_OPEN_CROSS_PROCESS_PASS")
+          PY
+
+      - name: Stage89 real Yabause separate MODE1/2352 plus AUDIO file support
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_yabause_split_cue.py -v
+          timeout -k 5s 90s python3 -m tools.verify_yabause_split_cue \
+            --executable "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" > split-cue-receipt.jsonl
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          lines=Path("split-cue-receipt.jsonl").read_text().splitlines()
+          assert len(lines)==2, "missing exact two-line receipt"
+          r=json.loads(lines[0])
+          assert r["stage"] == 89
+          assert r["real_public_yabause_split_cue_opened"] is True
+          assert r["synthetic_data_sectors"] == 2
+          assert r["synthetic_audio_sectors_after_pregap"] == 2
+          assert r["audio_index01_fad"] == 302
+          assert r["numeric_fad_receipts"] == 4
+          assert r["negative_inputs_rejected"] == 2
+          assert r["original_game_media_present"] is False
+          assert r["authentic_saturn_boot_verified"] is False
+          assert lines[1] == "STAGE89_REAL_YABAUSE_TWO_FILE_CUE_PASS"
+          print("STAGE89_PINNED_REAL_YABAUSE_SPLIT_TRACK_VERIFIED")
+          PY
+
+      - name: Stage91 strict 8-directive parser rejects actual malformed CUE inputs
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_yabause_strict_cue.py -v
+          timeout -k 5s 120s python3 -m tools.verify_yabause_strict_cue \
+            --executable "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" > strict-cue-receipt.jsonl
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          lines=Path("strict-cue-receipt.jsonl").read_text().splitlines()
+          assert len(lines)==2, "unexpected receipt output"
+          record=json.loads(lines[0])
+          assert record["stage"]==91
+          assert record["actual_pinned_yabause_negative_processes"]==12
+          assert record["strict_cue_negative_inputs_rejected"] is True
+          assert record["no_fake_success_receipts"] is True
+          assert record["actual_game_media_used"] is False
+          assert record["authentic_first_battle_execution_verified"] is False
+          assert lines[1]=="STAGE91_REAL_PINNED_YABAUSE_STRICT_CUE_NEGATIVES_PASS"
+          print("STAGE91_STRICT_YABAUSE_NEGATIVES_CONFIRMED")
+          PY
+
+      - name: Stage98 real Yabause reads invented Saturn boot and CDDA through exact CUE
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_yabause_private_disc_probe.py -v
+          timeout -k 5s 90s python3 -m tools.verify_yabause_public_disc_probe \
+            --executable "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" > probe-receipt.txt
+          grep -Fxq STAGE98_REAL_YABAUSE_FAKE_SPLIT_CUE_PROBE_PASS probe-receipt.txt
+          echo STAGE98_LINKED_ISOCD_PUBLIC_RUNNER_READY
+
+      - name: Save only the public pinned Yabause runner executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage105-public-linked-yabause-${{ matrix.compiler }}
+          path: build-yabause/src/runner/yabause
+          if-no-files-found: error
+          retention-days: 5
+
+      - name: Stage99 private boot frame mode patch contracts only (no game image)
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_yabause_private_game_frames.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_video_state.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_sh2_window.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_c68k_experiment.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_long_frames.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_title_10800.py -v
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+          # No original game CD is present on CI and no boot is attempted.
+          if (cd "$workdir" && "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" \
+               vh-private-frame-boot /nonexistent/test.cue 0) >/dev/null 2>&1; then
+            echo 'Stage99 should refuse a missing privately pinned CUE' >&2
+            exit 1
+          fi
+          echo 'STAGE99_PUBLIC_RUNNER_BAD_ARGS_FAIL_CLOSED_PASS'
