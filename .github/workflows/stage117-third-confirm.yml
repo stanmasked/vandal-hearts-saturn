@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   build-runner:
-    name: Public Yabause second-confirm runner (${{ matrix.compiler }})
+    name: Public Yabause third-confirm runner (${{ matrix.compiler }})
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
@@ -69,7 +69,7 @@ jobs:
           grep -Fq 'VH_SATURN_CONFIRM_BUTTON' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'PerPadCPressed(vh107_pad)' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'frames > 48000' external-yabause/yabause/src/runner/yui.cpp
-          echo STAGE116_SECOND_CONFIRM_SOURCE_READY
+          echo STAGE117_THIRD_CONFIRM_SOURCE_READY
       - name: Run synthetic-only Stage116 and inherited regressions
         run: |
           set -euo pipefail
@@ -136,7 +136,7 @@ jobs:
           ! grep -Fq 'STAGE99_REAL_YABAUSE_BOUND_FRAMES_PASS' missing-cue.txt
           test ! -e "Vandal Hearts - Ushinawareta Kodai Bunmei (English v1.1).cue"
           test ! -e original-saturn.bin
-          echo STAGE116_PUBLIC_RUNNER_FAIL_CLOSED_PASS
+          echo STAGE117_PUBLIC_RUNNER_FAIL_CLOSED_PASS
       - name: Record executable SHA-256 for private artifact verification
         run: |
           set -euo pipefail
