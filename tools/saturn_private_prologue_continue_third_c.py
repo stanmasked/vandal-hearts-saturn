@@ -80,11 +80,21 @@ TRIPLE_C_STATE = (
     f"VH_PADSTATE mode=1 completed_frames={FRAME_COUNT}\n"
 ).encode("ascii")
 
+def _validate_pair_path_shape(double_c: Path, triple_c: Path) -> None:
+    double_resolved = double_c.resolve()
+    triple_resolved = triple_c.resolve()
+    if double_resolved.parent != triple_resolved.parent:
+        raise ValueError("Stage117 paired output directories must share one parent")
+    if len(str(double_resolved)) != len(str(triple_resolved)):
+        raise ValueError("Stage117 paired output paths must have equal length for matched environment shape")
+
+
 def audit_private_prologue_continue_third_c(double_c: Path, triple_c: Path) -> dict:
     if not double_c.is_absolute() or not triple_c.is_absolute():
         raise ValueError("absolute private Stage117 output paths required")
     if double_c.resolve() == triple_c.resolve():
         raise ValueError("two distinct Stage117 output directories required")
+    _validate_pair_path_shape(double_c, triple_c)
     _private_directory(double_c)
     _private_directory(triple_c)
     if _private_regular(double_c / "pad-events.txt", 2048) != DOUBLE_C_EVENTS:
@@ -228,6 +238,7 @@ def run_private_prologue_continue_third_c(
         raise ValueError("absolute private Stage117 output paths required")
     if double_c.resolve() == triple_c.resolve():
         raise ValueError("two distinct Stage117 output directories required")
+    _validate_pair_path_shape(double_c, triple_c)
     for directory in outputs:
         _private_directory(directory)
         if any(directory.iterdir()):
