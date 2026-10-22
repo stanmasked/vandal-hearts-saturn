@@ -122,11 +122,16 @@ def _frame(directory: Path, frame: int) -> tuple[tuple[int, int], bytes]:
 
 
 def _check_frames(directory: Path) -> tuple[int, tuple[int, int]]:
-    expected = {f"frame-{n}.png" for n in range(120, FRAME_COUNT + 1, 120)}
-    expected.update({"pre.png", "post.png", "frames.stats", "fad.vhcdlog",
-                     "pad-events.txt", "pad-state.txt", "sh2-window.txt",
-                     "video-state.txt"})
+    expected_checkpoints = {f"frame-{n}.png" for n in range(120, FRAME_COUNT + 1, 120)}
     actual = {p.name for p in directory.iterdir()}
+    missing_checkpoints = expected_checkpoints - actual
+    if missing_checkpoints:
+        raise ValueError("private Stage112 checkpoint sequence incomplete")
+    expected = expected_checkpoints | {
+        "pre.png", "post.png", "frames.stats", "fad.vhcdlog",
+        "pad-events.txt", "pad-state.txt", "sh2-window.txt",
+        "video-state.txt",
+    }
     if actual != expected:
         raise ValueError("private Stage112 output set incomplete or unexpected")
     for name in expected:
