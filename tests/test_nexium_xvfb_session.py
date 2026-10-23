@@ -52,6 +52,13 @@ class WindowManagerSessionTests(unittest.TestCase):
     def test_valid_bash_syntax(self):
         subprocess.run(['bash', '-n', str(SCRIPT)], check=True)
 
+    def test_capture_uses_bounded_window_scoped_imagemagick(self):
+        capture_script = SCRIPT.with_name('nexium_capture.sh').read_text(encoding='utf8')
+        self.assertIn("command -v import", capture_script)
+        self.assertIn('timeout --kill-after=2s 15s import -window "$window"', capture_script)
+        self.assertNotIn('-window_id "$window"', capture_script)
+        self.assertNotIn('ffmpeg -hide_banner', capture_script)
+
     def test_ready_window_manager_proceeds_to_guest(self):
         proc, files = self.run_session()
         self.assertEqual(proc.returncode, 0, proc.stderr)

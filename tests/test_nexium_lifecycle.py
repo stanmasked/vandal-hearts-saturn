@@ -29,11 +29,12 @@ class LifecycleTests(unittest.TestCase):
                        + ('trap "exit 0" TERM\n' if kind != 'crash' else '')
                        + ('exit 7\n' if kind == 'crash' else 'while :; do sleep 0.1; done\n'))
             executable(root / 'bin' / 'xdotool',
-                       '#!/usr/bin/env bash\n'
-                       'if [[ "$1" == "search" ]]; then echo 456; exit 0; fi\n'
-                       'if [[ "$1" == "windowclose" ]]; then\n'
-                       + ('  exit 1\n' if kind == 'no_windowclose' else '  kill -TERM "$(cat emu.pid)"; exit 0\n')
-                       + 'fi\n' + ('if [[ "$1" == "key" ]]; then sleep 30; fi\n' if kind == 'hung_key' else '') + 'exit 0\n')
+                        '#!/usr/bin/env bash\n'
+                        'if [[ "$1" == "search" ]]; then echo 456; exit 0; fi\n'
+                        'if [[ "$1" == "getwindowgeometry" ]]; then printf "WINDOW=456\\nX=0\\nY=0\\nWIDTH=640\\nHEIGHT=480\\nSCREEN=0\\n"; exit 0; fi\n'
+                        'if [[ "$1" == "windowclose" ]]; then\n'
+                        + ('  exit 1\n' if kind == 'no_windowclose' else '  kill -TERM "$(cat emu.pid)"; exit 0\n')
+                        + 'fi\n' + ('if [[ "$1" == "key" ]]; then sleep 30; fi\n' if kind == 'hung_key' else '') + 'exit 0\n')
             executable(root / 'bin' / 'xprop',
                        '#!/usr/bin/env bash\nprintf "WM_PROTOCOLS(ATOM): WM_DELETE_WINDOW\\n"\n')
             executable(root / 'bin' / 'wmctrl',
@@ -41,10 +42,10 @@ class LifecycleTests(unittest.TestCase):
                        ('exit 1\n' if kind == 'no_windowclose' else
                         'kill -TERM "$(cat emu.pid)"; exit 0\n'))
             executable(root / 'bin' / 'import',
-                       '#!/usr/bin/env bash\n'
-                       'printf PNG_MOCK > "$3"\n')
+                        '#!/usr/bin/env bash\n'
+                        'out=""; for arg in "$@"; do out="$arg"; done; printf PNG_MOCK > "$out"\n')
             env = os.environ.copy()
-            env.update(PATH=f'{root / "bin"}:{os.environ["PATH"]}',
+            env.update(PATH=f'{root / "bin"}:{os.environ["PATH"]}', DISPLAY=':99',
                        NEXIUM_BIN=str(emu), NEXIUM_WINDOW_ATTEMPTS='2',
                        NEXIUM_POLL_DELAY_SECONDS='0', NEXIUM_SETTLE_DELAY_SECONDS='0',
                        NEXIUM_CLOSE_WAIT_SECONDS='1')

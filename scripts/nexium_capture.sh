@@ -28,6 +28,11 @@ record_failure() {
   printf 'VH_EMU_FAILURE reason=%s\n' "$1" >&2
 }
 
+if ! command -v import >/dev/null 2>&1; then
+  record_failure 'imagemagick_unavailable'
+  exit 1
+fi
+
 "$NEXIUM_BIN" nros/vh_saturn_demo.nro >runtime-evidence/nexium.log 2>&1 &
 emu_pid=$!
 cleanup() {
@@ -55,7 +60,11 @@ if ! kill -0 "$emu_pid" 2>/dev/null; then
   cat runtime-evidence/nexium.log >&2
   exit 1
 fi
-if ! import -window "$window" runtime-evidence/nexium-window.png; then
+# Restore the window-scoped capture that passed the prior NeXium guest gate.
+# FFmpeg -window_id produced X11 BadMatch and an empty framebuffer on CI.
+# Timeout and independent PNG/pixel validators still fail closed.
+if ! timeout --kill-after=2s 15s import -window "$window" \
+    runtime-evidence/nexium-window.png; then
   record_failure 'window_capture_command_failed'
   exit 1
 fi

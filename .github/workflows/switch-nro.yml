@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: read
 
 jobs:
@@ -63,13 +64,13 @@ jobs:
             vh_saturn_attack.nacp
             attack-build-verification.json
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
 
   run-in-nexium:
     name: Experimental NeXium guest framebuffer smoke
     needs: build-nro
     runs-on: ubuntu-26.04
-    timeout-minutes: 18
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - name: Download built NRO
@@ -79,19 +80,24 @@ jobs:
           path: nros
 
       - name: Install headless NeXium graphics dependencies
+        id: nexium_deps
         shell: bash
         run: |
           set -euxo pipefail
           # Bound apt network and install work so an unreachable mirror cannot hold this guest job indefinitely.
           timeout --kill-after=10s 180s sudo apt-get \
             -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
-          timeout --kill-after=10s 300s sudo env DEBIAN_FRONTEND=noninteractive apt-get \
+          # Avoid upgrades to the hosted image; install only the packages this
+          # headless guest needs, with a hard deadline on network/package work.
+          timeout --kill-after=10s 720s sudo env DEBIAN_FRONTEND=noninteractive apt-get \
             -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 \
-            install -y curl jq xvfb xauth xdotool openbox wmctrl x11-utils imagemagick python3-pil \
+            install -y --no-upgrade --no-install-recommends curl jq imagemagick xvfb xauth xdotool openbox wmctrl x11-utils python3-pil \
             libgtk-3-0t64 libasound2t64 libudev1 libxkbcommon0 libxkbcommon-x11-0 \
             libx11-xcb1 libxcb-cursor0 libxcb-xinerama0 libxcb-xfixes0 \
             libxcb-randr0 libxcb-render0 libxcb-shape0 libxcb-xkb1 \
             libvulkan1 mesa-vulkan-drivers
+          command -v import
+          python3 -c 'from PIL import Image; print("Pillow import OK")'
 
       - name: Fetch NeXium nightly build
         shell: bash
@@ -110,6 +116,7 @@ jobs:
           echo "NEXIUM_BIN=$emu_bin" >> "$GITHUB_ENV"
 
       - name: Launch NRO and capture emulator framebuffer
+        id: guest_capture
         shell: bash
         run: |
           set -euxo pipefail
@@ -128,7 +135,7 @@ jobs:
             bash scripts/nexium_xvfb_session.sh
 
       - name: Check two allied and two opposing game markers
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euxo pipefail
@@ -137,7 +144,7 @@ jobs:
             --output runtime-evidence/frame-check.json
 
       - name: Verify native guest state via screenshot pixels
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euxo pipefail
@@ -147,7 +154,7 @@ jobs:
             --output runtime-evidence/state-digest.json
 
       - name: Inspect optional Right-key input evidence
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -eu
@@ -161,7 +168,7 @@ jobs:
             printf '%s\n' 'Cursor input not evaluated: screenshots missing' >runtime-evidence/cursor-motion-skipped.txt
           fi
       - name: Strict two-frame guest state and cursor evidence
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -173,19 +180,19 @@ jobs:
             --output runtime-evidence/guest-visual-evidence.json
 
       - name: Verify real move action changed the guest tactical state
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
           python3 -m tools.nexium_tactical_action --verify-dir runtime-evidence
       - name: Verify rejected second move and cancelled Scout selection on guest pixels
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
           python3 -m tools.nexium_post_move --verify-dir runtime-evidence
       - name: Classify NeXium host runtime failures
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -eu
@@ -199,7 +206,7 @@ jobs:
             exit 1
           fi
       - name: Distinguish NeXium host errors before versus after window close
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -eu
@@ -227,7 +234,7 @@ jobs:
           python3 -m tools.nexium_repeat_audit runtime-evidence/repeat-trials \
             --output runtime-evidence/repeat-audit.json
       - name: Stage44 independent real NeXium attack duel and HP evidence
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -261,7 +268,7 @@ jobs:
             stage44-session/runtime-evidence/lifecycle-status.txt \
             --output stage44-session/runtime-evidence/lifecycle-audit.json
       - name: Stage54 real NeXium forecast HUD pixel and hide/show verification
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -271,7 +278,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --victory stage44-session/runtime-evidence
       - name: Stage52 independent real NeXium Defeat duel and terminal evidence
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -299,7 +306,7 @@ jobs:
             stage52-session/runtime-evidence/lifecycle-status.txt \
             --output stage52-session/runtime-evidence/lifecycle-audit.json
       - name: Stage55 real NeXium selected ally HP and readiness evidence
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -309,7 +316,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage56 real NeXium hovered enemy stats and hide/show evidence
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -319,7 +326,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage57 real NeXium attack-availability cue verification
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -329,7 +336,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage58 real NeXium exact damage numeral and KO verification
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -339,7 +346,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage59 real NeXium projected remaining enemy HP pixels
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -348,7 +355,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage60 real NeXium projected damage health bar pixels
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -357,7 +364,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage61 real NeXium round badge and terminal hide/show
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -366,7 +373,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage62 real NeXium selected movement stat pixels
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -375,19 +382,23 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage64 real NeXium hovered movement-cost HUD and hide/show
-        if: always()
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
           python3 -m tools.nexium_move_preview_hud --verify-dir runtime-evidence
-      - name: Upload emulator evidence even on failure
+      - name: Delete temporary NRO handoff after runtime checks
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: vh-saturn-nexium-runtime-evidence
-          path: |
-            runtime-evidence/
-            stage44-session/runtime-evidence/
-            stage52-session/runtime-evidence/
-          if-no-files-found: warn
-          retention-days: 14
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100"
+          ids="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$api" | jq -r '.artifacts[] | select(.name == "vh-saturn-prototype-nro") | .id')"
+          for id in $ids; do
+            curl -fsSL -X DELETE -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$id" -o /dev/null
+          done
+          remaining="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$api" | jq '[.artifacts[] | select(.name == "vh-saturn-prototype-nro")] | length')"
+          test "$remaining" -eq 0
+          echo "SWITCH_NRO_TEMPORARY_ARTIFACT_CLEANUP_PASS"
