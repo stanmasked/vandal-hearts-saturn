@@ -1,8 +1,8 @@
 """Synthetic-only tests for the Stage125 private auditor; no original game files."""
-import os, struct, tempfile, unittest, zlib
+import json, os, struct, tempfile, unittest, zlib
 from pathlib import Path
 from tools.saturn_private_prologue_continue_tenth_c import (
-    audit_private_prologue_continue_tenth_c, CHECKPOINTS, FRAME_COUNT,
+    audit_private_prologue_continue_tenth_c, _require_stage124_drive_readback_receipt, CHECKPOINTS, FRAME_COUNT,
     NONA_EVENTS_120, NONA_STATE_120, DECA_EVENTS, DECA_STATE,
 )
 
@@ -44,5 +44,24 @@ class Stage125PrivateAuditorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="stage125-audit-") as tmp:
             a,b=self._pair(tmp);(b/"pad-events.txt").unlink();_write(b/"pad-events.txt",NONA_EVENTS_120)
             with self.assertRaisesRegex(ValueError,"tenth-C event receipt mismatch"):audit_private_prologue_continue_tenth_c(a,b)
+
+    def test_archive_readback_receipt_required_and_strict(self):
+        with tempfile.TemporaryDirectory(prefix="stage125-private-receipt-") as tmp:
+            path=Path(tmp)/"stage124-drive-readback.json"
+            record={"stage":124,"owner_only":True,"readback_verified":True,
+                    "drive_file_id":"synthetic-private-id","archive_size_bytes":1024,
+                    "archive_sha256":"a"*64,"drive_readback_sha256":"a"*64}
+            _write(path,json.dumps(record).encode("utf-8"))
+            _require_stage124_drive_readback_receipt(path)
+            for field,bad in (("readback_verified",False),("owner_only",False),
+                              ("archive_size_bytes",0),("drive_readback_sha256","b"*64),
+                              ("stage",123)):
+                altered=dict(record);altered[field]=bad
+                path.unlink();_write(path,json.dumps(altered).encode("utf-8"))
+                with self.assertRaises(ValueError):
+                    _require_stage124_drive_readback_receipt(path)
+            path.unlink()
+            with self.assertRaises(ValueError):
+                _require_stage124_drive_readback_receipt(path)
 
 if __name__=="__main__":unittest.main()
