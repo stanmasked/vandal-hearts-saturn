@@ -64,3 +64,7 @@ A dialogue change or framebuffer difference does not establish player control. K
 5. Keep the stacked dependency order explicit: Stage114 → Stage115 → Stage116 → Stage117 → Stage118 → the selected Stage119. Before each merge, confirm the exact head and all required checks again, then retarget/rebase the next stacked PR as needed.
 
 No PR in this chain should be marked ready or merged solely because its custom runner workflow passed while host/Switch checks remain pending.
+
+## Follow-up CI poll
+
+After the timestamped snapshot above, Stage118's Switch NRO build and NeXium guest framebuffer smoke both completed successfully on head `338b6aed18253d04698af9ddb690a5cbfefd3c2c`. Stage118 host GCC/Clang jobs were still queued at the follow-up poll. Stage119 PR #72's exact-head runner workflow remains green and its current artifacts/hashes are recorded above, while host tests and the Switch NRO workflow remain queued. PR #73's runner workflow is green, but its host and Switch jobs are also queued. These queue states are not failures, but they prevent claiming full CI success.
