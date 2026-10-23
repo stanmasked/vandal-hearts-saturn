@@ -116,6 +116,7 @@ jobs:
           echo "NEXIUM_BIN=$emu_bin" >> "$GITHUB_ENV"
 
       - name: Launch NRO and capture emulator framebuffer
+        id: guest_capture
         shell: bash
         run: |
           set -euxo pipefail
@@ -134,7 +135,7 @@ jobs:
             bash scripts/nexium_xvfb_session.sh
 
       - name: Check two allied and two opposing game markers
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euxo pipefail
@@ -143,7 +144,7 @@ jobs:
             --output runtime-evidence/frame-check.json
 
       - name: Verify native guest state via screenshot pixels
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euxo pipefail
@@ -153,7 +154,7 @@ jobs:
             --output runtime-evidence/state-digest.json
 
       - name: Inspect optional Right-key input evidence
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -eu
@@ -167,7 +168,7 @@ jobs:
             printf '%s\n' 'Cursor input not evaluated: screenshots missing' >runtime-evidence/cursor-motion-skipped.txt
           fi
       - name: Strict two-frame guest state and cursor evidence
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -179,19 +180,19 @@ jobs:
             --output runtime-evidence/guest-visual-evidence.json
 
       - name: Verify real move action changed the guest tactical state
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
           python3 -m tools.nexium_tactical_action --verify-dir runtime-evidence
       - name: Verify rejected second move and cancelled Scout selection on guest pixels
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
           python3 -m tools.nexium_post_move --verify-dir runtime-evidence
       - name: Classify NeXium host runtime failures
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -eu
@@ -205,7 +206,7 @@ jobs:
             exit 1
           fi
       - name: Distinguish NeXium host errors before versus after window close
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -eu
@@ -233,7 +234,7 @@ jobs:
           python3 -m tools.nexium_repeat_audit runtime-evidence/repeat-trials \
             --output runtime-evidence/repeat-audit.json
       - name: Stage44 independent real NeXium attack duel and HP evidence
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -267,7 +268,7 @@ jobs:
             stage44-session/runtime-evidence/lifecycle-status.txt \
             --output stage44-session/runtime-evidence/lifecycle-audit.json
       - name: Stage54 real NeXium forecast HUD pixel and hide/show verification
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -277,7 +278,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --victory stage44-session/runtime-evidence
       - name: Stage52 independent real NeXium Defeat duel and terminal evidence
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -305,7 +306,7 @@ jobs:
             stage52-session/runtime-evidence/lifecycle-status.txt \
             --output stage52-session/runtime-evidence/lifecycle-audit.json
       - name: Stage55 real NeXium selected ally HP and readiness evidence
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -315,7 +316,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage56 real NeXium hovered enemy stats and hide/show evidence
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -325,7 +326,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage57 real NeXium attack-availability cue verification
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -335,7 +336,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage58 real NeXium exact damage numeral and KO verification
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -345,7 +346,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage59 real NeXium projected remaining enemy HP pixels
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -354,7 +355,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage60 real NeXium projected damage health bar pixels
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -363,7 +364,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage61 real NeXium round badge and terminal hide/show
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -372,7 +373,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage62 real NeXium selected movement stat pixels
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -381,7 +382,7 @@ jobs:
             --duel stage44-session/runtime-evidence \
             --defeat stage52-session/runtime-evidence
       - name: Stage64 real NeXium hovered movement-cost HUD and hide/show
-        if: ${{ always() && steps.nexium_deps.outcome == 'success' }}
+        if: ${{ always() && steps.nexium_deps.outcome == 'success' && steps.guest_capture.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
