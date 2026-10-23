@@ -12,7 +12,8 @@ PNG = b"\x89PNG\r\n\x1a\n" + b"SYNTHETIC-FRAME-ONLY"
 
 
 def archive_at(path: Path, *, count: int = 2, omit: tuple[str, int] | None = None,
-               traversal: bool = False, symlink: bool = False, invalid_png: bool = False):
+               traversal: bool = False, symlink: bool = False, invalid_png: bool = False,
+               omit_sidecar: tuple[str, str] | None = None):
     with tarfile.open(path, "w:gz") as tar:
         for group in ("control", "enabled"):
             for n in range(120, 120 * (count + 1), 120):
@@ -22,9 +23,12 @@ def archive_at(path: Path, *, count: int = 2, omit: tuple[str, int] | None = Non
                 ent = tarfile.TarInfo(f"capture/{group}/frame-{n}.png")
                 ent.size = len(data)
                 tar.addfile(ent, BytesIO(data))
-            for i in range(6):
-                data = b"SYNTHETIC-SIDECAR"
-                ent = tarfile.TarInfo(f"capture/{group}/diagnostic-{i}.txt")
+            for name in ("pre.png", "post.png", "frames.stats", "fad.vhcdlog",
+                         "pad-events.txt", "pad-state.txt", "sh2-window.txt", "video-state.txt"):
+                if omit_sidecar == (group, name):
+                    continue
+                data = PNG if name.endswith(".png") else b"SYNTHETIC-SIDECAR"
+                ent = tarfile.TarInfo(f"capture/{group}/{name}")
                 ent.size = len(data)
                 tar.addfile(ent, BytesIO(data))
         if traversal:
@@ -47,7 +51,7 @@ class PrivateArchiveGateTests(unittest.TestCase):
             result = verify_private_stage124_archive(path, expected_size=size,
                                                     expected_sha256=digest, checkpoints=2)
             self.assertEqual(result["checkpoint_pngs"], 4)
-            self.assertEqual(result["regular_members"], 16)
+            self.assertEqual(result["regular_members"], 20)
             self.assertFalse(result["drive_upload_and_readback_verified"])
 
     def test_full_stage124_checkpoint_shape_is_supported(self):
@@ -57,7 +61,7 @@ class PrivateArchiveGateTests(unittest.TestCase):
             result = verify_private_stage124_archive(path, expected_size=size,
                                                     expected_sha256=digest)
             self.assertEqual(result["checkpoint_pngs"], 1800)
-            self.assertEqual(result["regular_members"], 1812)
+            self.assertEqual(result["regular_members"], 1816)
 
     def test_corrupted_gzip_tail_rejected_even_if_digest_matches(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -95,6 +99,14 @@ class PrivateArchiveGateTests(unittest.TestCase):
             path.unlink()
             size, digest = archive_at(path, invalid_png=True)
             with self.assertRaisesRegex(ValueError, "invalid PNG"):
+                verify_private_stage124_archive(path, expected_size=size,
+                                                expected_sha256=digest, checkpoints=2)
+
+    def test_missing_private_diagnostic_sidecar_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "missing-diagnostic.tar.gz"
+            size, digest = archive_at(path, omit_sidecar=("enabled", "fad.vhcdlog"))
+            with self.assertRaisesRegex(ValueError, "diagnostics missing"):
                 verify_private_stage124_archive(path, expected_size=size,
                                                 expected_sha256=digest, checkpoints=2)
 
