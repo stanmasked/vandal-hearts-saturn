@@ -1,0 +1,46 @@
+name: Stage120 public auditor source handoff
+on:
+  push:
+    branches:
+      - "stage120/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  public-python-tools:
+    name: Package public Python audit sources only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Collect tracked and reviewed source files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p handoff/tools
+          count=0
+          while IFS= read -r -d '' f; do
+            case "$f" in tools/*.py) ;; *) echo 'unexpected path' >&2; exit 1 ;; esac
+            test -f "$f" && test ! -L "$f"
+            cp -- "$f" "handoff/$f"
+            count=$((count + 1))
+          done < <(git ls-files -z -- 'tools/*.py')
+          test "$count" -ge 25
+          test -f handoff/tools/saturn_private_prologue_continue_fifth_c.py
+          test -f handoff/tools/saturn_private_frame_witness.py
+          test -f handoff/tools/saturn_private_start_ab.py
+          test -f handoff/tools/saturn_private_prologue_continue_fourth_c.py
+          if find handoff -type f ! -name '*.py' | grep .; then
+            echo 'only public Python sources may be uploaded' >&2
+            exit 1
+          fi
+          python3 -m compileall -q handoff/tools
+          echo "STAGE120_PUBLIC_AUDITOR_SOURCE_READY count=$count"
+      - name: Upload public Python sources only
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage120-public-python-auditor
+          path: handoff/
+          if-no-files-found: error
+          retention-days: 5
