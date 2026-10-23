@@ -7,8 +7,12 @@ import sys
 from tools.patch_yabause_native_start_bit import MODE_START, MODE_END
 from tools.patch_yabause_private_start_sequence import EMULATE_START
 from tools.patch_yabause_private_sixth_confirm import (
-    CONFIRM6_PRESS, CONFIRM6_RELEASE, SIXTH_SETUP_END,
-    instrument_full_private_sixth_confirm,
+    CONFIRM6_PRESS, CONFIRM6_RELEASE, instrument_full_private_sixth_confirm,
+)
+
+SIXTH_SETUP_END = (
+    "         vh121_confirm_at6 = (int)n121;\\n"
+    "         vh121_confirm6_enabled = (vh121_enable6[0] == '1') ? 1 : 0;\\n"
 )
 
 SETUP_CONFIRM7 = r'''         /* Stage122: both paired runs share the seventh-C frame. */
