@@ -21,7 +21,7 @@ SETUP_CONFIRM5 = r'''         /* Stage119: identical scheduled fifth-C frame in 
          int vh119_confirm_at5 = -1;
          int vh119_confirm5_enabled = -1;
          if (vh119_at5 == NULL || vh119_enable5 == NULL || !*vh119_at5 ||
-             vh118_confirm_at4 < 0 || vh118_confirm4_enabled != 1)
+             !*vh119_enable5 || vh118_confirm_at4 < 0 || vh118_confirm4_enabled != 1)
             return 283;
          char *endptr119 = NULL;
          long n119 = strtol(vh119_at5, &endptr119, 10);
