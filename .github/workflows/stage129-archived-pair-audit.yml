@@ -1,0 +1,24 @@
+name: Stage129 private archived pair semantics (synthetic only)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/saturn_private_archived_pair_audit.py'
+      - 'tools/saturn_private_prologue_continue_tenth_c.py'
+      - 'tests/test_saturn_private_archived_pair_audit.py'
+      - '.github/workflows/stage129-archived-pair-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  archived-pair-semantics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay only invented Stage124 pair archive inputs
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_archived_pair_audit.py' -v
+      - name: Preserve Stage128 archive admission regressions
+        run: python3 -m unittest discover -s tests -p 'test_saturn_stage128_archive_admission.py' -v

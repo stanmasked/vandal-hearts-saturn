@@ -7,6 +7,7 @@ import json, os, signal, subprocess, sys
 from pathlib import Path
 from tools.saturn_private_capture_cohort import _private_directory, _private_regular
 from tools.saturn_private_capture_archive_gate import verify_private_stage124_archive
+from tools.saturn_private_archived_pair_audit import audit_archived_stage124_pair
 from tools.saturn_private_capture_session import PINNED, _fingerprint, _not_in_checkout
 from tools.saturn_private_frame_witness import validate_png_file
 from tools.saturn_private_first_battle_window import _equal_frame
@@ -179,6 +180,10 @@ def run_private_prologue_continue_tenth_c(cue:Path,track1:Path,track2:Path,execu
     stage124_drive_readback_archive:Path,*,seconds:int=14400,pins:dict=PINNED)->dict:
     readback_before=_require_stage124_drive_readback_receipt(stage124_drive_receipt,stage124_drive_readback_archive)
     _enforce_stage124_capture_archive_integrity(stage124_drive_readback_archive,readback_before)
+    semantic=audit_archived_stage124_pair(stage124_drive_readback_archive,
+        expected_size=readback_before[0],expected_sha256=readback_before[1])
+    if semantic.get("stage124_paired_capture_semantics_verified_in_archive") is not True:
+        raise ValueError("Stage124 previous capture pair semantic audit not verified")
     if not isinstance(expected_runner_sha256,str) or not SHA256.fullmatch(expected_runner_sha256):raise ValueError("invalid Stage125 executable SHA-256")
     if type(seconds)is not int or not 1<=seconds<=MAX_SECONDS:raise ValueError("invalid Stage125 timeout")
     if not executable.is_absolute() or executable.is_symlink() or not executable.is_file() or not os.access(executable,os.X_OK):raise ValueError("absolute nonsymlinked executable required")
