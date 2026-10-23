@@ -7,6 +7,7 @@ on:
       - 'tools/saturn_private_capture_packager.py'
       - 'tests/test_saturn_private_capture_archive_gate.py'
       - 'tests/test_saturn_private_capture_packager.py'
+      - 'tests/test_saturn_private_capture_packager_full_audit.py'
       - '.github/workflows/stage126-private-archive-gate.yml'
   workflow_dispatch:
 
@@ -23,6 +24,8 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_saturn_private_capture_archive_gate.py' -v
       - name: Test invented-only archive packager and cleanup guard
         run: python3 -m unittest discover -s tests -p 'test_saturn_private_capture_packager.py' -v
+      - name: Full-size synthetic paired audit before archival
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_capture_packager_full_audit.py' -v
       - name: Missing private archive must reject without publishing a receipt
         run: |
           if python3 -m tools.saturn_private_capture_archive_gate \
