@@ -49,3 +49,13 @@ Download the GCC or Clang executable from the successful exact-head Stage118 Act
       --timeout 7200
 
 The report exports only booleans, counts and frame numbers. Never commit or upload original BIN/CUE files, private screenshots, raw FAD logs, extracted game resources, local paths or frame hashes. Keep authenticity Issue #11 open until the first controllable tactical battle is independently verified.
+
+## Private Stage118 result (23 October 2026)
+
+The exact-head Stage118 Clang executable matched SHA-256 `b4a682579d1da7804d4fe0e7ff8864a50aa30dd715e15d7a7265febd89f1bdf5`. The user-provided split Track 1 was recombined and unpacked into a private workspace; Track 1, Track 2, and CUE each matched the pinned source size and SHA-256. Two private cold boots each exited successfully after 48,000 frames.
+
+An independent local audit verified the complete 400-PNG checkpoint sets, 402 ordered samples in each video/SH2 diagnostic log, native controller event and active-low state receipts, and byte-identical initial framebuffer and all 349 checkpoints before frame 42,000. The first divergence appeared at frame 42,120. Both runs recorded exactly 34,850 canonical numeric CD/FAD events, with matching CD logs; source media and executable hashes matched after the experiment.
+
+Private visual review shows the fourth-C branch advances the in-room dialogue: after the prior “Oh...that sparkle... This must be it!” line, by frame 42,480 the intervention displays “Th...these rays... What's happening?” with a new ray/ring animation. The control remains on the earlier line. At frame 48,000 the new line is still visible. **No controllable tactical battle has been established.**
+
+The private source workspace and captures were not published. The independent cross-check was executed locally; this result should not be described as a run of the exact repository Stage118 auditor unless that module is executed and passes separately. In a shared/setgid filesystem, output folders created with requested mode 0700 may inherit group setgid (2700); explicitly clear that bit with `chmod g-s` and ensure mode 0700 before calling the strict repository auditor.
