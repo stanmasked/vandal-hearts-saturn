@@ -245,11 +245,3 @@ jobs:
             --executable "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" > probe-receipt.txt
           grep -Fxq STAGE98_REAL_YABAUSE_FAKE_SPLIT_CUE_PROBE_PASS probe-receipt.txt
           echo STAGE98_LINKED_ISOCD_PUBLIC_RUNNER_READY
-
-      - name: Save only the public pinned Yabause runner executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: stage98-public-linked-yabause-${{ matrix.compiler }}
-          path: build-yabause/src/runner/yabause
-          if-no-files-found: error
-          retention-days: 5
