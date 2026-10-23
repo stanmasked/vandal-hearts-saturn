@@ -97,7 +97,7 @@ def instrument_private_ninth_confirm(stage123: bytes) -> bytes:
     mode=mode.replace(EMULATE_START,CONFIRM9_PRESS+CONFIRM9_RELEASE+EMULATE_START,1)
     for token,count in (
         ("VH_SATURN_CONFIRM_AT_FRAME9",1),("VH_SATURN_CONFIRM9_ENABLED",1),
-        ("vh124_confirm_at9",6),("vh124_confirm9_enabled",4),
+        ("vh124_confirm_at9",4),("vh124_confirm9_enabled",4),
         ("PerPadCPressed(vh107_pad);",9),("PerPadCReleased(vh107_pad);",9),
         ("VH_PAD frame=%d button=%c action=PRESS",9),
         ("VH_PAD frame=%d button=%c action=RELEASE",9),
