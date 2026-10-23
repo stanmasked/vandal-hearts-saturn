@@ -1,0 +1,209 @@
+name: Stage124 ninth C source gate (invented-only CI)
+on:
+  push:
+    branches:
+      - "stage124/**"
+  pull_request:
+    branches:
+      - "stage123/**"
+permissions:
+  contents: read
+concurrency:
+  group: stage124-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build-runner:
+    name: Public Yabause ninth-confirm runner (${{ matrix.compiler }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc
+            cxx: g++
+          - compiler: clang
+            cxx: clang++
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact public Yabause source
+        env:
+          UPSTREAM_COMMIT: 7e38821dbac265490f115e163c523a939acda759
+        run: |
+          set -euo pipefail
+          git init -q external-yabause
+          git -C external-yabause remote add origin https://github.com/Yabause/yabause.git
+          git -C external-yabause fetch --quiet --depth 1 origin "$UPSTREAM_COMMIT"
+          test "$(git -C external-yabause rev-parse FETCH_HEAD)" = "$UPSTREAM_COMMIT"
+          git -C external-yabause checkout --quiet --detach FETCH_HEAD
+      - name: Fetch and verify pinned public PNG encoder
+        env:
+          LODEPNG_COMMIT: e584a8490db1b76b81bf298c11c09d3b55d9c270
+        run: |
+          set -euo pipefail
+          git init -q external-lodepng
+          git -C external-lodepng remote add origin https://github.com/lvandeve/lodepng.git
+          git -C external-lodepng fetch --quiet --depth 1 origin "$LODEPNG_COMMIT"
+          test "$(git -C external-lodepng rev-parse FETCH_HEAD)" = "$LODEPNG_COMMIT"
+          git -C external-lodepng checkout --quiet --detach FETCH_HEAD
+          test "$(git hash-object external-lodepng/lodepng.cpp)" = 4915ed7a1ddc827559eb42b8968924a61454f2e6
+          test "$(git hash-object external-lodepng/lodepng.h)" = 8f789b677668a495f641336cf62f3afe0b98a80d
+          mkdir -p external-yabause/yabause/src/runner/lodepng
+          cp external-lodepng/lodepng.cpp external-lodepng/lodepng.h external-yabause/yabause/src/runner/lodepng/
+      - name: Patch pinned real ISOCD for exact two-file CUE
+        run: |
+          set -euo pipefail
+          python3 -m tools.patch_yabause_strict_split_cue \
+            --source external-yabause/yabause/src/cdbase.c \
+            --output external-yabause/yabause/src/cdbase.instrumented.c
+          mv external-yabause/yabause/src/cdbase.instrumented.c external-yabause/yabause/src/cdbase.c
+      - name: Compose Stage124 108,000-frame runner with optional ninth C
+        run: |
+          set -euo pipefail
+          python3 -m tools.patch_yabause_private_ninth_confirm \
+            --source external-yabause/yabause/src/runner/yui.cpp \
+            --output external-yabause/yabause/src/runner/yui.stage124.cpp
+          mv external-yabause/yabause/src/runner/yui.stage124.cpp external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_START_AT_FRAME' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME2' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM2_ENABLED' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME3' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM3_ENABLED' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM_BUTTON' external-yabause/yabause/src/runner/yui.cpp
+          test "$(grep -Fc 'PerPadCPressed(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 9
+          test "$(grep -Fc 'PerPadCReleased(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 9
+          grep -Fq 'frames > 108000' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME4' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM4_ENABLED' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME5' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM5_ENABLED' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME6' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM6_ENABLED' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME7' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM7_ENABLED' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME8' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM8_ENABLED' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME9' external-yabause/yabause/src/runner/yui.cpp
+          grep -Fq 'VH_SATURN_CONFIRM9_ENABLED' external-yabause/yabause/src/runner/yui.cpp
+          test "$(grep -Fc 'PerPadCPressed(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 9
+          test "$(grep -Fc 'PerPadCReleased(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 9
+          echo STAGE124_NINTH_CONFIRM_SOURCE_READY
+      - name: Run Stage124 synthetic source and inherited regressions
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            tools/patch_yabause_private_second_confirm.py \
+            tools/patch_yabause_private_third_confirm.py \
+            tools/patch_yabause_private_fourth_confirm.py \
+            tools/patch_yabause_private_fifth_confirm.py \
+            tools/patch_yabause_private_sixth_confirm.py \
+            tools/patch_yabause_private_seventh_confirm.py \
+            tools/patch_yabause_private_eighth_confirm.py \
+            tools/patch_yabause_private_ninth_confirm.py \
+            tools/saturn_private_prologue_continue_sixth_c.py \
+            tools/saturn_private_prologue_continue_seventh_c.py \
+            tools/saturn_private_prologue_continue_eighth_c.py \
+            tools/saturn_private_prologue_continue_ninth_c.py \
+            tools/saturn_private_prologue_continue.py \
+            tools/saturn_private_prologue_continue_third_c.py \
+            tools/saturn_private_prologue_continue_fourth_c.py \
+            tools/saturn_private_prologue_continue_fifth_c.py \
+            tools/saturn_private_frame_witness.py \
+            tests/test_saturn_private_frame_witness.py \
+            tests/test_yabause_private_second_confirm.py \
+            tests/test_yabause_private_third_confirm.py \
+            tests/test_yabause_private_fourth_confirm.py \
+            tests/test_saturn_private_prologue_continue_fourth_c.py \
+            tests/test_yabause_private_fifth_confirm.py \
+            tests/test_yabause_private_sixth_confirm.py \
+            tests/test_yabause_private_seventh_confirm.py \
+            tests/test_yabause_private_eighth_confirm.py \
+            tests/test_yabause_private_ninth_confirm.py \
+            tests/test_saturn_private_prologue_continue_sixth_c.py \
+            tests/test_saturn_private_prologue_continue_seventh_c.py \
+            tests/test_saturn_private_prologue_continue_eighth_c.py \
+            tests/test_saturn_private_prologue_continue_ninth_c.py \
+            tests/test_saturn_private_prologue_continue.py \
+            tests/test_saturn_private_prologue_continue_third_c.py \
+            tests/test_saturn_private_prologue_continue_fifth_c.py
+          python3 -m unittest discover -s tests -p test_yabause_private_fifth_confirm.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_sixth_confirm.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_seventh_confirm.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_eighth_confirm.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_ninth_confirm.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_sixth_c.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_seventh_c.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_eighth_c.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_ninth_c.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_fifth_c.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_fourth_confirm.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_fourth_c.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_frame_witness.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_third_confirm.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_third_c.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_second_confirm.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_long_window.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_first_battle_window.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_confirm_pad.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_original_confirm_sequence.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_original_start_triple.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_original_start_sequence.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_start_sequence.py -v
+          python3 -m unittest discover -s tests -p test_yabause_native_start_bit.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_start_pad.py -v
+      - name: Configure real Yabause C68K software runner
+        env:
+          CC: ${{ matrix.compiler }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          set -euo pipefail
+          cmake -S external-yabause/yabause -B build-yabause \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DYAB_WANT_OPENGL=OFF \
+            -DYAB_WANT_SDL=OFF \
+            -DYAB_WANT_OPENAL=OFF \
+            -DYAB_USE_SSF=OFF \
+            -DYAB_WANT_MUSASHI=OFF \
+            -DYAB_WANT_C68K=ON \
+            -DYAB_USE_PLAY_JIT=OFF \
+            -DYAB_WANT_MPEG=OFF \
+            -DYAB_PORTS=runner
+      - name: Build genuine public Yabause runner
+        run: |
+          set -euo pipefail
+          cmake --build build-yabause --target yabause-runner --parallel 2
+          test -x build-yabause/src/runner/yabause
+      - name: Disc-free CLI smoke and fail-closed 108k frame-window check
+        run: |
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+          (cd "$workdir" && timeout 15s "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause") > cli.txt 2>&1
+          grep -Fq 'Not enough command line arguments.' cli.txt
+          if (cd "$workdir" && env -i HOME="$workdir" TMPDIR="$workdir" PATH=/bin:/usr/bin LANG=C LC_ALL=C TZ=UTC \
+              VH_SATURN_CAPTURE_GATE="$workdir/gate" VH_SATURN_FAD_LOG="$workdir/fad.vhcdlog" \
+              VH_SATURN_PRIVATE_FRAMES_DIR="$workdir" timeout -k 5s 20s \
+              "$GITHUB_WORKSPACE/build-yabause/src/runner/yabause" \
+              vh-private-frame-boot "$workdir/nonexistent-fabricated.cue" 108000) > missing-cue.txt 2>&1; then
+            echo 'missing fabricated CUE must fail closed' >&2
+            exit 1
+          fi
+          ! grep -Fq 'STAGE99_REAL_YABAUSE_BOUND_FRAMES_PASS' missing-cue.txt
+          test ! -e "Vandal Hearts - Ushinawareta Kodai Bunmei (English v1.1).cue"
+          test ! -e original-saturn.bin
+          echo STAGE124_PUBLIC_RUNNER_FAIL_CLOSED_PASS
+      - name: Record executable SHA-256 for private artifact verification
+        run: |
+          set -euo pipefail
+          sha256sum build-yabause/src/runner/yabause
+      - name: Upload only the public GPL Yabause executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage124-public-linked-yabause-${{ matrix.compiler }}
+          path: build-yabause/src/runner/yabause
+          if-no-files-found: error
+          retention-days: 5
