@@ -28,7 +28,7 @@ class LifecycleTests(unittest.TestCase):
                        + ('echo "thread main panicked at BEFORE_CLOSE"\n' if before_panic else '')
                        + ('trap "exit 0" TERM\n' if kind != 'crash' else '')
                        + ('exit 7\n' if kind == 'crash' else 'while :; do sleep 0.1; done\n'))
-             executable(root / 'bin' / 'xdotool',
+            executable(root / 'bin' / 'xdotool',
                         '#!/usr/bin/env bash\n'
                         'if [[ "$1" == "search" ]]; then echo 456; exit 0; fi\n'
                         'if [[ "$1" == "getwindowgeometry" ]]; then printf "WINDOW=456\\nX=0\\nY=0\\nWIDTH=640\\nHEIGHT=480\\nSCREEN=0\\n"; exit 0; fi\n'
@@ -41,7 +41,7 @@ class LifecycleTests(unittest.TestCase):
                        '#!/usr/bin/env bash\n' +
                        ('exit 1\n' if kind == 'no_windowclose' else
                         'kill -TERM "$(cat emu.pid)"; exit 0\n'))
-             executable(root / 'bin' / 'ffmpeg',
+            executable(root / 'bin' / 'ffmpeg',
                         '#!/usr/bin/env bash\n'
                         'out=""; for arg in "$@"; do out="$arg"; done; printf PNG_MOCK > "$out"\n')
             env = os.environ.copy()
