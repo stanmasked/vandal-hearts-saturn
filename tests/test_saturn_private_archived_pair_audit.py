@@ -56,6 +56,30 @@ class Stage129PrivateArchiveReplayAuditTests(unittest.TestCase):
                 audit_archived_stage124_pair(path, expected_size=size,
                                              expected_sha256=digest)
 
+    def test_stage125_does_not_reach_original_runner_when_semantics_fail(self):
+        from tools.saturn_private_prologue_continue_tenth_c import (
+            run_private_prologue_continue_tenth_c,
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with patch(
+                "tools.saturn_private_prologue_continue_tenth_c._require_stage124_drive_readback_receipt",
+                return_value=(100, "a"*64, ())
+            ), patch(
+                "tools.saturn_private_prologue_continue_tenth_c._enforce_stage124_capture_archive_integrity",
+                return_value={"checkpoint_pngs":1800}
+            ), patch(
+                "tools.saturn_private_prologue_continue_tenth_c.audit_archived_stage124_pair",
+                side_effect=ValueError("STAGE129_SEMANTIC_FAIL")
+            ) as paired:
+                with self.assertRaisesRegex(ValueError, "STAGE129_SEMANTIC_FAIL"):
+                    run_private_prologue_continue_tenth_c(
+                        root/"missing.cue", root/"missing1.bin", root/"missing2.bin",
+                        root/"missing-executable", "0"*64,
+                        root/"control", root/"enabled", root/"receipt.json",
+                        root/"downloaded.tar.gz")
+                paired.assert_called_once()
+
     def test_missing_archive_never_claims_verified(self):
         with tempfile.TemporaryDirectory() as tmp:
             missing = Path(tmp) / "archive-not-present.tar.gz"
