@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build-runner:
-    name: Public Yabause sixth-confirm runner (${{ matrix.compiler }})
+    name: Public Yabause seventh-confirm runner (${{ matrix.compiler }})
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
