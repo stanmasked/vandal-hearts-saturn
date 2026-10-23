@@ -1,5 +1,7 @@
 """Stage126 synthetic-only archive gate tests: absolutely no original media."""
 import hashlib
+import struct
+import zlib
 from io import BytesIO
 from pathlib import Path
 import tarfile
@@ -8,7 +10,13 @@ import unittest
 
 from tools.saturn_private_capture_archive_gate import verify_private_stage124_archive
 
-PNG = b"\x89PNG\r\n\x1a\n" + b"SYNTHETIC-FRAME-ONLY"
+def png_chunk(kind: bytes, data: bytes) -> bytes:
+    return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xffffffff)
+
+
+PNG = (b"\x89PNG\r\n\x1a\n" + png_chunk(b"IHDR", struct.pack(">IIBBBBB", 64, 64, 8, 2, 0, 0, 0))
+       + png_chunk(b"IDAT", zlib.compress(b"".join(b"\0" + b"\x00\x00\x00" * 64 for _ in range(64))))
+       + png_chunk(b"IEND", b""))
 
 
 def archive_at(path: Path, *, count: int = 2, omit: tuple[str, int] | None = None,
@@ -99,6 +107,29 @@ class PrivateArchiveGateTests(unittest.TestCase):
             path.unlink()
             size, digest = archive_at(path, invalid_png=True)
             with self.assertRaisesRegex(ValueError, "invalid PNG"):
+                verify_private_stage124_archive(path, expected_size=size,
+                                                expected_sha256=digest, checkpoints=2)
+
+    def test_png_crc_corruption_rejected_even_with_matching_archive_digest(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "crc-corrupted-synthetic.tar.gz"
+            bad = bytearray(PNG)
+            bad[45] ^= 0x41
+            with tarfile.open(path, "w:gz") as tar:
+                for group in ("control", "enabled"):
+                    for n in (120, 240):
+                        data = bytes(bad) if group == "enabled" and n == 120 else PNG
+                        ent = tarfile.TarInfo(f"capture/{group}/frame-{n}.png")
+                        ent.size = len(data)
+                        tar.addfile(ent, BytesIO(data))
+                    for name in ("pre.png", "post.png", "frames.stats", "fad.vhcdlog",
+                                 "pad-events.txt", "pad-state.txt", "sh2-window.txt", "video-state.txt"):
+                        data = PNG if name.endswith(".png") else b"SYNTHETIC-SIDECAR"
+                        ent = tarfile.TarInfo(f"capture/{group}/{name}")
+                        ent.size = len(data)
+                        tar.addfile(ent, BytesIO(data))
+            size, digest = path.stat().st_size, hashlib.sha256(path.read_bytes()).hexdigest()
+            with self.assertRaisesRegex(ValueError, "PNG chunk CRC"):
                 verify_private_stage124_archive(path, expected_size=size,
                                                 expected_sha256=digest, checkpoints=2)
 
