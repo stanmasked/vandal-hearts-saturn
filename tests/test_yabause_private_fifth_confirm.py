@@ -55,6 +55,7 @@ class Stage119FifthConfirmSourceTests(unittest.TestCase):
         for token in (
             "vh118_confirm_at4 < 0",
             "vh118_confirm4_enabled != 1",
+            "!*vh119_enable5",
             "n119 < (long)vh118_confirm_at4 + 12L",
             "n119 > (long)frames - 8L",
             "vh119_enable5[0] != '0'",
