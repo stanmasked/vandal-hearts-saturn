@@ -32,7 +32,7 @@ DECA_EVENTS=NONA_EVENTS_120.replace(TERM120,(f"VH_PAD frame={CONFIRM10_PRESS} bu
 DECA_STATE=NONA_STATE_120.replace(STATE120,(f"VH_PADSTATE frame={CONFIRM10_PRESS} button=C active_low_bit=0\n"
     f"VH_PADSTATE frame={CONFIRM10_RELEASE} button=C active_low_bit=1\n").encode("ascii")+STATE120)
 
-def _require_stage124_drive_readback_receipt(receipt:Path,readback_archive:Path)->tuple[int,str,tuple[int,...]]:
+def _require_stage124_drive_readback_receipt(receipt:Path,readback_archive:Path,baseline:Path)->tuple[int,str,tuple[int,...]]:
     """Require an owner-only private attestation before any new capture is launched."""
     if (not readback_archive.is_absolute() or readback_archive.is_symlink()
             or readback_archive.resolve()==receipt.resolve()):
@@ -64,6 +64,26 @@ def _require_stage124_drive_readback_receipt(receipt:Path,readback_archive:Path)
         raise ValueError("Stage124 Drive-downloaded archive unavailable") from exc
     if archived[0]!=evidence["archive_size_bytes"] or archived[1]!=archive_hash:
         raise ValueError("Stage124 Drive-downloaded archive differs from private receipt")
+    # A receipt can accidentally describe the wrong archive. Independently pin the
+    # expected content from the owner-only Stage124 source manifest as well.
+    if (not baseline.is_absolute() or baseline.is_symlink()
+            or baseline.resolve() in (receipt.resolve(),readback_archive.resolve())):
+        raise ValueError("independent private Stage124 baseline required")
+    _not_in_checkout(baseline)
+    try:
+        expected=json.loads(_private_regular(baseline,8192).decode("utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("private Stage124 baseline unreadable") from exc
+    if (not isinstance(expected,dict) or type(expected.get("stage")) is not int
+            or expected["stage"]!=124 or expected.get("schema_version")!=1
+            or type(expected.get("expected_archive_size_bytes")) is not int
+            or expected["expected_archive_size_bytes"]<=0
+            or not isinstance(expected.get("expected_archive_sha256"),str)
+            or not SHA256.fullmatch(expected["expected_archive_sha256"])):
+        raise ValueError("private Stage124 baseline malformed")
+    if (expected["expected_archive_size_bytes"]!=archived[0]
+            or expected["expected_archive_sha256"]!=archived[1]):
+        raise ValueError("Stage124 Drive archive does not match independent private baseline")
     return archived
 
 def _pair_shape(a:Path,b:Path)->None:
@@ -157,8 +177,8 @@ def _run_one(exe:Path,cue:Path,d:Path,*,tenth:bool,seconds:int)->None:
 
 def run_private_prologue_continue_tenth_c(cue:Path,track1:Path,track2:Path,executable:Path,
     expected_runner_sha256:str,control:Path,enabled:Path,stage124_drive_receipt:Path,
-    stage124_drive_readback_archive:Path,*,seconds:int=14400,pins:dict=PINNED)->dict:
-    readback_before=_require_stage124_drive_readback_receipt(stage124_drive_receipt,stage124_drive_readback_archive)
+    stage124_drive_readback_archive:Path,stage124_private_baseline:Path,*,seconds:int=14400,pins:dict=PINNED)->dict:
+    readback_before=_require_stage124_drive_readback_receipt(stage124_drive_receipt,stage124_drive_readback_archive,stage124_private_baseline)
     if not isinstance(expected_runner_sha256,str) or not SHA256.fullmatch(expected_runner_sha256):raise ValueError("invalid Stage125 executable SHA-256")
     if type(seconds)is not int or not 1<=seconds<=MAX_SECONDS:raise ValueError("invalid Stage125 timeout")
     if not executable.is_absolute() or executable.is_symlink() or not executable.is_file() or not os.access(executable,os.X_OK):raise ValueError("absolute nonsymlinked executable required")
@@ -198,8 +218,9 @@ def main()->int:
     for flag in ("cue","track1","track2","executable","control","enabled"):p.add_argument("--"+flag,type=Path,required=True)
     p.add_argument("--stage124-drive-receipt",type=Path,required=True)
     p.add_argument("--stage124-drive-readback-archive",type=Path,required=True)
+    p.add_argument("--stage124-private-baseline",type=Path,required=True)
     p.add_argument("--expected-runner-sha256",required=True);p.add_argument("--timeout",type=int,default=14400);a=p.parse_args()
-    try:r=run_private_prologue_continue_tenth_c(a.cue,a.track1,a.track2,a.executable,a.expected_runner_sha256,a.control,a.enabled,a.stage124_drive_receipt,a.stage124_drive_readback_archive,seconds=a.timeout)
+    try:r=run_private_prologue_continue_tenth_c(a.cue,a.track1,a.track2,a.executable,a.expected_runner_sha256,a.control,a.enabled,a.stage124_drive_receipt,a.stage124_drive_readback_archive,a.stage124_private_baseline,seconds=a.timeout)
     except (OSError,ValueError,TypeError,subprocess.SubprocessError):
         print("STAGE125_PRIVATE_TENTH_C_RUN_REJECTED",file=sys.stderr);return 1
     print(json.dumps(r,sort_keys=True));return 0
