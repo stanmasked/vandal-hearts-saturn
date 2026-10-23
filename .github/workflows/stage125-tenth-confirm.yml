@@ -109,6 +109,7 @@ jobs:
             tools/saturn_private_prologue_continue_seventh_c.py \
             tools/saturn_private_prologue_continue_eighth_c.py \
             tools/saturn_private_prologue_continue_ninth_c.py \
+            tools/saturn_private_prologue_continue_tenth_c.py \
             tools/saturn_private_prologue_continue.py \
             tools/saturn_private_prologue_continue_third_c.py \
             tools/saturn_private_prologue_continue_fourth_c.py \
@@ -129,6 +130,7 @@ jobs:
             tests/test_saturn_private_prologue_continue_seventh_c.py \
             tests/test_saturn_private_prologue_continue_eighth_c.py \
             tests/test_saturn_private_prologue_continue_ninth_c.py \
+            tests/test_saturn_private_prologue_continue_tenth_c.py \
             tests/test_saturn_private_prologue_continue.py \
             tests/test_saturn_private_prologue_continue_third_c.py \
             tests/test_saturn_private_prologue_continue_fifth_c.py
@@ -142,6 +144,7 @@ jobs:
           python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_seventh_c.py -v
           python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_eighth_c.py -v
           python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_ninth_c.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_tenth_c.py -v
           python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_fifth_c.py -v
           python3 -m unittest discover -s tests -p test_yabause_private_fourth_confirm.py -v
           python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_fourth_c.py -v
