@@ -28,8 +28,8 @@ record_failure() {
   printf 'VH_EMU_FAILURE reason=%s\n' "$1" >&2
 }
 
-if ! command -v ffmpeg >/dev/null 2>&1; then
-  record_failure 'ffmpeg_unavailable'
+if ! command -v import >/dev/null 2>&1; then
+  record_failure 'imagemagick_unavailable'
   exit 1
 fi
 
@@ -60,20 +60,11 @@ if ! kill -0 "$emu_pid" 2>/dev/null; then
   cat runtime-evidence/nexium.log >&2
   exit 1
 fi
-geometry="$(xdotool getwindowgeometry --shell "$window")" || {
-  record_failure 'window_geometry_unavailable'
-  exit 1
-}
-width="$(printf '%s\n' "$geometry" | sed -n 's/^WIDTH=//p')"
-height="$(printf '%s\n' "$geometry" | sed -n 's/^HEIGHT=//p')"
-if ! [[ "$width" =~ ^[1-9][0-9]*$ && "$height" =~ ^[1-9][0-9]*$ ]]; then
-  record_failure 'window_geometry_invalid'
-  exit 1
-fi
-if ! timeout --kill-after=2s 15s ffmpeg -hide_banner -loglevel error -y \
-    -f x11grab -window_id "$window" -video_size "${width}x${height}" \
-    -framerate 1 -draw_mouse 0 -i "$DISPLAY" \
-    -frames:v 1 -update 1 runtime-evidence/nexium-window.png; then
+# Restore the window-scoped capture that passed the prior NeXium guest gate.
+# FFmpeg -window_id produced X11 BadMatch and an empty framebuffer on CI.
+# Timeout and independent PNG/pixel validators still fail closed.
+if ! timeout --kill-after=2s 15s import -window "$window" \
+    runtime-evidence/nexium-window.png; then
   record_failure 'window_capture_command_failed'
   exit 1
 fi
