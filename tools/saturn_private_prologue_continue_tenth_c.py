@@ -32,8 +32,12 @@ DECA_EVENTS=NONA_EVENTS_120.replace(TERM120,(f"VH_PAD frame={CONFIRM10_PRESS} bu
 DECA_STATE=NONA_STATE_120.replace(STATE120,(f"VH_PADSTATE frame={CONFIRM10_PRESS} button=C active_low_bit=0\n"
     f"VH_PADSTATE frame={CONFIRM10_RELEASE} button=C active_low_bit=1\n").encode("ascii")+STATE120)
 
-def _require_stage124_drive_readback_receipt(receipt:Path)->None:
+def _require_stage124_drive_readback_receipt(receipt:Path,readback_archive:Path)->tuple[int,str,tuple[int,...]]:
     """Require an owner-only private attestation before any new capture is launched."""
+    if (not readback_archive.is_absolute() or readback_archive.is_symlink()
+            or readback_archive.resolve()==receipt.resolve()):
+        raise ValueError("distinct absolute private Stage124 Drive-downloaded archive required")
+    _not_in_checkout(readback_archive)
     if not receipt.is_absolute() or receipt.is_symlink():
         raise ValueError("absolute private Stage124 Drive readback receipt required")
     _not_in_checkout(receipt)
@@ -54,6 +58,10 @@ def _require_stage124_drive_readback_receipt(receipt:Path)->None:
     if (not isinstance(archive_hash,str) or not SHA256.fullmatch(archive_hash)
             or not isinstance(readback_hash,str) or readback_hash!=archive_hash):
         raise ValueError("Stage124 archive hash readback not attested")
+    archived=_fingerprint(readback_archive)
+    if archived[0]!=evidence["archive_size_bytes"] or archived[1]!=archive_hash:
+        raise ValueError("Stage124 Drive-downloaded archive differs from private receipt")
+    return archived
 
 def _pair_shape(a:Path,b:Path)->None:
     a,b=a.resolve(),b.resolve()
@@ -145,8 +153,9 @@ def _run_one(exe:Path,cue:Path,d:Path,*,tenth:bool,seconds:int)->None:
     if (d/"gate").exists() or (d/"gate").is_symlink():raise ValueError("Stage125 CD gate remained open")
 
 def run_private_prologue_continue_tenth_c(cue:Path,track1:Path,track2:Path,executable:Path,
-    expected_runner_sha256:str,control:Path,enabled:Path,stage124_drive_receipt:Path,*,seconds:int=14400,pins:dict=PINNED)->dict:
-    _require_stage124_drive_readback_receipt(stage124_drive_receipt)
+    expected_runner_sha256:str,control:Path,enabled:Path,stage124_drive_receipt:Path,
+    stage124_drive_readback_archive:Path,*,seconds:int=14400,pins:dict=PINNED)->dict:
+    readback_before=_require_stage124_drive_readback_receipt(stage124_drive_receipt,stage124_drive_readback_archive)
     if not isinstance(expected_runner_sha256,str) or not SHA256.fullmatch(expected_runner_sha256):raise ValueError("invalid Stage125 executable SHA-256")
     if type(seconds)is not int or not 1<=seconds<=MAX_SECONDS:raise ValueError("invalid Stage125 timeout")
     if not executable.is_absolute() or executable.is_symlink() or not executable.is_file() or not os.access(executable,os.X_OK):raise ValueError("absolute nonsymlinked executable required")
@@ -173,6 +182,7 @@ def run_private_prologue_continue_tenth_c(cue:Path,track1:Path,track2:Path,execu
             if _check_media(manifest,pins)!=media_before:raise ValueError("source media changed")
         except (OSError,ValueError) as exc:raise ValueError("source media changed during Stage125") from exc
         if _fingerprint(executable)!=runner_before:raise ValueError("Stage125 executable changed")
+        if _fingerprint(stage124_drive_readback_archive)!=readback_before:raise ValueError("Stage124 Drive readback archive changed during Stage125")
     report=audit_private_prologue_continue_tenth_c(control,enabled)
     report.update({"same_pinned_original_media_before_and_after_both_processes":True,
         "same_public_runner_file_identity_and_digest_before_and_after":True,
@@ -184,8 +194,9 @@ def main()->int:
     p=argparse.ArgumentParser(description=__doc__)
     for flag in ("cue","track1","track2","executable","control","enabled"):p.add_argument("--"+flag,type=Path,required=True)
     p.add_argument("--stage124-drive-receipt",type=Path,required=True)
+    p.add_argument("--stage124-drive-readback-archive",type=Path,required=True)
     p.add_argument("--expected-runner-sha256",required=True);p.add_argument("--timeout",type=int,default=14400);a=p.parse_args()
-    try:r=run_private_prologue_continue_tenth_c(a.cue,a.track1,a.track2,a.executable,a.expected_runner_sha256,a.control,a.enabled,a.stage124_drive_receipt,seconds=a.timeout)
+    try:r=run_private_prologue_continue_tenth_c(a.cue,a.track1,a.track2,a.executable,a.expected_runner_sha256,a.control,a.enabled,a.stage124_drive_receipt,a.stage124_drive_readback_archive,seconds=a.timeout)
     except (OSError,ValueError,TypeError,subprocess.SubprocessError):
         print("STAGE125_PRIVATE_TENTH_C_RUN_REJECTED",file=sys.stderr);return 1
     print(json.dumps(r,sort_keys=True));return 0
