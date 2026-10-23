@@ -31,7 +31,10 @@ untouched originals and all raw outputs.
 
 The private `tools/saturn_private_capture_packager.py` requires two
 non-overlapping absolute private output directories with exactly 900 checkpoint
-PNGs and eight approved sidecars in each. It refuses symlinks, hardlinks,
+PNGs and eight approved sidecars in each. For a full-size pair it automatically
+executes the independent Stage124 paired-run auditor **before packaging**;
+invalid eighth/ninth C receipts, mismatching pre-ninth frames, incorrect
+SH2/video diagnostics or missing frame evidence prevent archive creation. It refuses symlinks, hardlinks,
 unexpected files, incomplete checkpoints, source/output overlaps and existing
 archive destinations. It streams the 1,816 required files into a fresh
 owner-only TAR.GZIP, fixes archive member metadata to safe stable values,
