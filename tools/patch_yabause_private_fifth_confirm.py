@@ -88,11 +88,11 @@ def instrument_private_fifth_confirm(patched: bytes) -> bytes:
     start = source.index(MODE_START)
     end = source.index(MODE_END, start) + len(MODE_END)
     mode = source[start:end]
-    if "frames > 48000" not in mode:
-        raise ValueError("Stage119 requires the Stage118 48,000-frame cap")
     if ("VH_SATURN_CONFIRM_AT_FRAME5" in mode or
             "vh119_confirm_at5" in mode):
         raise ValueError("Stage119 fifth confirm pulse already instrumented")
+    if "frames > 48000" not in mode:
+        raise ValueError("Stage119 requires the Stage118 48,000-frame cap")
     if mode.count(FOURTH_SETUP_END) != 1:
         raise ValueError("Stage118 fourth-confirm setup anchor differs")
     if mode.count(EMULATE_START) != 1:
