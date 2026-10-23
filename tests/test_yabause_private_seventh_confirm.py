@@ -49,7 +49,7 @@ class SeventhConfirmTests(unittest.TestCase):
         self.assertIn("n122 < (long)vh121_confirm_at6 + 12L",SETUP_CONFIRM7)
         self.assertIn("n122 > (long)frames - 8L",SETUP_CONFIRM7)
     def test_full_pipeline_composes_from_stage121(self):
-        expected=b"VH_SATURN_CONFIRM_AT_FRAME7 VH_SATURN_CONFIRM7_ENABLED frames > 84000 frames.stats video-state.txt sh2-window.txt pad-state.txt"
+        expected=b"VH_SATURN_START_AT_FRAME VH_SATURN_CONFIRM_AT_FRAME5 VH_SATURN_CONFIRM5_ENABLED VH_SATURN_CONFIRM_AT_FRAME6 VH_SATURN_CONFIRM6_ENABLED VH_SATURN_CONFIRM_AT_FRAME7 VH_SATURN_CONFIRM7_ENABLED frames > 84000 frames.stats video-state.txt sh2-window.txt pad-state.txt"
         with patch("tools.patch_yabause_private_seventh_confirm.instrument_full_private_sixth_confirm",return_value=b"stage121") as sixth, \
              patch("tools.patch_yabause_private_seventh_confirm.instrument_private_seventh_confirm",return_value=expected) as seventh:
             self.assertEqual(instrument_full_private_seventh_confirm(b"pinned upstream"),expected)
