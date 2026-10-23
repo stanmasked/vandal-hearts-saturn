@@ -193,11 +193,11 @@ def verify_private_stage124_archive(archive: Path, *, expected_size: int,
         raise ValueError("checkpoint bound invalid")
     before = _private_fingerprint(archive)
     if (before[0], before[1]) != (expected_size, expected_sha256):
-        raise ValueError("archive differs from independent private Stage124 manifest")
+        raise ValueError("archive differs from supplied expected fingerprint")
     files, pngs = _members_are_safe(archive, checkpoints)
     if _private_fingerprint(archive) != before:
         raise ValueError("archive mutated during inspection")
-    return {"stage": 124, "archive_verified_against_private_manifest": True,
+    return {"stage": 124, "archive_matches_supplied_fingerprint": True,
             "archive_bytes": expected_size, "regular_members": files,
             "checkpoint_pngs": pngs, "cohorts": 2,
             "drive_upload_and_readback_verified": False}
