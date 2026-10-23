@@ -44,7 +44,7 @@ class LauncherIntegrationTests(unittest.TestCase):
             executable(bin_dir, 'xdotool', xdotool_script)
             executable(bin_dir, 'xprop', '#!/usr/bin/env bash\nprintf "WM_PROTOCOLS(ATOM): WM_DELETE_WINDOW\\n"\n')
             executable(bin_dir, 'wmctrl', '#!/usr/bin/env bash\ntouch wm-close-requested; exit 0\n')
-            executable(bin_dir, 'ffmpeg', '#!/usr/bin/env bash\n' +
+            executable(bin_dir, 'import', '#!/usr/bin/env bash\n' +
                        ('out=""; for arg in "$@"; do out="$arg"; done; printf PNG_MOCK > "$out"\n'
                         if capture_ok else 'exit 42\n'))
             env = dict(os.environ, PATH=f'{bin_dir}:{os.environ["PATH"]}', DISPLAY=':99',
