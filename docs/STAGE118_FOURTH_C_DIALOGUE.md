@@ -34,16 +34,25 @@ The exact Stage118 source revision `aa3dc4f224a9537a73610b6f9d081e182042e8f9` pa
 
 Before a private run, independently hash the downloaded executable and compare it with the selected compiler's value above. Do not use the artifact ZIP digest as the executable digest.
 
+## Public CI result
+
+At exact PR head `338b6aed18253d04698af9ddb690a5cbfefd3c2c`, both Stage118 runner jobs passed:
+
+- [Clang runner job](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39899572882) — executable SHA-256: `b4a682579d1da7804d4fe0e7ff8864a50aa30dd715e15d7a7265febd89f1bdf5`; artifact ID `12478680452`.
+- [GCC runner job](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39899567541) — executable SHA-256: `ba061492d4773a0bf0893ee38f93498d080c8d8cfdef3a2c4be3cd9f81a09669`; artifact ID `12478431623`.
+
+Both jobs passed the synthetic-only Stage118 and inherited regression suites, built the genuine public Yabause C68K software runner, and passed the disc-free CLI/fail-closed frame-window check. These results validate the public executable and test harness only; they do not represent a run of the original game.
+
 ## Private execution
 
-Download the GCC or Clang executable from the successful exact-head Stage118 Actions run and use the SHA-256 printed by that same job. Create two fresh empty 0700 directories outside the checkout with sibling paths of equal length.
+The English v1.1 CUE and both tracks are present in the private Google Drive folder `VH-Saturn`. Before running, materialize those exact three files into the private execution environment and re-check the pinned media fingerprints. Do not substitute the separate Russian v1.6 BIN/CUE set. Use one of the following exact-head Stage118 runner hashes and create two fresh empty 0700 output directories outside the checkout with sibling paths of equal length.
 
     python3 -m tools.saturn_private_prologue_continue_fourth_c \
       --cue "/private/VH/Vandal Hearts - Ushinawareta Kodai Bunmei (English v1.1).cue" \
       --track1 "/private/VH/Vandal Hearts - Ushinawareta Kodai Bunmei (English v1.1) (Track 1).bin" \
       --track2 "/private/VH/Vandal Hearts - Ushinawareta Kodai Bunmei (English v1.1) (Track 2).bin" \
       --executable "/private/yabause" \
-      --expected-runner-sha256 "LOWERCASE_SHA256_FROM_EXACT_HEAD_CI" \
+      --expected-runner-sha256 "b4a682579d1da7804d4fe0e7ff8864a50aa30dd715e15d7a7265febd89f1bdf5" \
       --triple-c "/private/runs/triple-c" \
       --fourth-c "/private/runs/fourth-c" \
       --timeout 7200
