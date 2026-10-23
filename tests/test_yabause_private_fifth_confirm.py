@@ -4,7 +4,8 @@ from unittest.mock import patch
 
 from test_yabause_private_third_confirm import _stage116_fixture
 from tools.patch_yabause_native_start_bit import MODE_END, MODE_START
-from tools.patch_yabause_private_fourth_confirm import instrument_full_private_fourth_confirm
+from tools.patch_yabause_private_third_confirm import instrument_private_third_confirm
+from tools.patch_yabause_private_fourth_confirm import instrument_private_fourth_confirm
 from tools.patch_yabause_private_fifth_confirm import (
     SETUP_CONFIRM5, instrument_full_private_fifth_confirm,
     instrument_private_fifth_confirm,
@@ -12,7 +13,8 @@ from tools.patch_yabause_private_fifth_confirm import (
 
 
 def _stage118_fixture():
-    return instrument_full_private_fourth_confirm(_stage116_fixture())
+    stage117 = instrument_private_third_confirm(_stage116_fixture())
+    return instrument_private_fourth_confirm(stage117)
 
 
 def _mode(source):
