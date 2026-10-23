@@ -43,6 +43,14 @@ At exact PR head `338b6aed18253d04698af9ddb690a5cbfefd3c2c`, both Stage118 runne
 
 Both jobs passed the synthetic-only Stage118 and inherited regression suites, built the genuine public Yabause C68K software runner, and passed the disc-free CLI/fail-closed frame-window check. These results validate the public executable and test harness only; they do not represent a run of the original game.
 
+## Private Stage118 result
+
+The exact-head Clang artifact was extracted locally and its executable SHA-256 matched the CI log. The English v1.1 CUE and both tracks matched all pinned SHA-256 values before and after the run. Two private cold boots completed 48,000 frames each.
+
+The local audit verified 400 sequential checkpoint PNGs per run, 402 ordered video samples and 402 ordered SH2 samples per run, closed CD-capture gates, exact controller receipts, byte-identical `pre.png`, all 349 checkpoints before frame 42,000 byte-identical, and identical canonical CD/FAD logs with 34,850 events per run. The first post-fourth-C framebuffer divergence was frame 42,120; the images matched through frame 42,000. Frame 48,000 differed.
+
+Private visual review confirms the fourth C advances the dialogue: the triple-C control still shows “Oh...that sparkle... This must be it!” at frame 48,000, while the fourth-C run shows “Th...these rays... What's happening?” by frame 43,200 and retains it through frame 48,000. This is another confirmed prologue dialogue transition, not a controllable tactical battle; the scene remains in its scripted 3D animation and dialogue state.
+
 ## Private execution
 
 The English v1.1 CUE and both tracks are present in the private Google Drive folder `VH-Saturn`. Before running, materialize those exact three files into the private execution environment and re-check the pinned media fingerprints. Do not substitute the separate Russian v1.6 BIN/CUE set. Use one of the following exact-head Stage118 runner hashes and create two fresh empty 0700 output directories outside the checkout with sibling paths of equal length.
