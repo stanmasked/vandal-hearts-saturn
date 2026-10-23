@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json, os, signal, subprocess, sys
 from pathlib import Path
 from tools.saturn_private_capture_cohort import _private_directory, _private_regular
+from tools.saturn_private_capture_archive_gate import verify_private_stage124_archive
 from tools.saturn_private_capture_session import PINNED, _fingerprint, _not_in_checkout
 from tools.saturn_private_frame_witness import validate_png_file
 from tools.saturn_private_first_battle_window import _equal_frame
@@ -155,10 +156,29 @@ def _run_one(exe:Path,cue:Path,d:Path,*,tenth:bool,seconds:int)->None:
     if status!=0:raise ValueError("Stage125 Yabause process failed")
     if (d/"gate").exists() or (d/"gate").is_symlink():raise ValueError("Stage125 CD gate remained open")
 
+def _enforce_stage124_capture_archive_integrity(readback_archive:Path, fingerprint:tuple)->dict:
+    """Stage128: verify the FULL previous capture before admitting any emulator run.
+
+    A matching local receipt and file digest alone cannot establish valid
+    900+900-frame evidence, or independently authenticate Google Drive access.
+    """
+    if (not isinstance(fingerprint,tuple) or len(fingerprint)<2
+            or type(fingerprint[0]) is not int or fingerprint[0]<=0
+            or not isinstance(fingerprint[1],str) or not SHA256.fullmatch(fingerprint[1])):
+        raise ValueError("previous archive fingerprint unavailable")
+    result=verify_private_stage124_archive(readback_archive,
+        expected_size=fingerprint[0],expected_sha256=fingerprint[1])
+    if (result.get("stage")!=124 or result.get("checkpoint_pngs")!=1800
+            or result.get("cohorts")!=2 or result.get("regular_members",0)<1816
+            or result.get("archive_matches_supplied_fingerprint") is not True):
+        raise ValueError("Stage124 readback archive integrity gate incomplete")
+    return result
+
 def run_private_prologue_continue_tenth_c(cue:Path,track1:Path,track2:Path,executable:Path,
     expected_runner_sha256:str,control:Path,enabled:Path,stage124_drive_receipt:Path,
     stage124_drive_readback_archive:Path,*,seconds:int=14400,pins:dict=PINNED)->dict:
     readback_before=_require_stage124_drive_readback_receipt(stage124_drive_receipt,stage124_drive_readback_archive)
+    _enforce_stage124_capture_archive_integrity(stage124_drive_readback_archive,readback_before)
     if not isinstance(expected_runner_sha256,str) or not SHA256.fullmatch(expected_runner_sha256):raise ValueError("invalid Stage125 executable SHA-256")
     if type(seconds)is not int or not 1<=seconds<=MAX_SECONDS:raise ValueError("invalid Stage125 timeout")
     if not executable.is_absolute() or executable.is_symlink() or not executable.is_file() or not os.access(executable,os.X_OK):raise ValueError("absolute nonsymlinked executable required")
