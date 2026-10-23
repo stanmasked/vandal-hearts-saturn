@@ -15,7 +15,7 @@ REMOTE = "privateowner:VH-Saturn/Private Archives/Stage124-Captures/synthetic.ta
 class PrivateRemoteRoundtripTests(unittest.TestCase):
     def _inputs(self, folder: Path):
         archive = folder / "invented-stage124.tar.gz"
-        size, digest = archive_at(archive, count=2)
+        size, digest = archive_at(archive, count=900)
         download_dir = folder / "private-download"
         download_dir.mkdir(mode=0o700)
         return archive, size, digest, download_dir / "readback.tar.gz"
