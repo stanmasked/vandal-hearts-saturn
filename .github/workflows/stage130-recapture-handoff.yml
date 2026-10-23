@@ -1,0 +1,26 @@
+name: Stage130 private recapture handoff contract (synthetic only)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/saturn_private_stage130_storage_preflight.py'
+      - 'tools/saturn_private_stage130_recapture_handoff.py'
+      - 'tests/test_saturn_stage130_private_handoff.py'
+      - '.github/workflows/stage130-recapture-handoff.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recapture-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify private destination and mocked recapture handoff
+        run: python3 -m unittest discover -s tests -p 'test_saturn_stage130_private_handoff.py' -v
+      - name: Keep Stage129 independent paired audit intact
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_archived_pair_audit.py' -v
+      - name: Keep Stage128 archive preflight intact
+        run: python3 -m unittest discover -s tests -p 'test_saturn_stage128_archive_admission.py' -v
