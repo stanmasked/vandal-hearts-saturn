@@ -1,0 +1,50 @@
+name: One-time public build artifact cleanup
+
+on:
+  push:
+    branches:
+      - "stage124/**"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  remove-public-build-artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Delete old public build and evidence artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts"
+          declare -a ids=()
+          page=1
+          while :; do
+            response="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$api?per_page=100&page=$page")"
+            count="$(printf '%s' "$response" | jq '.artifacts | length')"
+            while IFS=$'\t' read -r id name; do
+              [ -n "$id" ] && ids+=("$id")
+            done < <(printf '%s' "$response" | jq -r '.artifacts[] | select(.expired == false) | select(.name | test("^(stage(9[8-9]|10[0-9]|11[0-9]|12[0-4])-public-linked-yabause-|stage120-public-python-auditor$|stage124-audit-source-bundle$|vh-saturn-prototype-nro$|vh-saturn-nexium-runtime-evidence$")) | [.id, .name] | @tsv')
+            [ "$count" -lt 100 ] && break
+            page=$((page + 1))
+          done
+          for id in "${ids[@]}"; do
+            curl -fsSL -X DELETE -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$api/$id" -o /dev/null
+          done
+          remaining=0
+          page=1
+          while :; do
+            response="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$api?per_page=100&page=$page")"
+            count="$(printf '%s' "$response" | jq '.artifacts | length')"
+            matches="$(printf '%s' "$response" | jq '[.artifacts[] | select(.expired == false) | select(.name | test("^(stage(9[8-9]|10[0-9]|11[0-9]|12[0-4])-public-linked-yabause-|stage120-public-python-auditor$|stage124-audit-source-bundle$|vh-saturn-prototype-nro$|vh-saturn-nexium-runtime-evidence$"))] | length')"
+            remaining=$((remaining + matches))
+            [ "$count" -lt 100 ] && break
+            page=$((page + 1))
+          done
+          test "$remaining" -eq 0
+          echo "PUBLIC_BUILD_ARTIFACT_CLEANUP_PASS deleted_count=${#ids[@]}"
