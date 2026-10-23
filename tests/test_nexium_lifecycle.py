@@ -41,7 +41,7 @@ class LifecycleTests(unittest.TestCase):
                        '#!/usr/bin/env bash\n' +
                        ('exit 1\n' if kind == 'no_windowclose' else
                         'kill -TERM "$(cat emu.pid)"; exit 0\n'))
-            executable(root / 'bin' / 'ffmpeg',
+            executable(root / 'bin' / 'import',
                         '#!/usr/bin/env bash\n'
                         'out=""; for arg in "$@"; do out="$arg"; done; printf PNG_MOCK > "$out"\n')
             env = os.environ.copy()
