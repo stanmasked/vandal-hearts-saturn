@@ -70,7 +70,7 @@ jobs:
     name: Experimental NeXium guest framebuffer smoke
     needs: build-nro
     runs-on: ubuntu-26.04
-    timeout-minutes: 18
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - name: Download built NRO
@@ -90,11 +90,12 @@ jobs:
           # exhaust the bounded install window before Pillow is installed.
           timeout --kill-after=10s 300s sudo env DEBIAN_FRONTEND=noninteractive apt-get \
             -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 \
-            install -y --no-install-recommends curl jq xvfb xauth xdotool openbox wmctrl x11-utils imagemagick python3-pil \
+            install -y --no-upgrade --no-install-recommends curl jq xvfb xauth xdotool openbox wmctrl x11-utils python3-pil \
             libgtk-3-0t64 libasound2t64 libudev1 libxkbcommon0 libxkbcommon-x11-0 \
             libx11-xcb1 libxcb-cursor0 libxcb-xinerama0 libxcb-xfixes0 \
             libxcb-randr0 libxcb-render0 libxcb-shape0 libxcb-xkb1 \
             libvulkan1 mesa-vulkan-drivers
+          command -v ffmpeg
           python3 -c 'from PIL import Image; print("Pillow import OK")'
 
       - name: Fetch NeXium nightly build
