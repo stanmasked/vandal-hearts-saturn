@@ -61,6 +61,8 @@ class PrivateArchiveGateTests(unittest.TestCase):
             self.assertEqual(result["checkpoint_pngs"], 4)
             self.assertEqual(result["regular_members"], 20)
             self.assertFalse(result["drive_upload_and_readback_verified"])
+            self.assertTrue(result["archive_matches_supplied_fingerprint"])
+            self.assertNotIn("archive_verified_against_private_manifest", result)
 
     def test_full_stage124_checkpoint_shape_is_supported(self):
         with tempfile.TemporaryDirectory() as folder:
