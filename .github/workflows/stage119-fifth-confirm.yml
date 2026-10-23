@@ -61,7 +61,7 @@ jobs:
       - name: Compose Stage119 48,000-frame runner with optional fifth C
         run: |
           set -euo pipefail
-          python3 -m tools.patch_yabause_private_fourth_confirm \
+          python3 -m tools.patch_yabause_private_fifth_confirm \
             --source external-yabause/yabause/src/runner/yui.cpp \
             --output external-yabause/yabause/src/runner/yui.stage119.cpp
           mv external-yabause/yabause/src/runner/yui.stage119.cpp external-yabause/yabause/src/runner/yui.cpp
@@ -77,8 +77,8 @@ jobs:
           grep -Fq 'frames > 48000' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_CONFIRM_AT_FRAME5' external-yabause/yabause/src/runner/yui.cpp
           grep -Fq 'VH_SATURN_CONFIRM5_ENABLED' external-yabause/yabause/src/runner/yui.cpp
-          test "$(grep -Fc 'PerPadCPressed(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 4
-          test "$(grep -Fc 'PerPadCReleased(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 4
+          test "$(grep -Fc 'PerPadCPressed(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 5
+          test "$(grep -Fc 'PerPadCReleased(vh107_pad);' external-yabause/yabause/src/runner/yui.cpp)" -eq 5
           echo STAGE119_FIFTH_CONFIRM_SOURCE_READY
       - name: Run synthetic-only Stage119 and inherited regressions
         run: |
