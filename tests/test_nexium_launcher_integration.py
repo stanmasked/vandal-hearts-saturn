@@ -47,7 +47,7 @@ class LauncherIntegrationTests(unittest.TestCase):
             executable(bin_dir, 'ffmpeg', '#!/usr/bin/env bash\n' +
                        ('out=""; for arg in "$@"; do out="$arg"; done; printf PNG_MOCK > "$out"\n'
                         if capture_ok else 'exit 42\n'))
-            env = dict(os.environ, PATH=f'{bin_dir}:{os.environ["PATH"]}',
+            env = dict(os.environ, PATH=f'{bin_dir}:{os.environ["PATH"]}', DISPLAY=':99',
                        NEXIUM_BIN=str(emu), NEXIUM_WINDOW_ATTEMPTS=str(attempts),
                        NEXIUM_POLL_DELAY_SECONDS='0', NEXIUM_SETTLE_DELAY_SECONDS=str(settle),
                        NEXIUM_CLOSE_WAIT_SECONDS='2',

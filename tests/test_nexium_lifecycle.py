@@ -45,7 +45,7 @@ class LifecycleTests(unittest.TestCase):
                         '#!/usr/bin/env bash\n'
                         'out=""; for arg in "$@"; do out="$arg"; done; printf PNG_MOCK > "$out"\n')
             env = os.environ.copy()
-            env.update(PATH=f'{root / "bin"}:{os.environ["PATH"]}',
+            env.update(PATH=f'{root / "bin"}:{os.environ["PATH"]}', DISPLAY=':99',
                        NEXIUM_BIN=str(emu), NEXIUM_WINDOW_ATTEMPTS='2',
                        NEXIUM_POLL_DELAY_SECONDS='0', NEXIUM_SETTLE_DELAY_SECONDS='0',
                        NEXIUM_CLOSE_WAIT_SECONDS='1')
