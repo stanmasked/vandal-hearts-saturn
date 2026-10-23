@@ -19,7 +19,7 @@ PAIR = (
 
 def synthetic_stage121():
     mode = MODE_START + "\nframes > 72000\n" + SIXTH_SETUP_END + PAIR*5
-    mode += CONFIRM6_PRESS + CONFIRM6_RELEASE + EMULATE_START + "YabauseEmulate();\n" + MODE_END
+    mode += CONFIRM6_PRESS + CONFIRM6_RELEASE + EMULATE_START + " return 1;\n" + MODE_END
     return ("void fake() {\n" + mode + "\n}\n").encode()
 
 class SeventhConfirmTests(unittest.TestCase):
