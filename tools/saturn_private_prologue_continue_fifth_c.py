@@ -14,6 +14,7 @@ import sys
 from tools.saturn_private_capture_cohort import _private_directory, _private_regular
 from tools.saturn_private_capture_session import PINNED, _fingerprint, _not_in_checkout
 from tools.saturn_private_frame_witness import validate_png_file
+from tools.saturn_private_first_battle_window import _equal_frame
 from tools.saturn_private_original_start_pair import _build_manifest, _check_media
 from tools.saturn_private_original_start_sequence import (
     FIRST_PRESS, MAX_SECONDS, SHA256, FRAME_STATS, SH2_LINE, VIDEO_LINE, _frame,
