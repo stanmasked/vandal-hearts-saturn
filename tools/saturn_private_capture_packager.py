@@ -17,6 +17,7 @@ import stat
 import sys
 import tarfile
 
+from tools.saturn_private_prologue_continue_ninth_c import audit_private_prologue_continue_ninth_c
 from tools.saturn_private_capture_archive_gate import (
     ROOT, SIDECARS, MAX_MEMBER, MAX_TOTAL, _private_fingerprint,
     verify_private_stage124_archive,
@@ -74,6 +75,23 @@ def package_stage124_style_pair(control: Path, enabled: Path, archive: Path,
               "enabled": _capture_files(enabled, checkpoints)}
     if sum(len(v) for v in cohort.values()) != 2 * (checkpoints + len(SIDECARS)):
         raise ValueError("incomplete input file inventory")
+    # Every real 900-checkpoint archive requires an independent Stage124
+    # pair audit (PAD inputs, pre-input equality, frame sequence, CD receipts).
+    # Shorter cohorts exist solely for invented-only CI fixtures; the CLI
+    # never exposes a reduced checkpoint count.
+    paired_audit = None
+    if checkpoints == 900:
+        paired_audit = audit_private_prologue_continue_ninth_c(control, enabled)
+        if (paired_audit.get("kind") != "STAGE124_PRIVATE_PROLOGUE_CONTINUE_INTEGRITY_ONLY"
+                or paired_audit.get("checkpoint_png_count_per_process") != 900
+                or paired_audit.get("first_battle_or_player_control_verified") is not False):
+            raise ValueError("Stage124 paired capture audit incomplete")
+        for files in cohort.values():
+            for _, path, expected in files:
+                st = path.lstat()
+                actual = (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+                if actual != expected:
+                    raise ValueError("capture source changed during paired audit")
     total = sum(fingerprint[2] for files in cohort.values() for _, _, fingerprint in files)
     if total > MAX_TOTAL:
         raise ValueError("private archive exceeds safe expanded data limit")
@@ -111,6 +129,8 @@ def package_stage124_style_pair(control: Path, enabled: Path, archive: Path,
                                                  expected_sha256=digest, checkpoints=checkpoints)
         report["new_private_archive_requires_authenticated_drive_readback"] = True
         report["historical_stage124_archive_recovered"] = False
+        report["stage124_paired_capture_audit_executed"] = paired_audit is not None
+        report["original_gameplay_verified"] = False
         return report
     except BaseException:
         # Only remove this new incomplete output; NEVER delete or mutate raw captures.
