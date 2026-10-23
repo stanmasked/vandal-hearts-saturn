@@ -24,14 +24,14 @@ CHECKPOINTS=tuple(range(120,FRAME_COUNT+1,120))
 PRE_SEVENTH_CHECKPOINTS=tuple(range(120,CONFIRM7_PRESS,120))
 POST_SEVENTH_CHECKPOINTS=tuple(f for f in CHECKPOINTS if f>CONFIRM7_PRESS)
 POST_SEVENTH_BY_73200=tuple(range(CONFIRM7_PRESS+120,73200+1,120))
-TERM84=f"VH_PAD mode=1 completed_frames={FRAME_COUNT}\\n".encode()
-STATE84=f"VH_PADSTATE mode=1 completed_frames={FRAME_COUNT}\\n".encode()
+TERM84=f"VH_PAD mode=1 completed_frames={FRAME_COUNT}\n".encode()
+STATE84=f"VH_PADSTATE mode=1 completed_frames={FRAME_COUNT}\n".encode()
 HEXA_EVENTS_84=HEXA_EVENTS.replace(TERM72,TERM84)
 HEXA_STATE_84=HEXA_STATE.replace(STATE72,STATE84)
-HEPTA_EVENTS=HEXA_EVENTS_84.replace(TERM84,(f"VH_PAD frame={CONFIRM7_PRESS} button=C action=PRESS\\n"
-    f"VH_PAD frame={CONFIRM7_RELEASE} button=C action=RELEASE\\n").encode()+TERM84)
-HEPTA_STATE=HEXA_STATE_84.replace(STATE84,(f"VH_PADSTATE frame={CONFIRM7_PRESS} button=C active_low_bit=0\\n"
-    f"VH_PADSTATE frame={CONFIRM7_RELEASE} button=C active_low_bit=1\\n").encode()+STATE84)
+HEPTA_EVENTS=HEXA_EVENTS_84.replace(TERM84,(f"VH_PAD frame={CONFIRM7_PRESS} button=C action=PRESS\n"
+    f"VH_PAD frame={CONFIRM7_RELEASE} button=C action=RELEASE\n").encode()+TERM84)
+HEPTA_STATE=HEXA_STATE_84.replace(STATE84,(f"VH_PADSTATE frame={CONFIRM7_PRESS} button=C active_low_bit=0\n"
+    f"VH_PADSTATE frame={CONFIRM7_RELEASE} button=C active_low_bit=1\n").encode()+STATE84)
 
 def _pair_shape(a:Path,b:Path)->None:
     a,b=a.resolve(),b.resolve()
@@ -57,7 +57,7 @@ def _check_frames(d:Path)->tuple[int,tuple[int,int]]:
     samples=[0]+list(CHECKPOINTS)+[FRAME_COUNT]
     for name,pattern in (("sh2-window.txt",SH2_LINE),("video-state.txt",VIDEO_LINE)):
         raw=_private_regular(d/name,1024*1024)
-        if not raw.endswith(b"\\n") or b"\\r" in raw or b"\\0" in raw:raise ValueError("Stage122 noncanonical diagnostics")
+        if not raw.endswith(b"\n") or b"\r" in raw or b"\0" in raw:raise ValueError("Stage122 noncanonical diagnostics")
         lines=raw.splitlines()
         if len(lines)!=len(samples):raise ValueError("Stage122 diagnostic sample count mismatch")
         seen=[]
