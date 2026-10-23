@@ -1,0 +1,23 @@
+name: Stage128 original-disc archive admission (synthetic only)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/saturn_private_prologue_continue_tenth_c.py'
+      - 'tests/test_saturn_stage128_archive_admission.py'
+      - '.github/workflows/stage128-private-admission.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fail-closed-private-admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exercise stage128 admission against invented Stage124 tar archives
+        run: python3 -m unittest discover -s tests -p 'test_saturn_stage128_archive_admission.py' -v
+      - name: Keep existing tenth-C receipt regressions intact
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_prologue_continue_tenth_c.py' -v
