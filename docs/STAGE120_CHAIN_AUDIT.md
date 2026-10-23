@@ -79,3 +79,24 @@ After the snapshot above, every planned public workflow completed successfully:
 - Stage120 [host](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39901293983) and [Switch](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39901293997) passed on audit head `dd0fab0a549ed1083bd9287923c171b9648368d4` before this follow-up documentation edit. Since the audit PR head has changed, do not apply that prior CI pass to a newer exact head without readback.
 
 Public CI success **does not substitute for a private original-disc Stage119 pair**, a scene-level review or a demonstrated response to an independent player movement/selection input. The first-battle claim remains false.
+
+## Private Stage119 pair verified (23 October 2026)
+
+The selected Stage119 source, [PR #72](https://github.com/stanmasked/vandal-hearts-saturn/pull/72) at `2375ff5806a0e8091804078037507bf141e9502a`, was used for a private original-disc comparison. The exact-head Clang Yabause executable from artifact 12478697575 matched its build-job executable SHA-256. Both original track files and the CUE matched their independently pinned sizes and SHA-256 before and after the experiment. No original media, screenshot, raw FAD event, local path or frame hash is included here.
+
+Two separate cold boots used identical environments and the same START/four-C schedule, with the fifth-C enable flag disabled in the control and enabled in the intervention. Both processes ran to 60,000 frames. The actual in-repository `audit_private_prologue_continue_fifth_c` function was executed on their private outputs and **passed**, in addition to a separate independent local structural check:
+
+- **500/500 PNG checkpoints** and **502 ordered SH2/video samples per log** validated for each boot.
+- Initial images and **399/399** checkpoints strictly before the fifth-C press at frame 48,000 were byte-identical.
+- Native fifth-C press/release receipts at frames 48,000/48,006 were validated, including active-low bit state.
+- First post-input framebuffer difference: **frame 48,120**; final frame 60,000 remained different.
+- Canonical private numeric CD/FAD event counts: **34,850** for four-C control and **40,840** for fifth-C intervention. The logs differed after the intervention, as expected.
+- Media and executable fingerprints remained unchanged. The private CD capture gates closed and both runner processes exited normally.
+
+Private visual review at frame 49,200: the four-C control still shows the ray dialogue ("Th...these rays... What's happening?"), while the fifth-C intervention has transitioned to a full-screen pillar-of-light scene. By frame 54,000, and still at frame 60,000, the intervention shows the next dialogue text ("...Ash... ...Ash!!!") on black. These observations confirm **fifth-C-driven prologue progression**.
+
+**Evidence boundary:** This experiment does not verify an actively controllable first tactical battle. No tactical turn/HUD plus separate player movement/selection input response has been independently verified. Keep `first_battle_or_player_control_verified` false and authenticity Issue #11 open. The independent cross-check and the in-repo integrity auditor were run, but the entire in-repo `run_private_prologue_continue_fifth_c` wrapper was not re-executed; the two cold boots were performed with an independently reconstructed matching private environment schedule.
+
+## Stage121 proposed next original-game gate
+
+Once the same private source pipeline is preserved, test a **sixth guarded C confirmation after frame 60,000**, since the "...Ash... ...Ash!!!" dialogue remains visible through that checkpoint. Compare two new cold boots with five earlier C pulses identical; change only the sixth enable flag. Extend the bounded capture window sufficiently to observe the next story state. Apply the same strict prior-checkpoint equality, active-low controller receipts, source hashes and privacy limits. Do not assume the sixth C leads to a playable battle without its own visual/input-response evidence.
