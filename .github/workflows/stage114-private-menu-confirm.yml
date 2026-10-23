@@ -130,10 +130,3 @@ jobs:
         run: |
           set -euo pipefail
           sha256sum build-yabause/src/runner/yabause
-      - name: Upload only the public GPL Yabause executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: stage114-public-linked-yabause-${{ matrix.compiler }}
-          path: build-yabause/src/runner/yabause
-          if-no-files-found: error
-          retention-days: 5
