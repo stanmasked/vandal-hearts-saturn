@@ -97,8 +97,10 @@ jobs:
             tools/patch_yabause_private_fourth_confirm.py \
             tools/patch_yabause_private_fifth_confirm.py \
             tools/patch_yabause_private_sixth_confirm.py \
+            tools/patch_yabause_private_seventh_confirm.py \
             tools/patch_yabause_private_eighth_confirm.py \
             tools/saturn_private_prologue_continue_sixth_c.py \
+            tools/saturn_private_prologue_continue_seventh_c.py \
             tools/saturn_private_prologue_continue_eighth_c.py \
             tools/saturn_private_prologue_continue.py \
             tools/saturn_private_prologue_continue_third_c.py \
@@ -112,16 +114,20 @@ jobs:
             tests/test_saturn_private_prologue_continue_fourth_c.py \
             tests/test_yabause_private_fifth_confirm.py \
             tests/test_yabause_private_sixth_confirm.py \
+            tests/test_yabause_private_seventh_confirm.py \
             tests/test_yabause_private_eighth_confirm.py \
             tests/test_saturn_private_prologue_continue_sixth_c.py \
+            tests/test_saturn_private_prologue_continue_seventh_c.py \
             tests/test_saturn_private_prologue_continue_eighth_c.py \
             tests/test_saturn_private_prologue_continue.py \
             tests/test_saturn_private_prologue_continue_third_c.py \
             tests/test_saturn_private_prologue_continue_fifth_c.py
           python3 -m unittest discover -s tests -p test_yabause_private_fifth_confirm.py -v
           python3 -m unittest discover -s tests -p test_yabause_private_sixth_confirm.py -v
+          python3 -m unittest discover -s tests -p test_yabause_private_seventh_confirm.py -v
           python3 -m unittest discover -s tests -p test_yabause_private_eighth_confirm.py -v
           python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_sixth_c.py -v
+          python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_seventh_c.py -v
           python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_eighth_c.py -v
           python3 -m unittest discover -s tests -p test_saturn_private_prologue_continue_fifth_c.py -v
           python3 -m unittest discover -s tests -p test_yabause_private_fourth_confirm.py -v
@@ -163,7 +169,7 @@ jobs:
           set -euo pipefail
           cmake --build build-yabause --target yabause-runner --parallel 2
           test -x build-yabause/src/runner/yabause
-      - name: Disc-free CLI smoke and fail-closed 72k frame-window check
+      - name: Disc-free CLI smoke and fail-closed 96k frame-window check
         run: |
           set -euo pipefail
           workdir="$(mktemp -d)"
