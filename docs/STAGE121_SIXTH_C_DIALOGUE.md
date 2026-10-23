@@ -31,3 +31,22 @@ Passing a numerical equality/divergence gate would still **not** establish playe
 ## Current evidence boundary
 
 The Stage121 source patch and ROM-free tests have been created. A corresponding private 72,000-frame pair, full Stage121 private auditor and original gameplay interpretation have **not** been completed. Keep this PR Draft and do not merge it solely on a green pinned-source build.
+
+## Private Stage121 pair completed (23 October 2026)
+
+The exact Stage121 Clang runner from [public CI run #39955365015](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39955365015), artifact [12502522017](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39955365015/artifacts/12502522017), was used for two private original-disc cold boots. Its executable SHA-256 matched the successful Clang build log. The exact repository auditor `audit_private_prologue_continue_sixth_c` was then run against the two private output folders and passed. A separate local cross-check also passed. No original media, screenshots, FAD traces, local paths or frame hashes are published.
+
+- Both boots completed **72,000 frames** with **600 PNG checkpoints** and **602 ordered samples per SH2/video log**.
+- All **499/499** checkpoints strictly before the sixth-C input at frame 60,000 matched byte-for-byte.
+- The active-low controller receipts validated the C press at frame **60,000** and release at **60,006**.
+- First post-input framebuffer divergence: **frame 60,120**; the final frame at 72,000 still differed.
+- Canonical CD/FAD event counts were **45,215 in both runs** and the numeric logs were identical. This experiment did not establish a CD-read-count change.
+- The original Track 1, Track 2, CUE and Stage121 executable fingerprints were unchanged before and after the pair.
+
+Private visual review: at frame 60,120 the intervention shows a transition to black while the control remains on the prior "...Ash... ...Ash!!!" dialogue. By frame 61,200 the intervention has entered an outdoor scene with the dialogue **"Merchant: Ash!"**. The same scene/dialogue remains at frames 66,000 and 72,000, while the control still shows the prior dialogue at frame 72,000. This confirms sixth-C-driven scene progression.
+
+**Conclusion:** Stage121 verifies another real prologue transition, but does not verify a controllable tactical battle. No tactical turn/HUD state or separate movement/selection response has been observed. Keep `first_battle_or_player_control_verified` false and authenticity Issue #11 open.
+
+## Stage122 next experiment
+
+The Merchant/Ash dialogue persists through frame 72,000, suggesting the next bounded experiment should test a **seventh C press at frame 72,000**, release at 72,006, and capture through 84,000. Both cold boots must keep the first six C pulses identical; only the seventh-C enable flag may differ. Reuse the exact-head source and media fingerprints, 700 checkpoint/702-sample integrity checks, and strict privacy boundary. Do not claim battle entry without separate visual and player-input evidence.
