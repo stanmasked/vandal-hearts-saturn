@@ -68,3 +68,14 @@ No PR in this chain should be marked ready or merged solely because its custom r
 ## Follow-up CI poll
 
 After the timestamped snapshot above, Stage118's Switch NRO build and NeXium guest framebuffer smoke both completed successfully on head `338b6aed18253d04698af9ddb690a5cbfefd3c2c`. Stage118 host GCC/Clang jobs were still queued at the follow-up poll. Stage119 PR #72's exact-head runner workflow remains green and its current artifacts/hashes are recorded above, while host tests and the Switch NRO workflow remain queued. PR #73's runner workflow is green, but its host and Switch jobs are also queued. These queue states are not failures, but they prevent claiming full CI success.
+
+## Stage120 follow-up — exact-head public CI complete (2026-10-23)
+
+After the snapshot above, every planned public workflow completed successfully:
+
+- Stage118 PR #71 at `338b6aed18253d04698af9ddb690a5cbfefd3c2c`: [pinned runner](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39899572882), [host GCC/Clang](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39899572900), [Switch NRO and NeXium guest smoke](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39899573033) all passed.
+- Stage119 PR #72 at `2375ff5806a0e8091804078037507bf141e9502a`: [pinned runner](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39900429677), [host GCC/Clang](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39900429543), and [Switch NRO/NeXium](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39900429560) all passed.
+- Stage119 alternate PR #73 at `a06d468e5e0eeec2faa478b40051abb3928d98b2`: its public runner, host and Switch workflows also passed, but its documented empty-value guard weakness remains; **PR #73 was closed without merging as superseded by PR #72**, preserving the alternative branch as a reference.
+- Stage120 [host](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39901293983) and [Switch](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39901293997) passed on audit head `dd0fab0a549ed1083bd9287923c171b9648368d4` before this follow-up documentation edit. Since the audit PR head has changed, do not apply that prior CI pass to a newer exact head without readback.
+
+Public CI success **does not substitute for a private original-disc Stage119 pair**, a scene-level review or a demonstrated response to an independent player movement/selection input. The first-battle claim remains false.
