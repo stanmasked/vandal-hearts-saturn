@@ -25,4 +25,24 @@ A passing integrity gate does not prove player control. The first battle require
 
 ## Current state
 
-The Stage123 patcher, synthetic-only tests, private auditor, and CI workflow are drafted in PR #79. The Stage123 original-game pair has **not** been run yet. Keep this PR Draft until exact-head public CI passes and the private pair plus visual review are complete.
+## Private Stage123 pair completed (23 October 2026)
+
+Used the exact Stage123 Clang runner from [public CI run #39964675108](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39964675108), artifact [12506383710](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39964675108/artifacts/12506383710), SHA-256 `42be39781e5050a51508cd1d85c9d386bff0353df4fc178e4a7f4b1bb4de5fb2`. The exact Stage123 private auditor completed successfully on two cold boots of the original disc.
+
+- Both runs completed **96,000 frames**, with **800 checkpoint PNGs** and **802 ordered SH2/video samples** per run.
+- All **699/699** checkpoints strictly before the eighth C at frame **84,000** matched byte-for-byte.
+- Active-low receipts verified press at **84,000** and release at **84,006**.
+- First framebuffer divergence: **frame 84,120**; the intervention still differs at frame 96,000.
+- Both runs recorded **54,103 canonical CD/FAD events** with identical numeric logs.
+- Private visual review at frame **85,200**: the intervention's lower dialogue advances to “Merchant: Well you better get up. We've got some trouble.” The control still shows “Merchant: Ash!”. By frame 96,000 the intervention retains the new Merchant dialogue, while the control remains on “Ash!”. The upper “Man Called Ash” dialogue is unchanged.
+- Original media and public runner fingerprints remained unchanged before and after both runs. No original media, screenshots, raw logs, local paths or frame hashes were exported.
+
+This confirms eighth-C-driven **dialogue progression**, not tactical battle entry or player control. Keep authenticity Issue #11 open and `first_battle_or_player_control_verified` false.
+
+The source gate passed on the code-equivalent revision used to build the private runner, with both GCC and Clang. The latest workflow revision additionally runs Stage122 inherited regressions; its exact-head GitHub Actions checks are still queued. Keep PR #79 Draft until those checks and the stacked PR chain are ready.
+
+## Stage124 next experiment
+
+Use Stage123 as the exact parent. Keep the first eight C pulses enabled in both cold boots and test a **ninth C at frame 96,000**, released at **96,006**, through a **108,000-frame** cap. Only the ninth-C enable flag may differ. Require **900 checkpoint PNGs** and **902 ordered diagnostic samples** per boot; all **799 checkpoints** strictly before frame 96,000 must match. Require reproducible framebuffer divergence by frame **97,200**. Keep original media, images, raw logs and frame hashes private.
+
+The current scene is still a conversation. Do not claim battle entry without a visible tactical turn/HUD state and a separate, repeatable movement or selection response.
