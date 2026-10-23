@@ -25,4 +25,4 @@ A passing integrity gate does not prove player control. The first battle require
 
 ## Current state
 
-The Stage123 patcher, synthetic-only tests, private auditor, and CI workflow are drafted in PR #78. The Stage123 original-game pair has **not** been run yet. Keep this PR Draft until exact-head public CI passes and the private pair plus visual review are complete.
+The Stage123 patcher, synthetic-only tests, private auditor, and CI workflow are drafted in PR #79. The Stage123 original-game pair has **not** been run yet. Keep this PR Draft until exact-head public CI passes and the private pair plus visual review are complete.
