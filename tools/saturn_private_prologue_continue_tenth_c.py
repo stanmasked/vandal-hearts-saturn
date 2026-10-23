@@ -58,7 +58,10 @@ def _require_stage124_drive_readback_receipt(receipt:Path,readback_archive:Path)
     if (not isinstance(archive_hash,str) or not SHA256.fullmatch(archive_hash)
             or not isinstance(readback_hash,str) or readback_hash!=archive_hash):
         raise ValueError("Stage124 archive hash readback not attested")
-    archived=_fingerprint(readback_archive)
+    try:
+        archived=_fingerprint(readback_archive)
+    except OSError as exc:
+        raise ValueError("Stage124 Drive-downloaded archive unavailable") from exc
     if archived[0]!=evidence["archive_size_bytes"] or archived[1]!=archive_hash:
         raise ValueError("Stage124 Drive-downloaded archive differs from private receipt")
     return archived
