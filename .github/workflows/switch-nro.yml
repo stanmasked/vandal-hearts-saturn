@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: read
 
 jobs:
@@ -63,7 +64,7 @@ jobs:
             vh_saturn_attack.nacp
             attack-build-verification.json
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
 
   run-in-nexium:
     name: Experimental NeXium guest framebuffer smoke
@@ -383,14 +384,18 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m tools.nexium_move_preview_hud --verify-dir runtime-evidence
-      - name: Upload emulator evidence even on failure
+      - name: Delete temporary NRO handoff after runtime checks
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: vh-saturn-nexium-runtime-evidence
-          path: |
-            runtime-evidence/
-            stage44-session/runtime-evidence/
-            stage52-session/runtime-evidence/
-          if-no-files-found: warn
-          retention-days: 14
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100"
+          ids="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$api" | jq -r '.artifacts[] | select(.name == "vh-saturn-prototype-nro") | .id')"
+          for id in $ids; do
+            curl -fsSL -X DELETE -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$id" -o /dev/null
+          done
+          remaining="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$api" | jq '[.artifacts[] | select(.name == "vh-saturn-prototype-nro")] | length')"
+          test "$remaining" -eq 0
+          echo "SWITCH_NRO_TEMPORARY_ARTIFACT_CLEANUP_PASS"
