@@ -31,6 +31,13 @@ The two Stage119 PRs implement different experiments and must not both be merged
 
 - **PR #72 is the preferred candidate for the next private experiment.** It schedules the fifth C at frame 48,000—after the Stage118 observation that the ray dialogue remains visible through that frame—and captures through frame 60,000. Its auditor expects 500 checkpoints per cold boot, 502 ordered video/SH2 samples, all 399 pre-input checkpoints identical, and a post-input divergence by frame 49,200.
 - PR #72's patcher and regression test explicitly reject an empty `VH_SATURN_CONFIRM5_ENABLED` value before indexing the string.
+
+The current exact-head PR #72 runner workflow is [run #39900429677](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39900429677) at head `2375ff5806a0e8091804078037507bf141e9502a`. Its executable SHA-256 values, taken from the build-job logs (not the ZIP digests), are:
+
+- GCC artifact [12479001461](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39900429677/artifacts/12479001461): `d235e520f2d705830fb05ccfef00b54cd4ce8f5cc9e8865630488195945de62c`.
+- Clang artifact [12478697575](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39900429677/artifacts/12478697575): `bcf52bd23873a7b510340e0906f2c4e4943cf0d616d675f9b31958400558d27c`.
+
+Independently hash the downloaded executable and compare it to the corresponding value before a private run; do not use the artifact ZIP digest as the executable digest.
 - PR #73 instead schedules the fifth C at frame 45,600 and ends at frame 48,000. Static review found that its patcher checks whether `VH_SATURN_CONFIRM5_ENABLED` is null but does not check for an empty string before reading index 1; its source test also omits that guard. This is a fail-closed validation gap to fix if PR #73 is retained.
 
 This preference is based on the observed Stage118 boundary and code review; it is **not** a claim that either private Stage119 pair has completed.
