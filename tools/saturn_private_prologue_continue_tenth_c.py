@@ -37,7 +37,10 @@ def _require_stage124_drive_readback_receipt(receipt:Path)->None:
     if not receipt.is_absolute() or receipt.is_symlink():
         raise ValueError("absolute private Stage124 Drive readback receipt required")
     _not_in_checkout(receipt)
-    evidence=json.loads(_private_regular(receipt,16384).decode("utf-8"))
+    try:
+        evidence=json.loads(_private_regular(receipt,16384).decode("utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("Stage124 Drive readback receipt unreadable") from exc
     if not isinstance(evidence,dict) or type(evidence.get("stage")) is not int or evidence["stage"]!=124:
         raise ValueError("wrong previous archive stage")
     if (evidence.get("owner_only") is not True or evidence.get("readback_verified") is not True
