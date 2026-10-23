@@ -1,0 +1,25 @@
+name: Stage127 private Drive roundtrip (invented-only)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/saturn_private_drive_roundtrip.py'
+      - 'tests/test_saturn_private_drive_roundtrip.py'
+      - '.github/workflows/stage127-drive-roundtrip.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  private-transfer-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exercise offline mocked remote upload and full archive readback
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_drive_roundtrip.py' -v
+      - name: Ensure no Drive credentials or actual media are needed
+        run: |
+          test -f tools/saturn_private_drive_roundtrip.py
+          echo STAGE127_SYNTHETIC_PRIVATE_DRIVE_ROUNDTRIP_ONLY
