@@ -25,12 +25,12 @@ A passing integrity gate does not prove player control. The first battle require
 
 ## Current state
 
-The Stage122 patcher, synthetic-only tests, private auditor, and CI workflow are drafted in PR #77. The private seventh-C original-game pair has **not** been run yet. Keep this PR Draft until the exact-head public CI is green and the private pair and visual review are complete.
+The Stage122 private pair is complete and the private auditor implementation passed. Stage122 GCC/Clang source gates, host GCC/Clang tests and Switch NRO passed at the prior code head; exact-head checks after syncing the bounded NeXium dependency setup are pending. The NeXium guest framebuffer smoke has not yet supplied a successful result. Keep PR #77 Draft while the stacked chain and guest evidence remain incomplete.
 
 
 ## Private Stage122 pair completed (23 October 2026)
 
-The exact Stage122 Clang runner from [public CI run #39958654436](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39958654436), artifact [12503158266](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39958654436/artifacts/12503158266), was used for two private original-disc cold boots. The runner SHA-256 was verified before execution; the exact Stage122 auditor passed, and media/runner fingerprints were unchanged after the pair.
+The exact Stage122 Clang runner from [public CI run #39958654436](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39958654436), artifact [12503158266](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39958654436/artifacts/12503158266), was used for two private original-disc cold boots. The runner SHA-256 was verified before execution; the Stage122 private auditor implementation passed, and media/runner fingerprints were unchanged after the pair.
 
 - Both cold boots completed **84,000 frames**, with **700 PNG checkpoints** and **702 ordered SH2/video samples** each.
 - All **599/599** checkpoints strictly before the seventh C at frame **72,000** matched byte-for-byte.
