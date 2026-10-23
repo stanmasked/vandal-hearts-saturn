@@ -31,7 +31,7 @@ The four-C baseline and fifth-C intervention receive the same fifth-C frame sche
 
 The exact Stage119 GCC/Clang workflow [#39900130531](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39900130531) passed on source revision cb8baa857c8bf9f30c42b07056384130830dc886 and uploads only the public GPL emulator executable. Executable SHA-256 values printed by the build jobs:
 
-- Clang artifact ID 12478866108, name stage119-public-linked-yabause-clang: bc f52bd23873a7b510340e0906f2c4e4943cf0d616d675f9b31958400558d27c.
+- Clang artifact ID 12478866108, name stage119-public-linked-yabause-clang: bcf52bd23873a7b510340e0906f2c4e4943cf0d616d675f9b31958400558d27c.
 - GCC artifact ID 12478323018, name stage119-public-linked-yabause-gcc: d235e520f2d705830fb05ccfef00b54cd4ce8f5cc9e8865630488195945de62c.
 
 The GitHub artifact ZIP digests are different from these executable hashes. Independently hash the downloaded runner and compare it with the chosen compiler's executable SHA-256 before private execution.
