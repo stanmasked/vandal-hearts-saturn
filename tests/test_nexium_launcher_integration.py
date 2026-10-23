@@ -32,13 +32,15 @@ class LauncherIntegrationTests(unittest.TestCase):
                              '#!/usr/bin/env bash\n' +
                              ('echo MOCK_FAIL; exit 9\n' if crash else
                               'echo MOCK_START; while :; do [[ -f wm-close-requested ]] && exit 0; sleep 0.1; done\n'))
-            xdotool_script = '#!/usr/bin/env bash\n' +
-                'if [[ "$1" == "search" ]]; then\n' +
-                ('  echo 123456\n  exit 0\n' if window else '  exit 1\n') +
-                'fi\n' +
-                'if [[ "$1" == "getwindowgeometry" ]]; then\n' +
-                '  printf "WINDOW=123456\\nX=0\\nY=0\\nWIDTH=640\\nHEIGHT=480\\nSCREEN=0\\n"\n' +
-                '  exit 0\nfi\nexit 1\n'
+            xdotool_script = (
+                '#!/usr/bin/env bash\n'
+                'if [[ "$1" == "search" ]]; then\n'
+                + ('  echo 123456\n  exit 0\n' if window else '  exit 1\n')
+                + 'fi\n'
+                + 'if [[ "$1" == "getwindowgeometry" ]]; then\n'
+                + '  printf "WINDOW=123456\\nX=0\\nY=0\\nWIDTH=640\\nHEIGHT=480\\nSCREEN=0\\n"\n'
+                + '  exit 0\nfi\nexit 1\n'
+            )
             executable(bin_dir, 'xdotool', xdotool_script)
             executable(bin_dir, 'xprop', '#!/usr/bin/env bash\nprintf "WM_PROTOCOLS(ATOM): WM_DELETE_WINDOW\\n"\n')
             executable(bin_dir, 'wmctrl', '#!/usr/bin/env bash\ntouch wm-close-requested; exit 0\n')
