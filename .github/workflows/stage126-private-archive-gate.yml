@@ -1,0 +1,31 @@
+name: Stage126 private capture archive gate (synthetic only)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/saturn_private_capture_archive_gate.py'
+      - 'tests/test_saturn_private_capture_archive_gate.py'
+      - '.github/workflows/stage126-private-archive-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-archive-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exercise complete invented-only capture shape and negative safety cases
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_capture_archive_gate.py' -v
+      - name: Missing private archive must reject without publishing a receipt
+        run: |
+          if python3 -m tools.saturn_private_capture_archive_gate \
+              --archive /tmp/stage126-archive-intentionally-absent.tar.gz \
+              --expected-size 1 \
+              --expected-sha256 0000000000000000000000000000000000000000000000000000000000000000; then
+            echo 'ERROR: missing archive incorrectly accepted' >&2
+            exit 1
+          fi
+          echo STAGE126_MISSING_PRIVATE_ARCHIVE_FAIL_CLOSED_PASS
