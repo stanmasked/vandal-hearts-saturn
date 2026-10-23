@@ -11,8 +11,8 @@ from tools.patch_yabause_private_sixth_confirm import (
 )
 
 SIXTH_SETUP_END = (
-    "         vh121_confirm_at6 = (int)n121;\\n"
-    "         vh121_confirm6_enabled = (vh121_enable6[0] == '1') ? 1 : 0;\\n"
+    "         vh121_confirm_at6 = (int)n121;\n"
+    "         vh121_confirm6_enabled = (vh121_enable6[0] == '1') ? 1 : 0;\n"
 )
 
 SETUP_CONFIRM7 = r'''         /* Stage122: both paired runs share the seventh-C frame. */
