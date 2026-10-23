@@ -23,6 +23,8 @@ PNG_SIG = b"\x89PNG\r\n\x1a\n"
 MAX_FILES = 4096
 MAX_TOTAL = 2_000_000_000
 MAX_MEMBER = 100_000_000
+SIDECARS = frozenset(("pre.png", "post.png", "frames.stats", "fad.vhcdlog",
+                      "pad-events.txt", "pad-state.txt", "sh2-window.txt", "video-state.txt"))
 
 
 def _private_fingerprint(path: Path) -> tuple[int, str, tuple[int, ...]]:
@@ -54,6 +56,7 @@ def _private_fingerprint(path: Path) -> tuple[int, str, tuple[int, ...]]:
 
 def _members_are_safe(archive: Path, expected_checkpoints: int) -> tuple[int, int]:
     found: dict[PurePosixPath, set[int]] = {}
+    sidecars: dict[PurePosixPath, set[str]] = {}
     names: set[str] = set()
     files = 0
     payload_size = 0
@@ -91,6 +94,8 @@ def _members_are_safe(archive: Path, expected_checkpoints: int) -> tuple[int, in
                     if index in group:
                         raise ValueError("duplicate cohort checkpoint")
                     group.add(index)
+                elif normalized.name in SIDECARS:
+                    sidecars.setdefault(normalized.parent, set()).add(normalized.name)
                 stream = tar.extractfile(entry)
                 if stream is None:
                     raise ValueError("unreadable archive member")
@@ -108,7 +113,9 @@ def _members_are_safe(archive: Path, expected_checkpoints: int) -> tuple[int, in
         frames = set(range(120, 120 * (expected_checkpoints + 1), 120))
         if any(group != frames for group in found.values()):
             raise ValueError("Stage124 checkpoint sequence incomplete")
-        if files < 2 * expected_checkpoints + 12:
+        if any(sidecars.get(folder) != SIDECARS for folder in found):
+            raise ValueError("Stage124 cohort diagnostics missing")
+        if files < 2 * expected_checkpoints + 2 * len(SIDECARS):
             raise ValueError("Stage124 diagnostics or inventory missing")
         # Drain the gzip stream, including its footer, to reject a truncated or
         # corrupt compressed tail that an early tar end-marker might conceal.
