@@ -86,11 +86,11 @@ jobs:
           # Bound apt network and install work so an unreachable mirror cannot hold this guest job indefinitely.
           timeout --kill-after=10s 180s sudo apt-get \
             -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
-          # Avoid optional recommends (notably large Ghostscript packages) that can
-          # exhaust the bounded install window before Pillow is installed.
+          # Avoid upgrades to the hosted image; install only the packages this
+          # headless guest needs, with a hard deadline on network/package work.
           timeout --kill-after=10s 300s sudo env DEBIAN_FRONTEND=noninteractive apt-get \
             -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 \
-            install -y --no-upgrade --no-install-recommends curl jq xvfb xauth xdotool openbox wmctrl x11-utils python3-pil \
+            install -y --no-upgrade --no-install-recommends curl jq ffmpeg xvfb xauth xdotool openbox wmctrl x11-utils python3-pil \
             libgtk-3-0t64 libasound2t64 libudev1 libxkbcommon0 libxkbcommon-x11-0 \
             libx11-xcb1 libxcb-cursor0 libxcb-xinerama0 libxcb-xfixes0 \
             libxcb-randr0 libxcb-render0 libxcb-shape0 libxcb-xkb1 \
