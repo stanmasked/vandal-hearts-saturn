@@ -29,7 +29,7 @@ jobs:
             count="$(printf '%s' "$response" | jq '.artifacts | length')"
             while IFS=$'\t' read -r id name; do
               [ -n "$id" ] && ids+=("$id")
-            done < <(printf '%s' "$response" | jq -r '.artifacts[] | select(.expired == false) | select(.name | test("^(stage(9[8-9]|10[0-9]|11[0-9]|12[0-4])-public-linked-yabause-.*|stage120-public-python-auditor|stage124-audit-source-bundle|vh-saturn-nexium-runtime-evidence)$")) | [.id, .name] | @tsv')
+            done < <(printf '%s' "$response" | jq -r '.artifacts[] | select(.expired == false) | select(.name != "vh-saturn-prototype-nro") | [.id, .name] | @tsv')
             [ "$count" -lt 100 ] && break
             page=$((page + 1))
           done
@@ -41,7 +41,7 @@ jobs:
           while :; do
             response="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$api?per_page=100&page=$page")"
             count="$(printf '%s' "$response" | jq '.artifacts | length')"
-            matches="$(printf '%s' "$response" | jq '[.artifacts[] | select(.expired == false) | select(.name | test("^(stage(9[8-9]|10[0-9]|11[0-9]|12[0-4])-public-linked-yabause-.*|stage120-public-python-auditor|stage124-audit-source-bundle|vh-saturn-nexium-runtime-evidence)$"))] | length')"
+            matches="$(printf '%s' "$response" | jq '[.artifacts[] | select(.expired == false) | select(.name != "vh-saturn-prototype-nro")] | length')"
             remaining=$((remaining + matches))
             [ "$count" -lt 100 ] && break
             page=$((page + 1))
