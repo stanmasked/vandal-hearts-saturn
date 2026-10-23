@@ -1,0 +1,22 @@
+# Stage126 — owner-only Stage124 archive recovery and verification
+
+## Status and limits
+
+Stage124 previously produced two original-disc cold boots of 108,000 frames each. The resulting private capture archive was verified locally, but was **not uploaded and independently read back from Google Drive**. It is absent from the current workspace and the owner-only Stage124 capture folder. The original-disc Track 1, Track 2, CUE and the private Stage124 manifest remain in owner-only Drive.
+
+The Stage124 and Stage125 public CI succeeds; this verifies source and the ROM-free prototype, **not** a tactical battle in the original Saturn game. No Stage125 original-disc run has occurred.
+
+## Restore and verify — private environment only
+
+1. Look for the exact original Stage124 archive, or the original untouched raw output directories, in earlier authorized private workspaces. Never upload original media, original screenshots or trace payloads to GitHub or GitHub Actions.
+2. Read the Stage124 *original private manifest* in Google Drive. Obtain the original archive byte count and SHA-256 there, not from a newly created receipt. Neither value is hardcoded in the public source.
+3. Locally invoke the Stage126 verifier with the recovered absolute archive path and the two independent expected values, using the three flags --archive, --expected-size, and --expected-sha256. The verifier checks digest, byte count, bounded GZIP/TAR integrity, two complete 900-checkpoint cohorts, regular members only, PNG signatures, safe paths, and unchanged archive identity; it never extracts payload into Git.
+4. Once and only once the local archive matches the original private manifest, upload it to the owner-only Drive folder VH-Saturn / Private Archives / Stage124 Private Captures and Logs. Preserve the local archive and original raw outputs.
+5. Download that exact Drive object into a separate private directory. Repeat Stage126 verification against the original private manifest. Independently confirm Drive file ID and **owner-only permissions**. Record the genuine upload/readback receipt privately outside the Git checkout. Stage125 separately requires that receipt **and the actual downloaded archive** before an original-disc run can begin.
+6. If both the original archive and raw output have been lost, do not invent old evidence. A future Stage124 recapture must be treated as a *new experiment*, independently fingerprinted, tested and archived. Its provenance and digest must never be silently substituted for the previously recorded Stage124 capture.
+
+## CI boundary
+
+The only archive produced in public CI is invented synthetic data. The workflow uses a full synthetic 1,800-checkpoint shape and adversarial tests, including corrupt GZIP tails, TAR traversal, symlinks, incomplete checkpoint sequences, missing archives and mismatched digests. No source BIN/CUE, translated disc, private capture, Drive receipt, screenshot, or real private digest is used or uploaded.
+
+Stage126 offline output contains only a bounded metadata report. A positive local result deliberately includes drive_upload_and_readback_verified=false, because hashing a local file is not proof that Google Drive contains it. Completion of the separate authenticated Drive readback remains a hard prerequisite for Stage125 private runtime.
