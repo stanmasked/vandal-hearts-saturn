@@ -207,3 +207,14 @@ jobs:
           path: build-yabause/src/runner/yabause
           if-no-files-found: error
           retention-days: 5
+      - name: Upload public Stage124 audit source bundle (Clang only)
+        if: matrix.compiler == 'clang'
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage124-audit-source-bundle
+          path: |
+            tools/
+            tests/test_yabause_private_ninth_confirm.py
+            tests/test_saturn_private_prologue_continue_ninth_c.py
+          if-no-files-found: error
+          retention-days: 5
