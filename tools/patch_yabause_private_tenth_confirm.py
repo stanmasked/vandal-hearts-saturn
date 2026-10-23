@@ -98,7 +98,7 @@ def instrument_private_tenth_confirm(stage124: bytes) -> bytes:
     for token, count in (
         ("VH_SATURN_CONFIRM_AT_FRAME10", 1),
         ("VH_SATURN_CONFIRM10_ENABLED", 1),
-        ("vh125_confirm_at10", 4),
+        ("vh125_confirm_at10", 6),
         ("vh125_confirm10_enabled", 4),
         ("PerPadCPressed(vh107_pad);", 10),
         ("PerPadCReleased(vh107_pad);", 10),
