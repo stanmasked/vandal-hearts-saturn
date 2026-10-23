@@ -29,7 +29,12 @@ The four-C baseline and fifth-C intervention receive the same fifth-C frame sche
 
 ## Reproducible runner artifacts
 
-The exact Stage119 GCC/Clang workflow builds the pinned public Yabause source and uploads only the public GPL emulator executable. After the exact-head run passes, record the executable SHA-256 printed by each build job here; do not confuse it with the GitHub artifact ZIP digest. Independently hash the downloaded runner before private execution.
+The exact Stage119 GCC/Clang workflow [#39900130531](https://github.com/stanmasked/vandal-hearts-saturn/actions/runs/39900130531) passed on source revision cb8baa857c8bf9f30c42b07056384130830dc886 and uploads only the public GPL emulator executable. Executable SHA-256 values printed by the build jobs:
+
+- Clang artifact ID 12478866108, name stage119-public-linked-yabause-clang: bc f52bd23873a7b510340e0906f2c4e4943cf0d616d675f9b31958400558d27c.
+- GCC artifact ID 12478323018, name stage119-public-linked-yabause-gcc: d235e520f2d705830fb05ccfef00b54cd4ce8f5cc9e8865630488195945de62c.
+
+The GitHub artifact ZIP digests are different from these executable hashes. Independently hash the downloaded runner and compare it with the chosen compiler's executable SHA-256 before private execution.
 
 ## Private execution
 
@@ -45,4 +50,4 @@ Download the GCC or Clang executable from a successful exact-head Stage119 Actio
       --fifth-c "/private/runs/fifth_" \
       --timeout 7200
 
-The report exports only booleans, counts and frame numbers. Never commit or upload original BIN/CUE files, private screenshots, raw FAD logs, extracted game resources, local paths or frame hashes. Keep authenticity Issue #11 open until the first controllable tactical battle is independently verified.
+The report exports only booleans, counts and frame numbers. If the filesystem sets the setgid bit on new directories, explicitly clear it and verify permissions are exactly 0700 before running the auditor (for example, chmod g-s followed by chmod 700 on both output directories). Never commit or upload original BIN/CUE files, private screenshots, raw FAD logs, extracted game resources, local paths or frame hashes. Keep authenticity Issue #11 open until the first controllable tactical battle is independently verified.
