@@ -23,27 +23,28 @@ jobs:
         run: |
           set -euo pipefail
           test -d tools
-          mkdir -p stage144-tools-export
-          cp -R tools stage144-tools-export/tools
-          if find stage144-tools-export -type f ! -name '*.py' | grep -q .; then
+          mkdir -p stage145-tools-export
+          cp -R tools stage145-tools-export/tools
+          if find stage145-tools-export -type f ! -name '*.py' | grep -q .; then
             echo 'Unexpected non-Python file in source-only export' >&2
             exit 1
           fi
-          test -f stage144-tools-export/tools/patch_yabause_private_eleventh_confirm.py
-          test -f stage144-tools-export/tools/saturn_private_prologue_continue_eleventh_c.py
-          test -f stage144-tools-export/tools/saturn_private_prologue_continue_eleventh_c_audit.py
-          test -f stage144-tools-export/tools/saturn_private_stage143_archive_gate.py
-          test -f stage144-tools-export/tools/saturn_private_stage144_archive_gate.py
-          test -f stage144-tools-export/tools/patch_yabause_private_twelfth_confirm.py
-          test -f stage144-tools-export/tools/saturn_private_prologue_continue_twelfth_c.py
-          test -f stage144-tools-export/tools/saturn_private_prologue_continue_twelfth_c_audit.py
-          test -f stage144-tools-export/tools/saturn_private_stage145_archive_gate.py
-          ( cd stage144-tools-export && find tools -type f -name '*.py' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS )
-          test "$(find stage144-tools-export/tools -type f -name '*.py' | wc -l)" -gt 100
+          test -f stage145-tools-export/tools/patch_yabause_private_eleventh_confirm.py
+          test -f stage145-tools-export/tools/saturn_private_prologue_continue_eleventh_c.py
+          test -f stage145-tools-export/tools/saturn_private_prologue_continue_eleventh_c_audit.py
+          test -f stage145-tools-export/tools/saturn_private_stage143_archive_gate.py
+          test -f stage145-tools-export/tools/saturn_private_stage144_archive_gate.py
+          test -f stage145-tools-export/tools/patch_yabause_private_twelfth_confirm.py
+          test -f stage145-tools-export/tools/saturn_private_prologue_continue_twelfth_c.py
+          test -f stage145-tools-export/tools/saturn_private_prologue_continue_twelfth_c_audit.py
+          test -f stage145-tools-export/tools/saturn_private_stage145_archive_gate.py
+          test -f stage145-tools-export/tools/saturn_private_stage145_capture_packager.py
+          ( cd stage145-tools-export && find tools -type f -name '*.py' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS )
+          test "$(find stage145-tools-export/tools -type f -name '*.py' | wc -l)" -gt 100
       - name: Upload source-only tooling artifact
         uses: actions/upload-artifact@v4
         with:
           name: stage145-public-tooling-source
-          path: stage144-tools-export/
+          path: stage145-tools-export/
           retention-days: 1
           if-no-files-found: error
