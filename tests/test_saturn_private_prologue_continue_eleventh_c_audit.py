@@ -40,18 +40,18 @@ def _make_pair(root: Path, *, divergence_frame=120120, bad_pad=False, enabled_wi
     control.mkdir(mode=0o700)
     enabled.mkdir(mode=0o700)
     visible = _png((20, 30, 40))
+    enabled_base = _png((20, 30, 40), width=enabled_width)
     changed = _png((90, 100, 110), width=enabled_width)
     _write_private(control / "pre.png", visible)
     _write_private(enabled / "pre.png", visible)
     _write_private(control / "post.png", visible)
-    post_enabled = changed if (enabled_width != 64 or
-        (divergence_frame is not None and divergence_frame <= FRAME_COUNT)) else visible
+    post_enabled = changed if (divergence_frame is not None and divergence_frame <= FRAME_COUNT) else enabled_base
     _write_private(enabled / "post.png", post_enabled)
 
     for frame in CHECKPOINTS:
         _write_private(control / f"frame-{frame}.png", visible)
         changed_now = divergence_frame is not None and frame >= divergence_frame
-        _write_private(enabled / f"frame-{frame}.png", changed if changed_now else visible)
+        _write_private(enabled / f"frame-{frame}.png", changed if changed_now else enabled_base)
 
     samples = [0] + list(CHECKPOINTS) + [FRAME_COUNT]
     for folder, width in ((control, 64), (enabled, enabled_width)):
