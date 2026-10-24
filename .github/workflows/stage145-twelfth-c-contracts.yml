@@ -20,6 +20,8 @@ on:
       - 'tests/test_saturn_private_stage145_archive_gate.py'
       - 'tools/saturn_private_stage145_capture_packager.py'
       - 'tests/test_saturn_private_stage145_capture_packager.py'
+      - 'tools/saturn_private_cross_stage_prefix_drift.py'
+      - 'tests/test_saturn_private_cross_stage_prefix_drift.py'
       - 'tools/patch_yabause_private_durable_pad_receipts.py'
       - 'tools/patch_yabause_private_tenth_confirm.py'
       - 'tests/test_yabause_private_eleventh_confirm.py'
@@ -77,3 +79,5 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_yabause_private_twelfth_confirm.py' -v
       - name: Run Stage145 package/readback round-trip regressions
         run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage145_capture_packager.py' -v
+      - name: Run decoded-pixel cross-stage drift regressions
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_cross_stage_prefix_drift.py' -v
