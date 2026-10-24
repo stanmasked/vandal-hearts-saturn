@@ -81,6 +81,14 @@ def _matrix(paths):
 
 
 class Stage149CoordinatorTests(unittest.TestCase):
+    def setUp(self):
+        # ROM-free CI deliberately uses transient runner storage; never allow
+        # the real original-disc host guard to run within these mocks.
+        guard = patch.object(stage149, "assert_durable_private_workspace",
+                             return_value={"capture_and_source_volumes_accepted": True})
+        guard.start()
+        self.addCleanup(guard.stop)
+
     def test_interleaved_four_pairs_only_finish_after_all_pass(self):
         with tempfile.TemporaryDirectory() as directory:
             args = _make_args(Path(directory))

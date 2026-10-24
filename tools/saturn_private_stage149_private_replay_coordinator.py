@@ -17,6 +17,7 @@ import re
 import sys
 
 from tools.saturn_private_capture_cohort import _private_directory, _private_regular
+from tools.saturn_private_stage150_storage_guard import assert_durable_private_workspace
 from tools.saturn_private_capture_session import _fingerprint, _not_in_checkout, PINNED
 from tools.saturn_private_original_start_pair import _build_manifest, _check_media
 from tools.saturn_private_prologue_continue_eleventh_c import (
@@ -69,6 +70,9 @@ def _preflight(args) -> dict:
         _not_in_checkout(path)
         if path.resolve() == root or root in path.resolve().parents or path.resolve() in root.parents:
             raise ValueError("Stage149 source and output trees overlap")
+    # Reject ephemeral overlays, CI runners and insecure local volumes before
+    # touching original media or creating any capture artifacts.
+    assert_durable_private_workspace(root, tuple(paths.values()))
     if args.stage144_executable.resolve() == args.stage145_executable.resolve():
         raise ValueError("Stage149 requires distinct Stage144/145 runner files")
     if not all(isinstance(getattr(args, key), str) and
@@ -87,6 +91,9 @@ def _preflight(args) -> dict:
 
 
 def _recheck(args, original: dict) -> None:
+    # Fail closed if the mounted private volume changes or becomes unsafe.
+    assert_durable_private_workspace(
+        args.output_root, tuple(getattr(args, key) for key in SOURCE_KEYS))
     for key in SOURCE_KEYS:
         if _fingerprint(getattr(args, key)) != original[key]:
             raise ValueError("Stage149 private source or executable changed between paired runs")
@@ -185,6 +192,7 @@ def run_private_stage149(args, *, run144=_run144, run145=_run145, matrix=_matrix
         "stage144_paired_experiments": 2,
         "stage145_paired_experiments": 2,
         "media_and_both_runners_unchanged_across_all_pairs": True,
+        "private_persistent_filesystem_preflight_passed": True,
         "runner_hashes_match_separately_supplied_pins": True,
         "all_predecessor_owner_only_receipts_verified_by_pair_runners": True,
         "comparison": summary,
