@@ -31,7 +31,7 @@ jobs:
           mapfile -t names < <(find tools -maxdepth 1 -type f -name '*.py' -print | LC_ALL=C sort)
           test "${#names[@]}" -ge 15
           tar --format=ustar -czf stage137-export/stage137-public-auditors.tar.gz "${names[@]}"
-          tar -tzf stage137-export/stage137-public-auditors.tar.gz | head -n 150
+          tar -tzf stage137-export/stage137-public-auditors.tar.gz | sed -n '1,150p'
           sha256sum stage137-export/stage137-public-auditors.tar.gz
       - name: Publish ROM-free audit source artifact only
         uses: actions/upload-artifact@v4
