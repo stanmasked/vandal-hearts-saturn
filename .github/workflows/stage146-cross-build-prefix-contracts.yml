@@ -1,0 +1,30 @@
+name: Stage146 same-session cross-build prefix contracts
+
+on:
+  push:
+    branches:
+      - 'stage146/same-session-cross-build-prefix'
+  pull_request:
+    paths:
+      - '.github/workflows/stage146-cross-build-prefix-contracts.yml'
+      - 'tools/saturn_private_same_session_cross_build_prefix.py'
+      - 'tests/test_saturn_private_same_session_cross_build_prefix.py'
+      - 'tools/saturn_private_cross_stage_prefix_drift.py'
+      - 'tests/test_saturn_private_cross_stage_prefix_drift.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  same-session-cross-build-prefix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Pillow decoder
+        run: python3 -m pip install --disable-pip-version-check --no-input Pillow==11.3.0
+      - name: Run existing Stage145 cross-stage drift regressions
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_cross_stage_prefix_drift.py' -v
+      - name: Run Stage146 same-session cross-build prefix regressions
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_same_session_cross_build_prefix.py' -v
