@@ -32,7 +32,7 @@ MAX_CHECKSUMS = 64 * 1024
 MAX_RECEIPT = 64 * 1024
 
 
-def _private_regular(path: Path, maximum: int) -> tuple[os.stat_result, bytes]:
+def _private_regular(path: Path, maximum: int, *, load_bytes: bool = True) -> tuple[os.stat_result, bytes]:
     if not path.is_absolute() or path.is_symlink():
         raise ValueError("absolute non-symlinked private file required")
     _not_in_checkout(path)
@@ -40,7 +40,7 @@ def _private_regular(path: Path, maximum: int) -> tuple[os.stat_result, bytes]:
     if (not stat.S_ISREG(st.st_mode) or st.st_nlink != 1 or
             stat.S_IMODE(st.st_mode) & 0o077 or st.st_size <= 0 or st.st_size > maximum):
         raise ValueError("unsafe, non-private, or oversized Stage143 evidence file")
-    return st, path.read_bytes()
+    return st, path.read_bytes() if load_bytes else b""
 
 
 def _sha256(data: bytes) -> str:
@@ -136,7 +136,7 @@ def verify_private_stage143_archive(archive: Path, manifest_path: Path,
     raw = {}
     limits = (MAX_ARCHIVE, MAX_MANIFEST, MAX_REPORT, MAX_CHECKSUMS, MAX_RECEIPT)
     for p, limit in zip(paths, limits):
-        stats[p], raw[p] = _private_regular(p, limit)
+        stats[p], raw[p] = _private_regular(p, limit, load_bytes=(p != archive))
     archive_sha, manifest_sha = _file_sha256(archive), _file_sha256(manifest_path)
     report_sha, checksums_sha = _file_sha256(audit_report_path), _file_sha256(checksums_path)
     try:
