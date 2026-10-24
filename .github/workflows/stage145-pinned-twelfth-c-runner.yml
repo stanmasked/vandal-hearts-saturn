@@ -20,6 +20,8 @@ on:
       - 'tests/test_saturn_private_stage145_archive_gate.py'
       - 'tools/saturn_private_stage145_capture_packager.py'
       - 'tests/test_saturn_private_stage145_capture_packager.py'
+      - 'tools/saturn_private_cross_stage_prefix_drift.py'
+      - 'tests/test_saturn_private_cross_stage_prefix_drift.py'
       - 'tests/test_saturn_private_prologue_continue_twelfth_c_runner.py'
       - 'tools/patch_yabause_private_eleventh_confirm.py'
       - 'tools/patch_yabause_private_durable_pad_receipts.py'
@@ -99,6 +101,7 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_yabause_private_twelfth_confirm.py' -v
           python3 -m unittest discover -s tests -p 'test_saturn_private_stage145_archive_gate.py' -v
           python3 -m unittest discover -s tests -p 'test_saturn_private_stage145_capture_packager.py' -v
+          python3 -m unittest discover -s tests -p 'test_saturn_private_cross_stage_prefix_drift.py' -v
       - name: Prepare temporary open-source runner artifact
         run: |
           set -euo pipefail
