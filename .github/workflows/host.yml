@@ -22,7 +22,7 @@ jobs:
       - name: Prepare Python image-test environment
         run: |
           python3 -m venv .ci-python
-          .ci-python/bin/python -m pip install --disable-pip-version-check Pillow
+          .ci-python/bin/python -m pip install --disable-pip-version-check --no-input Pillow==11.3.0
       - name: Test disc metadata and framebuffer parsers (synthetic only)
         run: .ci-python/bin/python -m unittest discover -s tests -p "test_*.py" -v
       - name: Stage79 validate pinned upstream primary CD data reads (fabricated only)

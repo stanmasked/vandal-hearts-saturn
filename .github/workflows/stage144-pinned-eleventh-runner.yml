@@ -1,0 +1,17 @@
+name: Stage144 runner notice (maintained in PR95)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notice:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Point to the isolated Stage144 draft
+        run: |
+          set -euo pipefail
+          echo "Stage144 eleventh-C implementation is maintained in Draft PR #95."
+          echo "This Stage143 branch intentionally does not build or run the Stage144 private experiment."
