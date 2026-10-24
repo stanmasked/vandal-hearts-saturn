@@ -17,6 +17,8 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+      - name: Install pinned Pillow pixel decoder
+        run: python3 -m pip install --disable-pip-version-check --no-input Pillow==11.3.0
       - name: Run Stage142 PAD receipt regressions
         run: python3 -m unittest discover -s tests -p 'test_saturn_stage142_partial_receipts.py' -v
       - name: Run Stage143 visual content regressions
