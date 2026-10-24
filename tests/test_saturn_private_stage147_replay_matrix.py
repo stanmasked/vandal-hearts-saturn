@@ -50,7 +50,8 @@ def make_capture(path, i, *, base=(20, 30, 40), different_frames=(),
     private_file(path / "fad.vhcdlog", b"VHCD_FAD 150\nVHCD_FAD 151\n")
 
 
-def fixture(root, **overrides):
+def fixture(root, overrides=None):
+    overrides = overrides or {}
     paths = tuple(root / f"test-{i}" for i in range(4))
     for i, path in enumerate(paths):
         make_capture(path, i, **overrides.get(i, {}))
@@ -60,7 +61,7 @@ def fixture(root, **overrides):
 class Stage147ReplayMatrixTests(unittest.TestCase):
     def test_equal_decoded_pixels_with_recompression(self):
         with tempfile.TemporaryDirectory() as td:
-            paths = fixture(Path(td), **{1: {"compression": 9}, 3: {"compression": 1}})
+            paths = fixture(Path(td), {1: {"compression": 9}, 3: {"compression": 1}})
             result = audit_private_stage147_replay_matrix(paths)
             self.assertEqual(result["classification"],
                              "decoded_prefix_and_within_build_diagnostics_aligned")
@@ -74,7 +75,7 @@ class Stage147ReplayMatrixTests(unittest.TestCase):
 
     def test_stable_between_build_difference_without_causal_claim(self):
         with tempfile.TemporaryDirectory() as td:
-            paths = fixture(Path(td), **{2: {"base": (90, 100, 110)},
+            paths = fixture(Path(td), {2: {"base": (90, 100, 110)},
                                            3: {"base": (90, 100, 110)}})
             result = audit_private_stage147_replay_matrix(paths)
             self.assertEqual(result["classification"],
@@ -87,7 +88,7 @@ class Stage147ReplayMatrixTests(unittest.TestCase):
 
     def test_within_stage144_drift_is_not_attributed_to_build_change(self):
         with tempfile.TemporaryDirectory() as td:
-            paths = fixture(Path(td), **{1: {"different_frames": {7800}}})
+            paths = fixture(Path(td), {1: {"different_frames": {7800}}})
             result = audit_private_stage147_replay_matrix(paths)
             self.assertEqual(result["classification"],
                              "within_build_replay_consistency_not_established")
@@ -97,7 +98,7 @@ class Stage147ReplayMatrixTests(unittest.TestCase):
 
     def test_diagnostic_drift_prevents_consistency_claim(self):
         with tempfile.TemporaryDirectory() as td:
-            paths = fixture(Path(td), **{1: {"sh2_mutation": True}})
+            paths = fixture(Path(td), {1: {"sh2_mutation": True}})
             result = audit_private_stage147_replay_matrix(paths)
             self.assertTrue(result["within_build_pixels_equal"])
             self.assertFalse(result["within_build_diagnostics_and_fad_equal"])
