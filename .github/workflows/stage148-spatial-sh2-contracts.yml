@@ -1,0 +1,30 @@
+name: Stage148 private spatial/SH2 audit (ROM-free tests)
+
+on:
+  push:
+    branches:
+      - 'stage148/spatial-sh2-correlation'
+  pull_request:
+    paths:
+      - '.github/workflows/stage148-spatial-sh2-contracts.yml'
+      - 'tools/saturn_private_stage148_spatial_drift.py'
+      - 'tests/test_saturn_private_stage148_spatial_drift.py'
+      - 'tools/saturn_private_stage147_replay_matrix.py'
+      - 'tools/saturn_private_same_session_cross_build_prefix.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage148-synthetic-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned PNG decoder for ROM-free fixtures
+        run: python3 -m pip install --disable-pip-version-check --no-input Pillow==11.3.0
+      - name: Stage147 full-capture synthetic regressions
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage147_replay_matrix.py' -v
+      - name: Stage148 spatial and diagnostic synthetic regressions
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage148_spatial_drift.py' -v
