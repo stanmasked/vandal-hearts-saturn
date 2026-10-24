@@ -1,0 +1,40 @@
+name: Stage144 eleventh-C source and receipt contracts
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/stage144-eleventh-c-contracts.yml'
+      - 'tools/patch_yabause_private_eleventh_confirm.py'
+      - 'tools/patch_yabause_private_durable_pad_receipts.py'
+      - 'tools/patch_yabause_private_tenth_confirm.py'
+      - 'tests/test_yabause_private_eleventh_confirm.py'
+      - 'tests/test_yabause_private_durable_pad_receipts.py'
+      - 'tests/test_yabause_private_tenth_confirm.py'
+      - 'tests/test_yabause_private_ninth_confirm.py'
+      - 'tests/test_saturn_stage143_visual_witness_gate.py'
+      - 'tests/test_saturn_stage142_partial_receipts.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  eleventh-c-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Pillow pixel decoder
+        run: python3 -m pip install --disable-pip-version-check --no-input Pillow==11.3.0
+      - name: Run Stage142 PAD receipt regressions
+        run: python3 -m unittest discover -s tests -p 'test_saturn_stage142_partial_receipts.py' -v
+      - name: Run inherited ninth and tenth-C regressions
+        run: |
+          python3 -m unittest discover -s tests -p 'test_yabause_private_ninth_confirm.py' -v
+          python3 -m unittest discover -s tests -p 'test_yabause_private_tenth_confirm.py' -v
+      - name: Run Stage143 visual and durable PAD regressions
+        run: |
+          python3 -m unittest discover -s tests -p 'test_saturn_stage143_visual_witness_gate.py' -v
+          python3 -m unittest discover -s tests -p 'test_yabause_private_durable_pad_receipts.py' -v
+      - name: Run Stage144 eleventh-C patch regressions
+        run: python3 -m unittest discover -s tests -p 'test_yabause_private_eleventh_confirm.py' -v
