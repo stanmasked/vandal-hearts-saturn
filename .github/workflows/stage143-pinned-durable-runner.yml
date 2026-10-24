@@ -21,6 +21,8 @@ jobs:
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
+      - name: Install pinned Pillow pixel decoder for visual regressions
+        run: python3 -m pip install --disable-pip-version-check --no-input Pillow==11.3.0
       - name: Fetch exact public Yabause source
         run: |
           set -euo pipefail
