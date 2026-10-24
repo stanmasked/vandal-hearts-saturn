@@ -1,0 +1,128 @@
+"""Invented-only tests for Stage143 PNG content quality; no original media."""
+from pathlib import Path
+import struct
+import tempfile
+import unittest
+import zlib
+
+from tools.saturn_stage143_visual_witness_gate import audit_visual_witness, _decode_is_black
+
+SIG = b"\x89PNG\r\n\x1a\n"
+
+
+def chunk(kind: bytes, payload: bytes = b"") -> bytes:
+    return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload) & 0xffffffff)
+
+
+def rgb_png(rgb=(30, 40, 50), width=352, height=240) -> bytes:
+    row = b"\0" + bytes(rgb) * width
+    raw = row * height
+    return SIG + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND")
+
+
+def gray1_png(value=0, width=352, height=240) -> bytes:
+    packed = bytes([0x00 if value == 0 else 0xff]) * ((width + 7) // 8)
+    raw = (b"\0" + packed) * height
+    return SIG + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 1, 0, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND")
+
+
+class VisualWitnessTests(unittest.TestCase):
+    def make_pair(self, root, control_black=(), enabled_black=(), *, count=4):
+        a, b = root / "control", root / "enabled"
+        a.mkdir(); b.mkdir()
+        for folder, black_frames in ((a, set(control_black)), (b, set(enabled_black))):
+            for frame in range(120, count * 120 + 1, 120):
+                data = rgb_png((0, 0, 0)) if frame in black_frames else rgb_png()
+                (folder / f"frame-{frame}.png").write_bytes(data)
+        return a, b
+
+    def test_visible_checkpoints_pass(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td))
+            report = audit_visual_witness(a, b, through_frame=480)
+            self.assertTrue(report["visual_witness_accepted"])
+            self.assertEqual(report["checkpoint_pairs_decoded"], 4)
+
+    def test_boot_black_prefix_is_allowed_if_display_later_appears(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td), (120, 240), (120, 240))
+            report = audit_visual_witness(a, b, through_frame=480)
+            self.assertTrue(report["visual_witness_accepted"])
+            self.assertEqual(report["control_black_prefix_count"], 2)
+
+    def test_single_internal_black_checkpoint_is_review_required(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td), (240,), (240,))
+            report = audit_visual_witness(a, b, through_frame=480)
+            self.assertFalse(report["visual_witness_accepted"])
+            self.assertEqual(report["control_suspect_black_runs"], [{"first_frame": 240, "last_frame": 240, "count": 1}])
+
+    def test_bounded_black_span_is_review_required(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td), (240, 360), (240, 360))
+            report = audit_visual_witness(a, b, through_frame=480)
+            self.assertFalse(report["visual_witness_accepted"])
+            self.assertEqual(report["enabled_suspect_black_runs"], [{"first_frame": 240, "last_frame": 360, "count": 2}])
+
+    def test_trailing_black_span_is_review_required(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td), (360, 480), (360, 480))
+            report = audit_visual_witness(a, b, through_frame=480)
+            self.assertFalse(report["visual_witness_accepted"])
+
+    def test_all_black_capture_is_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td), (120, 240, 360, 480), (120, 240, 360, 480))
+            report = audit_visual_witness(a, b, through_frame=480)
+            self.assertFalse(report["visual_witness_accepted"])
+            self.assertEqual(report["control_suspect_black_runs"][0]["count"], 4)
+
+    def test_different_black_masks_fail(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td), (240,), (), count=4)
+            report = audit_visual_witness(a, b, through_frame=480)
+            self.assertFalse(report["black_classification_masks_match"])
+            self.assertFalse(report["visual_witness_accepted"])
+
+    def test_realistic_one_bit_all_black_png_is_detected(self):
+        self.assertTrue(_decode_is_black(gray1_png(0)))
+        self.assertFalse(_decode_is_black(gray1_png(1)))
+
+    def test_crc_corruption_fails_closed(self):
+        blob = bytearray(rgb_png())
+        blob[-7] ^= 1
+        with self.assertRaisesRegex(ValueError, "CRC"):
+            _decode_is_black(bytes(blob))
+
+    def test_wrong_dimensions_fail_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td))
+            (a / "frame-120.png").write_bytes(rgb_png(width=320, height=240))
+            with self.assertRaisesRegex(ValueError, "dimensions"):
+                audit_visual_witness(a, b, through_frame=480)
+
+    def test_missing_checkpoint_fails_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td))
+            (b / "frame-360.png").unlink()
+            with self.assertRaisesRegex(ValueError, "missing or unsafe"):
+                audit_visual_witness(a, b, through_frame=480)
+
+    def test_symlinked_checkpoint_fails_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td))
+            p = b / "frame-360.png"
+            p.unlink(); p.symlink_to(a / "frame-360.png")
+            with self.assertRaisesRegex(ValueError, "missing or unsafe"):
+                audit_visual_witness(a, b, through_frame=480)
+
+    def test_invalid_window_fails_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td))
+            for frame in (0, 120, 241, 108000, -120):
+                with self.subTest(frame=frame), self.assertRaises(ValueError):
+                    audit_visual_witness(a, b, through_frame=frame)
+
+
+if __name__ == "__main__":
+    unittest.main()
