@@ -101,14 +101,14 @@ jobs:
           set -euo pipefail
           mkdir -p stage145-export
           cp build-yabause/src/runner/yabause stage145-export/yabause-stage145
-          chmod 755 stage144-export/yabause-stage144
-          sha256sum stage144-export/yabause-stage144
-          timeout 15s stage144-export/yabause-stage144 > stage145-smoke.txt 2>&1
-          grep -Fq 'Not enough command line arguments.' stage144-smoke.txt
+          chmod 755 stage145-export/yabause-stage145
+          sha256sum stage145-export/yabause-stage145
+          timeout 15s stage145-export/yabause-stage145 > stage145-smoke.txt 2>&1
+          grep -Fq 'Not enough command line arguments.' stage145-smoke.txt
       - name: Export only the open-source ROM-free runner
         uses: actions/upload-artifact@v4
         with:
           name: stage145-public-yabause-twelfth-c-runner
-          path: stage144-export/yabause-stage144
+          path: stage145-export/yabause-stage145
           retention-days: 1
           if-no-files-found: error
