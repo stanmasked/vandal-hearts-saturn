@@ -15,11 +15,11 @@ def fixture():
     for _ in range(9):
         prior.extend((
             "         PerPadCPressed(vh107_pad);\n",
-            '         fprintf(vh107_pad_log, "VH_PAD frame=%d button=%c action=PRESS\\n", frame, \\'C\\');\n',
-            '         fprintf(vh109_state_log, "VH_PADSTATE frame=%d button=%c active_low_bit=0\\n", frame, \\'C\\');\n',
+            "         fprintf(vh107_pad_log, \"VH_PAD frame=%d button=%c action=PRESS\\n\", frame, 'C');\n",
+            "         fprintf(vh109_state_log, \"VH_PADSTATE frame=%d button=%c active_low_bit=0\\n\", frame, 'C');\n",
             "         PerPadCReleased(vh107_pad);\n",
-            '         fprintf(vh107_pad_log, "VH_PAD frame=%d button=%c action=RELEASE\\n", frame, \\'C\\');\n',
-            '         fprintf(vh109_state_log, "VH_PADSTATE frame=%d button=%c active_low_bit=1\\n", frame, \\'C\\');\n',
+            "         fprintf(vh107_pad_log, \"VH_PAD frame=%d button=%c action=RELEASE\\n\", frame, 'C');\n",
+            "         fprintf(vh109_state_log, \"VH_PADSTATE frame=%d button=%c active_low_bit=1\\n\", frame, 'C');\n",
         ))
     mode = (
         "         if (frames > 120000) return 1;\n"
