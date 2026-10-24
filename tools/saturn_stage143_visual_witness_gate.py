@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 """Stage143 visual-witness quality gate for private paired Saturn checkpoints.
 
-Uses only the Python standard library. Validates PNG structure, CRCs, dimensions,
-scanline decoding and pixel content. It detects all-black checkpoint runs that
-are bracketed by non-black checkpoints; such spans are review-required, not
-automatically attributed to the emulator or the game.
+Uses a bounded stdlib PNG chunk/CRC parser and Pillow's C-backed pixel decoder.
+Validates PNG structure, CRCs, dimensions, decompression and scanline filters.
+It detects all-black checkpoint runs that are bracketed by non-black checkpoints;
+such spans are review-required, not automatically attributed to the emulator or game.
 
 The report contains only counts and frame indices, never image bytes or hashes.
 """
 from __future__ import annotations
 
 import argparse
+import io
 import json
 from pathlib import Path
 import struct
 import sys
 import zlib
+from PIL import Image
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 MAX_PNG_BYTES = 16_777_216
@@ -128,6 +130,36 @@ def _decode_is_black(blob: bytes) -> bool:
     raw += inflater.flush()
     if len(raw) != expected:
         raise ValueError("PNG scanline length invalid")
+    # Most real Yabause captures are 8-bit indexed/RGB PNGs. Validate every
+    # scanline filter byte first, then let Pillow's C decoder classify pixels;
+    # the former Python byte-by-byte unfilter loop made 900+ checkpoint audits
+    # take several minutes while emulation was otherwise idle.
+    if depth != 16:
+        if any(raw[i] > 4 for i in range(0, expected, row_bytes + 1)):
+            raise ValueError("PNG scanline filter invalid")
+        try:
+            with Image.open(io.BytesIO(blob)) as image:
+                image.load()
+                if image.size != (width, height):
+                    raise ValueError("PNG decoded dimensions invalid")
+                if color_type in (0, 2):
+                    # Grayscale and RGB contain no alpha channel.
+                    return image.getbbox() is None
+                if color_type == 3:
+                    # Convert palette indices to RGB; alpha is intentionally ignored.
+                    return image.convert("RGB").getbbox() is None
+                if color_type == 4:
+                    # LA: classify luminance only, not alpha.
+                    return image.getchannel("L").getbbox() is None
+                if color_type == 6:
+                    # RGBA: classify RGB only, not alpha.
+                    return image.convert("RGB").getbbox() is None
+        except (OSError, ValueError, SyntaxError) as exc:
+            raise ValueError("PNG pixel decode failed") from exc
+        raise ValueError("PNG color type unsupported by fast pixel decoder")
+
+    # Retain the exact 16-bit sample path: converting 16-bit samples to RGB
+    # can quantize tiny nonzero values to zero, which would change classification.
     previous = bytearray(row_bytes)
     black = True
     pos = 0
