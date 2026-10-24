@@ -259,6 +259,7 @@ def verify_private_stage145_archive(
             or nested.get("pre_twelfth_checkpoint_equal_count") != 1099
             or nested.get("twelfth_C_press_frame") != 132000
             or nested.get("twelfth_C_release_frame") != 132006
+            or nested.get("twelfth_press_checkpoint_equal") is not True
             or nested.get("shared_eleventh_C_press_frame") != 120000
             or nested.get("shared_eleventh_C_release_frame") != 120006
             or nested.get("shared_tenth_C_press_frame") != 108000

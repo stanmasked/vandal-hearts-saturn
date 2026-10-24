@@ -85,6 +85,7 @@ def build_fixture(root: Path) -> dict[str, Path]:
         "shared_eleventh_C_release_frame": 120006,
         "twelfth_C_press_frame": 132000,
         "twelfth_C_release_frame": 132006,
+        "twelfth_press_checkpoint_equal": True,
         "pre_twelfth_checkpoint_equal_count": 1099,
         "pre_twelfth_checkpoint_total": 1099,
         "first_post_twelfth_framebuffer_divergence_by_133200": 132120,
@@ -217,6 +218,15 @@ class Stage145ArchiveReadbackGateTests(unittest.TestCase):
             files = build_fixture(Path(td))
             report = json.loads(files["audit_report"].read_text())
             report["first_battle_or_player_control_verified"] = True
+            write_private(files["audit_report"], json.dumps(report).encode())
+            with self.assertRaisesRegex(ValueError, "aggregate audit report"):
+                self.verify(files)
+
+    def test_report_must_confirm_press_checkpoint_equal(self):
+        with tempfile.TemporaryDirectory() as td:
+            files = build_fixture(Path(td))
+            report = json.loads(files["audit_report"].read_text())
+            report["paired_capture_audit"]["twelfth_press_checkpoint_equal"] = False
             write_private(files["audit_report"], json.dumps(report).encode())
             with self.assertRaisesRegex(ValueError, "aggregate audit report"):
                 self.verify(files)

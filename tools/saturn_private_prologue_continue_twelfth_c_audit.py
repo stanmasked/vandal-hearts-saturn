@@ -113,6 +113,8 @@ def audit_private_prologue_continue_twelfth_c(control: Path, enabled: Path) -> d
     enabled_count, enabled_dims = _check_frames(enabled)
     if control_count != 1200 or enabled_count != 1200 or control_dims != enabled_dims:
         raise ValueError("Stage145 checkpoint count/dimensions mismatch")
+    if not _equal_frame(control, enabled, CONFIRM12_PRESS):
+        raise ValueError("Stage145 cohorts differ at twelfth-C press checkpoint")
     equal = sum(_equal_frame(control, enabled, frame) for frame in PRE_TWELFTH_CHECKPOINTS)
     if equal != len(PRE_TWELFTH_CHECKPOINTS):
         raise ValueError("Stage145 cohorts diverged before twelfth C")
@@ -136,6 +138,7 @@ def audit_private_prologue_continue_twelfth_c(control: Path, enabled: Path) -> d
         "shared_eleventh_C_release_frame": CONFIRM11_RELEASE,
         "twelfth_C_press_frame": CONFIRM12_PRESS,
         "twelfth_C_release_frame": CONFIRM12_RELEASE,
+        "twelfth_press_checkpoint_equal": True,
         "pre_twelfth_checkpoint_equal_count": equal,
         "pre_twelfth_checkpoint_total": len(PRE_TWELFTH_CHECKPOINTS),
         "first_post_twelfth_framebuffer_divergence_by_133200": min(early),

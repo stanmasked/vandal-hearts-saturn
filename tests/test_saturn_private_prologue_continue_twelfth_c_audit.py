@@ -87,6 +87,7 @@ class TwelfthCPairedCaptureAuditTests(unittest.TestCase):
             result = audit.audit_private_prologue_continue_twelfth_c(control, enabled)
             self.assertEqual(result["frames_per_process"], 144000)
             self.assertEqual(result["checkpoint_png_count_per_process"], 1200)
+            self.assertTrue(result["twelfth_press_checkpoint_equal"])
             self.assertEqual(result["pre_twelfth_checkpoint_equal_count"], 1099)
             self.assertEqual(result["first_post_twelfth_framebuffer_divergence_by_133200"], 132120)
             self.assertEqual(result["first_post_twelfth_framebuffer_divergence_through_144000"], 132120)
@@ -97,7 +98,14 @@ class TwelfthCPairedCaptureAuditTests(unittest.TestCase):
     def test_divergence_before_twelfth_c_fails_closed(self):
         with tempfile.TemporaryDirectory() as td:
             control, enabled = _make_pair(Path(td), divergence_frame=131880)
+            _write_private(enabled / "frame-132000.png", (control / "frame-132000.png").read_bytes())
             with self.assertRaisesRegex(ValueError, "diverged before twelfth C"):
+                audit.audit_private_prologue_continue_twelfth_c(control, enabled)
+
+    def test_divergence_at_twelfth_press_checkpoint_fails_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            control, enabled = _make_pair(Path(td), divergence_frame=132000)
+            with self.assertRaisesRegex(ValueError, "differ at twelfth-C press checkpoint"):
                 audit.audit_private_prologue_continue_twelfth_c(control, enabled)
 
     def test_no_post_press_framebuffer_effect_fails_closed(self):
