@@ -116,6 +116,41 @@ class VisualWitnessTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "missing or unsafe"):
                 audit_visual_witness(a, b, through_frame=480)
 
+    def test_explicitly_reviewed_black_spans_can_pass(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td), (240, 360, 600), (240, 360, 600), count=6)
+            report = audit_visual_witness(
+                a, b, through_frame=720,
+                reviewed_black_runs=((240, 360), (600, 600)),
+            )
+            self.assertTrue(report["visual_witness_accepted"])
+            self.assertTrue(report["reviewed_black_runs_match_both_cohorts"])
+            self.assertEqual(report["unreviewed_black_runs_control"], [])
+
+    def test_partial_or_extra_allowlist_fails_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td), (240, 360), (240, 360), count=4)
+            report = audit_visual_witness(a, b, through_frame=480,
+                                          reviewed_black_runs=((240, 240),))
+            self.assertFalse(report["visual_witness_accepted"])
+            self.assertEqual(len(report["unreviewed_black_runs_control"]), 1)
+
+    def test_reviewed_allowlist_cannot_hide_cohort_mismatch(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td), (240,), (), count=4)
+            report = audit_visual_witness(a, b, through_frame=480,
+                                          reviewed_black_runs=((240, 240),))
+            self.assertFalse(report["black_classification_masks_match"])
+            self.assertFalse(report["visual_witness_accepted"])
+
+    def test_invalid_reviewed_ranges_fail_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            a, b = self.make_pair(Path(td), count=4)
+            for ranges in (((241, 241),), ((240, 360), (360, 480)), ((600, 600),)):
+                with self.subTest(ranges=ranges), self.assertRaises(ValueError):
+                    audit_visual_witness(a, b, through_frame=480,
+                                         reviewed_black_runs=ranges)
+
     def test_invalid_window_fails_closed(self):
         with tempfile.TemporaryDirectory() as td:
             a, b = self.make_pair(Path(td))
