@@ -29,6 +29,46 @@ def _make_args(td: Path) -> SimpleNamespace:
     return SimpleNamespace(**kwargs)
 
 
+def _synthetic_audit(stage: int) -> dict:
+    """Invented source-free receipt values matching the canonical audit shape."""
+    common = {
+        "schema_version": 1, "frames_per_process": 132000 if stage == 144 else 144000,
+        "paired_cold_boot_processes": 2,
+        "checkpoint_png_count_per_process": 1100 if stage == 144 else 1200,
+        "all_checkpoint_pngs_and_diagnostic_sequences_verified": True,
+        "same_dimensions_across_runs": True,
+        "shared_tenth_C_press_frame": 108000, "shared_tenth_C_release_frame": 108006,
+        "control_cd_event_count": 10, "intervention_cd_event_count": 10,
+        "cd_logs_differ": False, "first_battle_or_player_control_verified": False,
+        "requires_private_visual_review_of_dialogue_and_battle_state": True,
+        "original_media_or_frame_hashes_exported": False,
+    }
+    if stage == 144:
+        common.update({
+            "kind": "STAGE144_PRIVATE_PROLOGUE_CONTINUE_ELEVENTH_C_INTEGRITY_ONLY",
+            "eleventh_C_press_frame": 120000, "eleventh_C_release_frame": 120006,
+            "pre_eleventh_checkpoint_equal_count": 999,
+            "pre_eleventh_checkpoint_total": 999,
+            "first_post_eleventh_framebuffer_divergence_by_121200": 120120,
+            "first_post_eleventh_framebuffer_divergence_through_132000": 120120,
+            "frame_132000_differs": True,
+        })
+    else:
+        common.update({
+            "kind": "STAGE145_PRIVATE_PROLOGUE_CONTINUE_TWELFTH_C_INTEGRITY_ONLY",
+            "shared_eleventh_C_press_frame": 120000,
+            "shared_eleventh_C_release_frame": 120006,
+            "twelfth_C_press_frame": 132000, "twelfth_C_release_frame": 132006,
+            "twelfth_press_checkpoint_equal": True,
+            "pre_twelfth_checkpoint_equal_count": 1099,
+            "pre_twelfth_checkpoint_total": 1099,
+            "first_post_twelfth_framebuffer_divergence_by_133200": 132120,
+            "first_post_twelfth_framebuffer_divergence_through_144000": 132120,
+            "frame_144000_differs": True,
+        })
+    return common
+
+
 def _runner(stage: int, seen: list, mutation=None, invalid_report=False):
     def invoke(*pos, **kw):
         control, enabled, report = pos[5:8]
@@ -45,15 +85,18 @@ def _runner(stage: int, seen: list, mutation=None, invalid_report=False):
             "runner_unchanged_before_after": True,
             "original_media_or_frame_hashes_exported": False,
             "full_playable_battle_or_unit_control_verified": False,
-            "paired_capture_audit": {"stub": "synthetic-only"},
+            "paired_capture_audit": _synthetic_audit(stage),
         }
         if stage == 144:
             obj.update(stage124_drive_readback_receipt_verified=True,
                        stage143_drive_readback_receipt_verified=True,
-                       stage143_owner_only_drive_readback_gate={"stub": True})
+                       stage124_archive_integrity_gate={"synthetic": True},
+                       stage143_owner_only_drive_readback_gate={
+                           "stage143_owner_only_drive_readback_verified": True})
         else:
             obj.update(stage144_drive_readback_receipt_verified=True,
-                       stage144_owner_only_drive_readback_gate={"stub": True})
+                       stage144_owner_only_drive_readback_gate={
+                           "stage144_owner_only_drive_readback_verified": True})
         if invalid_report:
             obj["runner_sha256_matches_pinned_release"] = False
         report.write_text(json.dumps(obj) + "\n", encoding="utf8")
@@ -71,11 +114,35 @@ def _matrix(paths):
         "stage144_a_control", "stage144_b_control",
         "stage145_a_control", "stage145_b_control",
     ]
+    from tools.saturn_private_stage151_evidence_contract import COMPARISON_KEYS
+    pairs = {
+        key: {
+            "pixel_mismatch_count": 0,
+            "first_pixel_mismatch_frame": None,
+            "pixel_mismatch_ranges": [],
+            "sh2_record_mismatch_count": 0,
+            "video_record_mismatch_count": 0,
+            "fad_common_prefix_record_count": 2,
+            "fad_equal": True,
+        } for key in COMPARISON_KEYS
+    }
     return {
         "schema": "vh-saturn-stage147-four-control-replay-matrix-1",
-        "checkpoint_count": 800,
-        "classification": "within_build_replay_consistency_not_established",
+        "kind": "STAGE147_PRIVATE_CONTROL_REPLAY_MATRIX",
+        "labels": ["stage144_a", "stage144_b", "stage145_a", "stage145_b"],
+        "checkpoint_count": 800, "frame_start": 120,
+        "frame_end": 96000, "frame_step": 120,
+        "comparisons": pairs,
+        "within_build_pixels_equal": True,
+        "within_build_diagnostics_and_fad_equal": True,
+        "cross_build_mismatch_patterns_equal": True,
+        "classification": "decoded_prefix_and_within_build_diagnostics_aligned",
+        "runner_sha256_independently_verified_by_this_tool": False,
+        "same_host_and_disc_provenance_independently_verified": False,
+        "caller_must_verify_full_paired_capture_audits_and_same_host_media": True,
+        "source_level_causality_established": False,
         "original_media_or_frame_hashes_exported": False,
+        "private_pixel_hashes_exported": False,
         "battle_or_tactical_player_control_verified": False,
     }
 
@@ -108,7 +175,7 @@ class Stage149CoordinatorTests(unittest.TestCase):
             self.assertNotIn("cue", json.dumps(summary))
             self.assertNotIn(args.stage144_runner_sha256, json.dumps(summary))
             self.assertEqual(result["classification"],
-                             "within_build_replay_consistency_not_established")
+                             "decoded_prefix_and_within_build_diagnostics_aligned")
 
     def test_source_mutation_between_pairs_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:
