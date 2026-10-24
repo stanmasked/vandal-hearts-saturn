@@ -146,6 +146,12 @@ def _decode_is_black(blob: bytes) -> bool:
                     # Grayscale and RGB contain no alpha channel.
                     return image.getbbox() is None
                 if color_type == 3:
+                    # Pillow preserves palette indices in mode P; reject invalid indices
+                    # before converting to RGB (Pillow otherwise tolerates some bad indices).
+                    extrema = image.getextrema()
+                    if (not isinstance(extrema, tuple) or len(extrema) != 2 or
+                            extrema[1] >= len(palette) // 3):
+                        raise ValueError("PNG palette index out of range")
                     # Convert palette indices to RGB; alpha is intentionally ignored.
                     return image.convert("RGB").getbbox() is None
                 if color_type == 4:
