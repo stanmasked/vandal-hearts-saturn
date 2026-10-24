@@ -1,5 +1,6 @@
 """Synthetic-only Stage143 archive gate tests; no game media is used."""
 import gzip
+import io
 import hashlib
 import json
 import os
@@ -133,6 +134,222 @@ class Stage143ArchiveGateTests(unittest.TestCase):
             files["checksums"].write_text("0" * 64 + "  fake.tar.gz\n"); os.chmod(files["checksums"], 0o600)
             with self.assertRaisesRegex(ValueError, "fingerprint mismatch|SHA256SUMS"):
                 verify_private_stage143_archive(files["archive"], files["manifest"], files["audit_report"], files["checksums"], files["receipt"])
+
+
+RAW_ARCHIVE_NAME = "stage143-full120000-raw-captures.tar.gz"
+RAW_MANIFEST_NAME = "stage143-full120000-raw-manifest.json"
+RAW_REPORT_NAME = "stage143-full-pair-audit.json"
+RAW_BUNDLE_NAME = "stage143-full120000-metadata-bundle.tar.gz"
+RAW_RECEIPT_NAME = "stage143-drive-readback-receipt.json"
+RAW_SIDECARS = {
+    "fad.vhcdlog", "frames.stats", "pad-events.txt", "pad-state.txt",
+    "post.png", "pre.png", "sh2-window.txt", "video-state.txt",
+}
+
+
+def build_raw_bundle_fixture(root: Path):
+    frame_names = {f"frame-{n}.png" for n in range(120, 120001, 120)}
+    expected = {f"{cohort}/{name}" for cohort in ("control", "enabled")
+                for name in (frame_names | RAW_SIDECARS)}
+    payloads = {name: (b"x" if name.endswith(".png") else b"s") for name in expected}
+    archive = root / RAW_ARCHIVE_NAME
+    with archive.open("xb") as raw_file:
+        os.chmod(archive, 0o600)
+        with gzip.GzipFile(filename="", fileobj=raw_file, mode="wb", mtime=0) as gz:
+            with tarfile.open(fileobj=gz, mode="w|", format=tarfile.PAX_FORMAT) as tar:
+                for name, data in sorted(payloads.items()):
+                    info = tarfile.TarInfo(name)
+                    info.size = len(data); info.mode = 0o600; info.mtime = 0
+                    info.uid = info.gid = 0; info.uname = info.gname = ""
+                    tar.addfile(info, io.BytesIO(data))
+        raw_file.flush(); os.fsync(raw_file.fileno())
+    archive_bytes = archive.read_bytes()
+    archive_hash = digest(archive_bytes)
+    members = [
+        {"path": name, "size_bytes": len(data), "sha256": digest(data)}
+        for name, data in sorted(payloads.items())
+    ]
+    manifest = {
+        "schema": "vh-saturn-stage143-raw-capture-manifest-1",
+        "stage": 143,
+        "experiment": "source-patched-release-full-120000-paired-run",
+        "archive_file_name": RAW_ARCHIVE_NAME,
+        "archive_size_bytes": len(archive_bytes),
+        "archive_sha256": archive_hash,
+        "contains_original_disc_media": False,
+        "contains_derived_audit_report": False,
+        "cohorts": {"control": 1000, "enabled": 1000},
+        "raw_member_count": 2016,
+        "raw_payload_bytes": sum(len(v) for v in payloads.values()),
+        "members": members,
+    }
+    manifest_bytes = (json.dumps(manifest, sort_keys=True, indent=2) + "\n").encode()
+    manifest_path = root / RAW_MANIFEST_NAME
+    manifest_path.write_bytes(manifest_bytes); os.chmod(manifest_path, 0o600)
+    report = {
+        "schema": "vh-saturn-stage143-full-pair-audit-1",
+        "kind": "STAGE143_FULL_PRIVATE_PAIR_AUDIT",
+        "stage": 143,
+        "paired_cold_boot_processes": 2,
+        "frames_per_process": 120000,
+        "checkpoint_png_count_per_process": 1000,
+        "all_pngs_decoded_and_crc_validated": True,
+        "all_pad_receipts_and_diagnostic_sequences_verified": True,
+        "source_media_and_runner_unchanged_per_controller_receipt": True,
+        "tenth_c_effect_on_original_framebuffer_confirmed": True,
+        "first_post_tenth_framebuffer_divergence": 108120,
+        "pre_tenth_checkpoint_pairs_identical": 899,
+        "post_tenth_checkpoint_pairs_different": 100,
+        "first_battle_or_player_control_verified": False,
+        "original_media_or_frame_hashes_exported": False,
+    }
+    report_bytes = (json.dumps(report, sort_keys=True, indent=2) + "\n").encode()
+    report_path = root / RAW_REPORT_NAME
+    report_path.write_bytes(report_bytes); os.chmod(report_path, 0o600)
+
+    bundle_entries = {
+        "manifest/" + RAW_MANIFEST_NAME: manifest_bytes,
+        "reports/" + RAW_REPORT_NAME: report_bytes,
+        "checksums/" + RAW_ARCHIVE_NAME + ".sha256":
+            f"{archive_hash}  {RAW_ARCHIVE_NAME}\n".encode(),
+        "checksums/" + RAW_MANIFEST_NAME + ".sha256":
+            f"{digest(manifest_bytes)}  {RAW_MANIFEST_NAME}\n".encode(),
+        "checksums/" + RAW_REPORT_NAME + ".sha256":
+            f"{digest(report_bytes)}  /mnt/data/{RAW_REPORT_NAME}\n".encode(),
+        "README.txt": (
+            "Vandal Hearts Saturn Stage143 metadata bundle\n"
+            "The raw capture archive is a separate owner-only Drive file.\n"
+            "Drive file ID: drive-file-archive\n"
+            f"Archive size: {len(archive_bytes)}\n"
+            f"Archive SHA-256: {archive_hash}\n"
+            "An independent Drive download/readback matched that size and SHA-256; "
+            "the tar listing contains 2016 files.\n"
+        ).encode(),
+    }
+    bundle_path = root / RAW_BUNDLE_NAME
+    with bundle_path.open("xb") as raw_file:
+        os.chmod(bundle_path, 0o600)
+        with gzip.GzipFile(filename="", fileobj=raw_file, mode="wb", mtime=0) as gz:
+            with tarfile.open(fileobj=gz, mode="w|", format=tarfile.PAX_FORMAT) as tar:
+                for name, data in sorted(bundle_entries.items()):
+                    info = tarfile.TarInfo(name)
+                    info.size = len(data); info.mode = 0o600; info.mtime = 0
+                    info.uid = info.gid = 0; info.uname = info.gname = ""
+                    tar.addfile(info, io.BytesIO(data))
+        raw_file.flush(); os.fsync(raw_file.fileno())
+    bundle_hash = digest(bundle_path.read_bytes())
+    receipt = {
+        "schema": "vh-saturn-stage143-drive-readback-receipt-2",
+        "stage": 143,
+        "owner_only": True,
+        "readback_verified": True,
+        "archive_shared": False,
+        "metadata_bundle_shared": False,
+        "drive_file_id": "drive-file-archive",
+        "metadata_bundle_drive_file_id": "drive-file-bundle",
+        "private_folder_id": "private-folder",
+        "archive_parent_folder_id": "private-folder",
+        "metadata_bundle_parent_folder_id": "private-folder",
+    }
+    for label, path in (
+        ("archive", archive), ("manifest", manifest_path),
+        ("audit_report", report_path), ("metadata_bundle", bundle_path),
+    ):
+        data = path.read_bytes()
+        receipt[label + "_size_bytes"] = len(data)
+        receipt[label + "_sha256"] = digest(data)
+        receipt[label + "_readback_sha256"] = digest(data)
+    receipt_path = root / RAW_RECEIPT_NAME
+    receipt_path.write_text(json.dumps(receipt, sort_keys=True)); os.chmod(receipt_path, 0o600)
+    return {
+        "archive": archive, "manifest": manifest_path, "audit_report": report_path,
+        "metadata_bundle": bundle_path, "receipt": receipt_path,
+        "manifest_bytes": manifest_bytes, "report_bytes": report_bytes,
+        "bundle_hash": bundle_hash,
+    }
+
+
+class Stage143RawDriveReadbackGateTests(unittest.TestCase):
+    def verify(self, files):
+        return verify_private_stage143_archive(
+            files["archive"], files["manifest"], files["audit_report"],
+            files["metadata_bundle"], files["receipt"],
+        )
+
+    def test_actual_raw_manifest_and_metadata_bundle_contract_passes(self):
+        with tempfile.TemporaryDirectory() as td:
+            files = build_raw_bundle_fixture(Path(td))
+            result = self.verify(files)
+            self.assertTrue(result["stage143_owner_only_drive_readback_verified"])
+            self.assertEqual(result["schema"], "vh-saturn-stage143-drive-readback-gate-2")
+            self.assertEqual(result["archive_member_count"], 2016)
+            self.assertEqual(result["raw_payload_bytes"], 52904564)
+            self.assertTrue(result["all_member_hashes_match_manifest"])
+            self.assertFalse(result["original_media_in_archive"])
+            self.assertEqual(result["metadata_bundle_sha256"], files["bundle_hash"])
+
+    def test_raw_archive_tampering_fails_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            files = build_raw_bundle_fixture(Path(td))
+            with files["archive"].open("ab") as stream:
+                stream.write(b"tamper")
+            with self.assertRaisesRegex(ValueError, "archive fingerprint"):
+                self.verify(files)
+
+    def test_readback_receipt_must_attest_owner_only_files(self):
+        with tempfile.TemporaryDirectory() as td:
+            files = build_raw_bundle_fixture(Path(td))
+            receipt = json.loads(files["receipt"].read_text())
+            receipt["metadata_bundle_shared"] = True
+            files["receipt"].write_text(json.dumps(receipt)); os.chmod(files["receipt"], 0o600)
+            with self.assertRaisesRegex(ValueError, "owner-only Drive readback receipt"):
+                self.verify(files)
+
+    def test_metadata_bundle_must_match_separately_extracted_manifest(self):
+        with tempfile.TemporaryDirectory() as td:
+            files = build_raw_bundle_fixture(Path(td))
+            changed = files["manifest"].read_bytes() + b"\n"
+            files["manifest"].write_bytes(changed); os.chmod(files["manifest"], 0o600)
+            receipt = json.loads(files["receipt"].read_text())
+            receipt["manifest_size_bytes"] = len(changed)
+            receipt["manifest_sha256"] = digest(changed)
+            receipt["manifest_readback_sha256"] = digest(changed)
+            files["receipt"].write_text(json.dumps(receipt)); os.chmod(files["receipt"], 0o600)
+            with self.assertRaisesRegex(ValueError, "metadata bundle differs"):
+                self.verify(files)
+
+    def test_metadata_bundle_readback_hash_must_match_receipt(self):
+        with tempfile.TemporaryDirectory() as td:
+            files = build_raw_bundle_fixture(Path(td))
+            receipt = json.loads(files["receipt"].read_text())
+            receipt["metadata_bundle_readback_sha256"] = "0" * 64
+            files["receipt"].write_text(json.dumps(receipt)); os.chmod(files["receipt"], 0o600)
+            with self.assertRaisesRegex(ValueError, "Drive readback metadata_bundle SHA-256 mismatch"):
+                self.verify(files)
+
+    def test_unexpected_archive_member_fails_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            files = build_raw_bundle_fixture(Path(td))
+            with tarfile.open(files["archive"], "a:gz") as tar:
+                info = tarfile.TarInfo("control/disc-track-1.bin")
+                info.size = 1; info.mode = 0o600
+                tar.addfile(info, io.BytesIO(b"x"))
+            archive_hash = digest(files["archive"].read_bytes())
+            manifest = json.loads(files["manifest"].read_text())
+            manifest["archive_sha256"] = archive_hash
+            manifest["archive_size_bytes"] = files["archive"].stat().st_size
+            files["manifest"].write_text(json.dumps(manifest, sort_keys=True, indent=2) + "\n")
+            os.chmod(files["manifest"], 0o600)
+            receipt = json.loads(files["receipt"].read_text())
+            receipt["archive_size_bytes"] = files["archive"].stat().st_size
+            receipt["archive_sha256"] = archive_hash
+            receipt["archive_readback_sha256"] = archive_hash
+            receipt["manifest_size_bytes"] = files["manifest"].stat().st_size
+            receipt["manifest_sha256"] = digest(files["manifest"].read_bytes())
+            receipt["manifest_readback_sha256"] = digest(files["manifest"].read_bytes())
+            files["receipt"].write_text(json.dumps(receipt)); os.chmod(files["receipt"], 0o600)
+            with self.assertRaisesRegex(ValueError, "member count mismatch|raw manifest"):
+                self.verify(files)
 
 
 if __name__ == "__main__":
