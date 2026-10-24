@@ -83,7 +83,8 @@ class Stage150PrivateStorageGateTests(unittest.TestCase):
             output, source = fixture(Path(td))
             source.chmod(0o644)
             with patch.dict(os.environ, {}, clear=True), \
-                 patch.object(guard.platform, "system", return_value="Linux"):
+                 patch.object(guard.platform, "system", return_value="Linux"), \
+                 patch.object(guard, "_storage_type", return_value="ext4"):
                 with self.assertRaisesRegex(ValueError, "permissions"):
                     guard.assert_durable_private_workspace(output, (source,))
 
@@ -93,7 +94,8 @@ class Stage150PrivateStorageGateTests(unittest.TestCase):
             alias = Path(td) / "alias"
             alias.symlink_to(Path(td) / "private", target_is_directory=True)
             with patch.dict(os.environ, {}, clear=True), \
-                 patch.object(guard.platform, "system", return_value="Linux"):
+                 patch.object(guard.platform, "system", return_value="Linux"), \
+                 patch.object(guard, "_storage_type", return_value="ext4"):
                 with self.assertRaisesRegex(ValueError, "ancestor contains symlink"):
                     guard.assert_durable_private_workspace(output, (alias / source.name,))
 
