@@ -329,20 +329,43 @@ class Stage143RawDriveReadbackGateTests(unittest.TestCase):
 
     def test_manifest_cannot_admit_original_media_member(self):
         with tempfile.TemporaryDirectory() as td:
-            files = build_raw_bundle_fixture(Path(td))
+            root = Path(td)
+            files = build_raw_bundle_fixture(root)
             manifest = json.loads(files["manifest"].read_text())
-            manifest["members"].append({
-                "path": "control/disc-track-1.bin",
-                "size_bytes": 1,
-                "sha256": digest(b"x"),
-            })
-            manifest["raw_member_count"] = 2017
-            files["manifest"].write_text(json.dumps(manifest, sort_keys=True, indent=2) + "\n")
-            os.chmod(files["manifest"], 0o600)
+            manifest["members"][0]["path"] = "control/disc-track-1.bin"
+            manifest_bytes = (json.dumps(manifest, sort_keys=True, indent=2) + "\n").encode()
+            files["manifest"].write_bytes(manifest_bytes); os.chmod(files["manifest"], 0o600)
+
+            # Keep the bundle internally consistent so the gate reaches its
+            # canonical-path validation rather than failing an earlier hash check.
+            with tarfile.open(files["metadata_bundle"], "r:gz") as tar:
+                entries = {m.name: tar.extractfile(m).read() for m in tar.getmembers()}
+            entries["manifest/" + RAW_MANIFEST_NAME] = manifest_bytes
+            entries["checksums/" + RAW_MANIFEST_NAME + ".sha256"] = (
+                f"{digest(manifest_bytes)}  {RAW_MANIFEST_NAME}\n".encode()
+            )
+            temp_bundle = root / "rebuilt-metadata-bundle.tar.gz"
+            with temp_bundle.open("xb") as raw_file:
+                os.chmod(temp_bundle, 0o600)
+                with gzip.GzipFile(filename="", fileobj=raw_file, mode="wb", mtime=0) as gz:
+                    with tarfile.open(fileobj=gz, mode="w|", format=tarfile.PAX_FORMAT) as tar:
+                        for name, data in sorted(entries.items()):
+                            info = tarfile.TarInfo(name)
+                            info.size = len(data); info.mode = 0o600; info.mtime = 0
+                            info.uid = info.gid = 0; info.uname = info.gname = ""
+                            tar.addfile(info, io.BytesIO(data))
+                raw_file.flush(); os.fsync(raw_file.fileno())
+            temp_bundle.replace(files["metadata_bundle"])
+            os.chmod(files["metadata_bundle"], 0o600)
+
             receipt = json.loads(files["receipt"].read_text())
-            receipt["manifest_size_bytes"] = files["manifest"].stat().st_size
-            receipt["manifest_sha256"] = digest(files["manifest"].read_bytes())
-            receipt["manifest_readback_sha256"] = digest(files["manifest"].read_bytes())
+            receipt["manifest_size_bytes"] = len(manifest_bytes)
+            receipt["manifest_sha256"] = digest(manifest_bytes)
+            receipt["manifest_readback_sha256"] = digest(manifest_bytes)
+            bundle_bytes = files["metadata_bundle"].read_bytes()
+            receipt["metadata_bundle_size_bytes"] = len(bundle_bytes)
+            receipt["metadata_bundle_sha256"] = digest(bundle_bytes)
+            receipt["metadata_bundle_readback_sha256"] = digest(bundle_bytes)
             files["receipt"].write_text(json.dumps(receipt)); os.chmod(files["receipt"], 0o600)
             with self.assertRaisesRegex(ValueError, "raw manifest member path/size/hash invalid"):
                 self.verify(files)
