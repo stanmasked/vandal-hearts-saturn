@@ -1,0 +1,55 @@
+name: Stage139 pinned Debug tenth-C runner
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/stage139-debug-tenth.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  debug-tenth:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin public source revisions
+        run: |
+          set -euo pipefail
+          git init -q yabause
+          git -C yabause remote add origin https://github.com/Yabause/yabause.git
+          git -C yabause fetch -q --depth 1 origin 7e38821dbac265490f115e163c523a939acda759
+          test "$(git -C yabause rev-parse FETCH_HEAD)" = 7e38821dbac265490f115e163c523a939acda759
+          git -C yabause checkout -q --detach FETCH_HEAD
+          git init -q png
+          git -C png remote add origin https://github.com/lvandeve/lodepng.git
+          git -C png fetch -q --depth 1 origin e584a8490db1b76b81bf298c11c09d3b55d9c270
+          test "$(git -C png rev-parse FETCH_HEAD)" = e584a8490db1b76b81bf298c11c09d3b55d9c270
+          git -C png checkout -q --detach FETCH_HEAD
+          test "$(git hash-object png/lodepng.cpp)" = 4915ed7a1ddc827559eb42b8968924a61454f2e6
+          test "$(git hash-object png/lodepng.h)" = 8f789b677668a495f641336cf62f3afe0b98a80d
+          mkdir -p yabause/yabause/src/runner/lodepng
+          cp png/lodepng.cpp png/lodepng.h yabause/yabause/src/runner/lodepng/
+      - name: Apply pinned original-media-free patches
+        run: |
+          set -euo pipefail
+          python3 -m tools.patch_yabause_strict_split_cue --source yabause/yabause/src/cdbase.c --output yabause/yabause/src/cdbase.patched.c
+          mv yabause/yabause/src/cdbase.patched.c yabause/yabause/src/cdbase.c
+          python3 -m tools.patch_yabause_private_tenth_confirm --source yabause/yabause/src/runner/yui.cpp --output yabause/yabause/src/runner/yui.patched.cpp
+          mv yabause/yabause/src/runner/yui.patched.cpp yabause/yabause/src/runner/yui.cpp
+      - name: Compile Yabause Debug C68K
+        run: |
+          set -euo pipefail
+          cmake -S yabause/yabause -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DYAB_WANT_OPENGL=OFF -DYAB_WANT_SDL=OFF -DYAB_WANT_OPENAL=OFF -DYAB_USE_SSF=OFF -DYAB_WANT_MUSASHI=OFF -DYAB_WANT_C68K=ON -DYAB_USE_PLAY_JIT=OFF -DYAB_WANT_MPEG=OFF -DYAB_PORTS=runner
+          cmake --build build --target yabause-runner --parallel 2
+          python3 -m unittest discover -s tests -p 'test_yabause_private_tenth_confirm.py' -v
+          mkdir -p public-debug
+          cp build/src/runner/yabause public-debug/yabause-stage125-debug
+          sha256sum public-debug/yabause-stage125-debug
+          timeout 15s public-debug/yabause-stage125-debug > smoke.txt 2>&1
+          grep -Fq 'Not enough command line arguments.' smoke.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stage139-public-debug-tenth-runner
+          path: public-debug/yabause-stage125-debug
+          retention-days: 1
+          if-no-files-found: error
