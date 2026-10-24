@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/stage144-eleventh-c-contracts.yml'
+      - '.github/workflows/stage144-public-tooling-source.yml'
       - 'tools/patch_yabause_private_eleventh_confirm.py'
       - 'tools/patch_yabause_private_durable_pad_receipts.py'
       - 'tools/patch_yabause_private_tenth_confirm.py'
