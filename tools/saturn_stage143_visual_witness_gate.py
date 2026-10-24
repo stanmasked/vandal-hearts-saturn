@@ -201,10 +201,25 @@ def _black_runs(frames: tuple[int, ...], mask: tuple[bool, ...]) -> list[dict[st
     return runs
 
 
-def audit_visual_witness(control: Path, enabled: Path, *, through_frame: int = 24000) -> dict:
+def audit_visual_witness(control: Path, enabled: Path, *, through_frame: int = 24000,
+                         reviewed_black_runs: tuple[tuple[int, int], ...] = ()) -> dict:
     if (type(through_frame) is not int or through_frame < 240 or through_frame % 120 or
             through_frame >= 108000):
         raise ValueError("invalid pre-tenth checkpoint window")
+    reviewed = []
+    for pair in reviewed_black_runs:
+        if not isinstance(pair, (tuple, list)) or len(pair) != 2:
+            raise ValueError("reviewed black span must be a start/end pair")
+        first, last = pair
+        if (type(first) is not int or type(last) is not int or first < 120 or first > last or
+                last > through_frame or first % 120 or last % 120):
+            raise ValueError("reviewed black span is outside the checkpoint window")
+        reviewed.append((first, last))
+    reviewed = tuple(sorted(reviewed))
+    if len(set(reviewed)) != len(reviewed):
+        raise ValueError("duplicate reviewed black span")
+    if any(reviewed[i][1] >= reviewed[i+1][0] for i in range(len(reviewed)-1)):
+        raise ValueError("overlapping reviewed black spans")
     if (control.is_symlink() or enabled.is_symlink() or not control.is_dir() or not enabled.is_dir()
             or control.resolve() == enabled.resolve()):
         raise ValueError("two independent private capture directories required")
@@ -224,7 +239,13 @@ def audit_visual_witness(control: Path, enabled: Path, *, through_frame: int = 2
     visible_control = sum(not x for x in control_mask)
     visible_enabled = sum(not x for x in enabled_mask)
     mask_equal = control_mask == enabled_mask
-    accepted = bool(mask_equal and visible_control and visible_enabled and not runs_control and not runs_enabled)
+    control_ranges = tuple((x["first_frame"], x["last_frame"]) for x in runs_control)
+    enabled_ranges = tuple((x["first_frame"], x["last_frame"]) for x in runs_enabled)
+    reviewed_match = bool(control_ranges == enabled_ranges and reviewed == control_ranges)
+    reviewed_set = set(reviewed)
+    unreviewed_control = [x for x in runs_control if (x["first_frame"], x["last_frame"]) not in reviewed_set]
+    unreviewed_enabled = [x for x in runs_enabled if (x["first_frame"], x["last_frame"]) not in reviewed_set]
+    accepted = bool(mask_equal and visible_control and visible_enabled and reviewed_match)
     return {
         "schema": "vh-saturn-stage143-visual-witness-gate-1",
         "stage": 143,
@@ -236,6 +257,11 @@ def audit_visual_witness(control: Path, enabled: Path, *, through_frame: int = 2
         "enabled_black_prefix_count": next((i for i, x in enumerate(enabled_mask) if not x), len(frames)),
         "control_suspect_black_runs": runs_control,
         "enabled_suspect_black_runs": runs_enabled,
+        "reviewed_black_runs": [{"first_frame": a, "last_frame": b} for a, b in reviewed],
+        "unreviewed_black_runs_control": unreviewed_control,
+        "unreviewed_black_runs_enabled": unreviewed_enabled,
+        "reviewed_black_runs_match_both_cohorts": reviewed_match,
+        "reviewed_black_runs_are_explicit_allowlist": True,
         "black_classification_masks_match": mask_equal,
         "visual_witness_accepted": accepted,
         "requires_visual_review": not accepted,
@@ -249,9 +275,18 @@ def main() -> int:
     parser.add_argument("--control", type=Path, required=True)
     parser.add_argument("--enabled", type=Path, required=True)
     parser.add_argument("--through-frame", type=int, default=24000)
+    parser.add_argument("--reviewed-black-run", action="append", default=[], metavar="START:END",
+                        help="explicitly reviewed black checkpoint span; repeat for each exact run")
     args = parser.parse_args()
     try:
-        report = audit_visual_witness(args.control, args.enabled, through_frame=args.through_frame)
+        reviewed = []
+        for item in args.reviewed_black_run:
+            parts = item.split(":")
+            if len(parts) != 2:
+                raise ValueError("reviewed black span must be START:END")
+            reviewed.append((int(parts[0]), int(parts[1])))
+        report = audit_visual_witness(args.control, args.enabled, through_frame=args.through_frame,
+                                      reviewed_black_runs=tuple(reviewed))
     except (OSError, ValueError, UnicodeError, struct.error, zlib.error):
         print("STAGE143_VISUAL_WITNESS_REJECTED_INVALID_CAPTURE", file=sys.stderr)
         return 1
