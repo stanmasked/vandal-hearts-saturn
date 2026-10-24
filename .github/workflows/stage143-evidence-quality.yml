@@ -1,0 +1,25 @@
+name: Stage143 visual and PAD evidence gates
+on:
+  pull_request:
+    paths:
+      - 'tools/saturn_stage143_visual_witness_gate.py'
+      - 'tools/patch_yabause_private_durable_pad_receipts.py'
+      - 'tests/test_saturn_stage143_visual_witness_gate.py'
+      - 'tests/test_yabause_private_durable_pad_receipts.py'
+      - 'tests/test_saturn_stage142_partial_receipts.py'
+      - '.github/workflows/stage143-evidence-quality.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  evidence-quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Stage142 PAD receipt regressions
+        run: python3 -m unittest discover -s tests -p 'test_saturn_stage142_partial_receipts.py' -v
+      - name: Run Stage143 visual content regressions
+        run: python3 -m unittest discover -s tests -p 'test_saturn_stage143_visual_witness_gate.py' -v
+      - name: Run Stage143 durable PAD patch regressions
+        run: python3 -m unittest discover -s tests -p 'test_yabause_private_durable_pad_receipts.py' -v
