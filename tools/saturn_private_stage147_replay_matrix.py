@@ -15,6 +15,8 @@ import sys
 from tools.saturn_private_capture_cohort import _private_directory, _private_regular
 from tools.saturn_private_capture_session import _not_in_checkout
 from tools.saturn_private_original_start_sequence import FRAME_STATS
+from tools.saturn_private_frame_witness import validate_png_file
+from tools.saturn_private_start_ab import MAX_PNG_BYTES
 from tools.saturn_private_prologue_continue_eleventh_c_audit import (
     DECA_EVENTS_132, DECA_STATE_132,
 )
@@ -39,7 +41,13 @@ def _validate_capture(path: Path, index: int) -> None:
         raise ValueError("Stage147 capture must be an absolute nonsymlinked private directory")
     _not_in_checkout(path)
     _private_directory(path)
-    prefix._validate_frame_set(path)
+    # Each control must be a complete, unmodified 132k/144k-frame capture.
+    # A plausible final frames.stats alone must never authorize a partial run.
+    expected_frames = {f"frame-{n}.png" for n in range(120, FRAME_LIMITS[index] + 1, 120)}
+    expected_sidecars = {"pre.png", "post.png", "frames.stats", "fad.vhcdlog",
+                         "pad-events.txt", "pad-state.txt", "sh2-window.txt", "video-state.txt"}
+    if {p.name for p in path.iterdir()} != expected_frames | expected_sidecars:
+        raise ValueError("Stage147 full-stage capture file set incomplete or unexpected")
     events, state = PAD_RECEIPTS[index]
     if _private_regular(path / "pad-events.txt", 4096) != events:
         raise ValueError("Stage147 control PAD event sequence differs from pinned stage")
@@ -52,6 +60,25 @@ def _validate_capture(path: Path, index: int) -> None:
     if (frames != FRAME_LIMITS[index] or pc_before > 0xFFFFFFFF or
             pc_after > 0xFFFFFFFF or not (64 <= width <= 704 and 64 <= height <= 512)):
         raise ValueError("Stage147 expected full-stage frame statistics invalid")
+    pre = _private_regular(path / "pre.png", MAX_PNG_BYTES)
+    post = _private_regular(path / "post.png", MAX_PNG_BYTES)
+    validate_png_file(pre)
+    if validate_png_file(post) != (width, height):
+        raise ValueError("Stage147 final framebuffer dimensions mismatch")
+    # Existing prefix audit decodes/checks all first 800 checkpoint PNGs.
+    # Validate the remaining tail too, without exposing a frame or checksum.
+    for frame in range(prefix.FRAME_END + prefix.FRAME_STEP,
+                       FRAME_LIMITS[index] + 1, prefix.FRAME_STEP):
+        raw = _private_regular(path / f"frame-{frame}.png", MAX_PNG_BYTES)
+        if validate_png_file(raw) != (width, height):
+            raise ValueError("Stage147 late framebuffer geometry mismatch")
+    expected_diagnostics = {0} | set(range(120, FRAME_LIMITS[index] + 1, 120))
+    for name, pattern in (("sh2-window.txt", prefix.SH2_LINE),
+                          ("video-state.txt", prefix.VIDEO_LINE)):
+        records = prefix._read_frame_diagnostics(path, name, pattern)
+        if set(records) != expected_diagnostics:
+            raise ValueError("Stage147 full-stage diagnostic sequence incomplete or unexpected")
+
 
 
 def audit_private_stage147_replay_matrix(paths: tuple[Path, Path, Path, Path]) -> dict:

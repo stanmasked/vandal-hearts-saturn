@@ -29,9 +29,11 @@ def make_capture(path, i, *, base=(20, 30, 40), different_frames=(),
     path.mkdir(mode=0o700)
     common = png(base, compression)
     changed = png((90, 100, 110))
-    for frame in prefix.CHECKPOINTS:
+    for frame in range(120, FRAME_LIMITS[i] + 1, 120):
         private_file(path / f"frame-{frame}.png",
                      changed if frame in different_frames else common)
+    private_file(path / "pre.png", common)
+    private_file(path / "post.png", common)
     events, state = PAD_RECEIPTS[i]
     private_file(path / "pad-events.txt", events)
     private_file(path / "pad-state.txt", state)
@@ -42,9 +44,10 @@ def make_capture(path, i, *, base=(20, 30, 40), different_frames=(),
     ).encode("ascii"))
     sh2 = "".join(
         f"VH_SH2 frame={n} pc={2 if sh2_mutation and n == 120 else 1}\n"
-        for n in prefix.DIAGNOSTIC_FRAMES
+        for n in [0] + list(range(120, FRAME_LIMITS[i] + 1, 120)) + [FRAME_LIMITS[i]]
     )
-    video = "".join(f"VH_VIDEO frame={n} pc=1\n" for n in prefix.DIAGNOSTIC_FRAMES)
+    video = "".join(f"VH_VIDEO frame={n} pc=1\n" for n in
+                    [0] + list(range(120, FRAME_LIMITS[i] + 1, 120)) + [FRAME_LIMITS[i]])
     private_file(path / "sh2-window.txt", sh2.encode("ascii"))
     private_file(path / "video-state.txt", video.encode("ascii"))
     private_file(path / "fad.vhcdlog", b"VHCD_FAD 150\nVHCD_FAD 151\n")
@@ -119,6 +122,37 @@ class Stage147ReplayMatrixTests(unittest.TestCase):
                          b"STAGE99_FRAMES 132000\nSTAGE99_PC_BEFORE 0\nSTAGE99_PC_AFTER 0\n"
                          b"STAGE99_WIDTH 64\nSTAGE99_HEIGHT 64\n")
             with self.assertRaisesRegex(ValueError, "expected full-stage frame statistics"):
+                audit_private_stage147_replay_matrix(paths)
+
+    def test_missing_late_checkpoint_is_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = fixture(Path(td))
+            (paths[3] / "frame-143880.png").unlink()
+            with self.assertRaisesRegex(ValueError, "full-stage capture file set"):
+                audit_private_stage147_replay_matrix(paths)
+
+    def test_missing_late_diagnostic_is_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = fixture(Path(td))
+            file = paths[0] / "sh2-window.txt"
+            records = file.read_bytes().splitlines(keepends=True)
+            records = [line for line in records if not line.startswith(b"VH_SH2 frame=131880 ")]
+            private_file(file, b"".join(records))
+            with self.assertRaisesRegex(ValueError, "full-stage diagnostic sequence"):
+                audit_private_stage147_replay_matrix(paths)
+
+    def test_corrupt_late_png_is_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = fixture(Path(td))
+            private_file(paths[2] / "frame-143880.png", b"not a PNG")
+            with self.assertRaises((ValueError, OSError)):
+                audit_private_stage147_replay_matrix(paths)
+
+    def test_extra_unapproved_file_is_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = fixture(Path(td))
+            private_file(paths[1] / "original-disc.bin", b"not permitted")
+            with self.assertRaisesRegex(ValueError, "full-stage capture file set"):
                 audit_private_stage147_replay_matrix(paths)
 
     def test_duplicate_directory_is_rejected(self):
