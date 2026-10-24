@@ -1,0 +1,70 @@
+name: Stage133 export pinned ROM-free Stage124 Yabause runner
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/stage133-pinned-stage124-runner.yml'
+      - 'tools/patch_yabause_private_ninth_confirm.py'
+      - 'tools/patch_yabause_strict_split_cue.py'
+      - 'tests/test_yabause_private_ninth_confirm.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-stage124-runner:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact public Yabause source
+        run: |
+          set -euo pipefail
+          git init -q external-yabause
+          git -C external-yabause remote add origin https://github.com/Yabause/yabause.git
+          git -C external-yabause fetch --quiet --depth 1 origin 7e38821dbac265490f115e163c523a939acda759
+          test "$(git -C external-yabause rev-parse FETCH_HEAD)" = 7e38821dbac265490f115e163c523a939acda759
+          git -C external-yabause checkout --quiet --detach FETCH_HEAD
+      - name: Fetch pinned public PNG codec
+        run: |
+          set -euo pipefail
+          git init -q external-lodepng
+          git -C external-lodepng remote add origin https://github.com/lvandeve/lodepng.git
+          git -C external-lodepng fetch --quiet --depth 1 origin e584a8490db1b76b81bf298c11c09d3b55d9c270
+          test "$(git -C external-lodepng rev-parse FETCH_HEAD)" = e584a8490db1b76b81bf298c11c09d3b55d9c270
+          git -C external-lodepng checkout --quiet --detach FETCH_HEAD
+          test "$(git hash-object external-lodepng/lodepng.cpp)" = 4915ed7a1ddc827559eb42b8968924a61454f2e6
+          test "$(git hash-object external-lodepng/lodepng.h)" = 8f789b677668a495f641336cf62f3afe0b98a80d
+          mkdir -p external-yabause/yabause/src/runner/lodepng
+          cp external-lodepng/lodepng.cpp external-lodepng/lodepng.h external-yabause/yabause/src/runner/lodepng/
+      - name: Patch exact pinned Yabause CD reader and Stage124 ninth-C runner
+        run: |
+          set -euo pipefail
+          python3 -m tools.patch_yabause_strict_split_cue --source external-yabause/yabause/src/cdbase.c --output external-yabause/yabause/src/cdbase.instrumented.c
+          mv external-yabause/yabause/src/cdbase.instrumented.c external-yabause/yabause/src/cdbase.c
+          python3 -m tools.patch_yabause_private_ninth_confirm --source external-yabause/yabause/src/runner/yui.cpp --output external-yabause/yabause/src/runner/yui.instrumented.cpp
+          mv external-yabause/yabause/src/runner/yui.instrumented.cpp external-yabause/yabause/src/runner/yui.cpp
+      - name: Compile pinned public Yabause core with no original game media
+        run: |
+          set -euo pipefail
+          cmake -S external-yabause/yabause -B build-yabause -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DYAB_WANT_OPENGL=OFF -DYAB_WANT_SDL=OFF -DYAB_WANT_OPENAL=OFF -DYAB_USE_SSF=OFF -DYAB_WANT_MUSASHI=OFF -DYAB_WANT_C68K=ON -DYAB_USE_PLAY_JIT=OFF -DYAB_WANT_MPEG=OFF -DYAB_PORTS=runner
+          cmake --build build-yabause --target yabause-runner --parallel 2
+          test -x build-yabause/src/runner/yabause
+      - name: Check synthetic Stage124 patch and emulator CLI
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_yabause_private_ninth_confirm.py' -v
+          mkdir -p stage133-export
+          cp build-yabause/src/runner/yabause stage133-export/yabause-stage124
+          chmod 755 stage133-export/yabause-stage124
+          sha256sum stage133-export/yabause-stage124
+          timeout 15s stage133-export/yabause-stage124 > stage133-smoke.txt 2>&1
+          grep -Fq 'Not enough command line arguments.' stage133-smoke.txt
+      - name: Export only the open-source ROM-free emulator executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage133-public-yabause-stage124-runner
+          path: stage133-export/yabause-stage124
+          retention-days: 1
+          if-no-files-found: error
