@@ -63,6 +63,8 @@ class SameSessionCrossBuildPrefixTests(unittest.TestCase):
             self.assertEqual(result["video_diagnostic_record_mismatch_count"], 0)
             self.assertEqual(result["fad_common_prefix_record_count"], 3)
             self.assertFalse(result["private_pixel_hashes_exported"])
+            self.assertFalse(result["same_session_provenance_independently_verified"])
+            self.assertTrue(result["caller_must_verify_capture_reports_and_same_host_media"])
 
     def test_reports_pixel_and_diagnostic_mismatches_without_hashes(self):
         with tempfile.TemporaryDirectory() as td:

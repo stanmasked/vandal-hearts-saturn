@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Compare fresh Stage144 and Stage145 captures from the same private host.
+"""Compare Stage144 and Stage145 capture prefixes from a private workspace.
 
+The caller must independently establish that both runs used the same private
+host and unchanged media. This comparator does not verify run provenance.
 Only aggregate pixel/diagnostic mismatch counts and checkpoint indices are
-reported. The tool never exports screenshots, image hashes, original media,
-or runner binaries.
+reported; screenshots, image hashes, original media, and runner binaries are
+never exported.
 """
 from __future__ import annotations
 
@@ -163,6 +165,9 @@ def audit_private_same_session_cross_build_prefix(stage144: Path, stage145: Path
         "kind": "STAGE144_STAGE145_SAME_SESSION_PREFIX_COMPARISON",
         "reference_stage": 144,
         "candidate_stage": 145,
+        "same_session_provenance_independently_verified": False,
+        "runner_identity_independently_verified_by_this_comparator": False,
+        "caller_must_verify_capture_reports_and_same_host_media": True,
         "frame_start": FRAME_START,
         "frame_end": FRAME_END,
         "frame_step": FRAME_STEP,
