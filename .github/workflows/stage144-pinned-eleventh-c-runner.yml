@@ -1,6 +1,9 @@
 name: Stage144 build pinned Yabause with isolated eleventh-C input
 
 on:
+  push:
+    branches:
+      - 'stage144/eleventh-c-prologue'
   pull_request:
     paths:
       - '.github/workflows/stage144-pinned-eleventh-c-runner.yml'
