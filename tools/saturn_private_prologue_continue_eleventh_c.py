@@ -90,7 +90,7 @@ def run_private_prologue_continue_eleventh_c(
     control: Path, enabled: Path, report_path: Path,
     stage124_drive_receipt: Path, stage124_drive_readback_archive: Path,
     stage143_archive: Path, stage143_manifest: Path, stage143_audit_report: Path,
-    stage143_checksums: Path, stage143_drive_receipt: Path,
+    stage143_metadata_bundle: Path, stage143_drive_receipt: Path,
     *, seconds: int = MAX_SECONDS, pins: dict = PINNED,
 ) -> dict:
     """Run the next C input only after Stage143's complete owner-only Drive readback gate passes."""
@@ -99,7 +99,7 @@ def run_private_prologue_continue_eleventh_c(
         raise ValueError("Stage144 timeout or runner digest invalid")
     input_paths = (cue, track1, track2, executable, stage124_drive_receipt,
         stage124_drive_readback_archive, stage143_archive, stage143_manifest,
-        stage143_audit_report, stage143_checksums, stage143_drive_receipt)
+        stage143_audit_report, stage143_metadata_bundle, stage143_drive_receipt)
     for path in input_paths:
         if not path.is_absolute() or path.is_symlink():
             raise ValueError("Stage144 inputs must be absolute non-symlinked private paths")
@@ -128,7 +128,7 @@ def run_private_prologue_continue_eleventh_c(
     stage124_integrity = _enforce_stage124_capture_archive_integrity(stage124_drive_readback_archive, stage124_fingerprint)
     stage143_integrity = verify_private_stage143_archive(
         stage143_archive, stage143_manifest, stage143_audit_report,
-        stage143_checksums, stage143_drive_receipt,
+        stage143_metadata_bundle, stage143_drive_receipt,
     )
 
     before_manifest = _build_manifest(cue, track1, track2)
@@ -140,7 +140,7 @@ def run_private_prologue_continue_eleventh_c(
     stage143_before = _fingerprint(stage143_archive)
     stage143_manifest_before = _fingerprint(stage143_manifest)
     stage143_report_before = _fingerprint(stage143_audit_report)
-    stage143_checksums_before = _fingerprint(stage143_checksums)
+    stage143_metadata_bundle_before = _fingerprint(stage143_metadata_bundle)
     with ThreadPoolExecutor(max_workers=2) as pool:
         futures = (
             pool.submit(_run_one, executable, cue, control, eleventh=False, seconds=seconds),
@@ -160,12 +160,12 @@ def run_private_prologue_continue_eleventh_c(
     if (_fingerprint(stage143_archive) != stage143_before or
             _fingerprint(stage143_manifest) != stage143_manifest_before or
             _fingerprint(stage143_audit_report) != stage143_report_before or
-            _fingerprint(stage143_checksums) != stage143_checksums_before):
+            _fingerprint(stage143_metadata_bundle) != stage143_metadata_bundle_before):
         raise ValueError("Stage144 Stage143 predecessor evidence changed during paired run")
     # Re-run the owner-only Drive readback gate after emulation as well.
     stage143_integrity_after = verify_private_stage143_archive(
         stage143_archive, stage143_manifest, stage143_audit_report,
-        stage143_checksums, stage143_drive_receipt,
+        stage143_metadata_bundle, stage143_drive_receipt,
     )
     if stage143_integrity_after != stage143_integrity:
         raise ValueError("Stage144 predecessor archive gate changed during paired run")
@@ -200,8 +200,9 @@ def main() -> int:
     for name in ("cue", "track1", "track2", "executable", "control", "enabled", "report",
                  "stage124-drive-receipt", "stage124-drive-readback-archive",
                  "stage143-archive", "stage143-manifest", "stage143-audit-report",
-                 "stage143-checksums", "stage143-drive-receipt"):
+                 "stage143-drive-receipt"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--stage143-metadata-bundle", "--stage143-checksums", dest="stage143_metadata_bundle", type=Path, required=True)
     parser.add_argument("--expected-runner-sha256", required=True)
     parser.add_argument("--seconds", type=int, default=MAX_SECONDS)
     args = parser.parse_args()
@@ -210,7 +211,7 @@ def main() -> int:
             args.cue, args.track1, args.track2, args.executable, args.expected_runner_sha256,
             args.control, args.enabled, args.report, args.stage124_drive_receipt,
             args.stage124_drive_readback_archive, args.stage143_archive, args.stage143_manifest,
-            args.stage143_audit_report, args.stage143_checksums, args.stage143_drive_receipt,
+            args.stage143_audit_report, args.stage143_metadata_bundle, args.stage143_drive_receipt,
             seconds=args.seconds,
         )
     except (OSError, ValueError, TypeError, RuntimeError) as exc:
