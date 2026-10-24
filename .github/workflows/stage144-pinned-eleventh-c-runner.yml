@@ -9,6 +9,8 @@ on:
       - 'tools/patch_yabause_private_tenth_confirm.py'
       - 'tools/patch_yabause_strict_split_cue.py'
       - 'tests/test_yabause_private_eleventh_confirm.py'
+      - 'tools/saturn_private_stage143_archive_gate.py'
+      - 'tests/test_saturn_private_stage143_archive_gate.py'
       - 'tests/test_yabause_private_tenth_confirm.py'
       - 'tests/test_yabause_private_ninth_confirm.py'
       - 'tests/test_yabause_private_durable_pad_receipts.py'
@@ -68,6 +70,7 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_yabause_private_tenth_confirm.py' -v
           python3 -m unittest discover -s tests -p 'test_yabause_private_durable_pad_receipts.py' -v
           python3 -m unittest discover -s tests -p 'test_saturn_stage143_visual_witness_gate.py' -v
+          python3 -m unittest discover -s tests -p 'test_saturn_private_stage143_archive_gate.py' -v
           python3 -m unittest discover -s tests -p 'test_yabause_private_eleventh_confirm.py' -v
       - name: Prepare temporary open-source runner artifact
         run: |
