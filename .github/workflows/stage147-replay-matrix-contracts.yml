@@ -1,0 +1,32 @@
+name: Stage147 four-control replay matrix (ROM-free)
+
+on:
+  push:
+    branches:
+      - 'stage147/replay-matrix'
+  pull_request:
+    paths:
+      - '.github/workflows/stage147-replay-matrix-contracts.yml'
+      - 'tools/saturn_private_stage147_replay_matrix.py'
+      - 'tests/test_saturn_private_stage147_replay_matrix.py'
+      - 'tools/saturn_private_same_session_cross_build_prefix.py'
+      - 'tools/saturn_private_cross_stage_prefix_drift.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage147-matrix-synthetic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned ROM-free PNG decoder
+        run: python3 -m pip install --disable-pip-version-check --no-input Pillow==11.3.0
+      - name: Stage145 historical-prefix synthetic regression
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_cross_stage_prefix_drift.py' -v
+      - name: Stage146 pair-prefix synthetic regression
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_same_session_cross_build_prefix.py' -v
+      - name: Stage147 four-control replay synthetic regression
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage147_replay_matrix.py' -v
