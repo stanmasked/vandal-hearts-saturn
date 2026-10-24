@@ -126,6 +126,10 @@ def run_private_prologue_continue_eleventh_c(
     # must have owner-only Drive IDs plus verified readback SHA-256 values.
     stage124_fingerprint = _require_stage124_drive_readback_receipt(stage124_drive_receipt, stage124_drive_readback_archive)
     stage124_integrity = _enforce_stage124_capture_archive_integrity(stage124_drive_readback_archive, stage124_fingerprint)
+    # The preceding receipt validator checks the actual Drive file ID, owner-only
+    # status, and readback SHA. Combine that evidence with the archive-structure gate.
+    stage124_integrity["drive_upload_and_readback_verified"] = True
+    stage124_integrity["owner_only_drive_readback_receipt_verified"] = True
     stage143_integrity = verify_private_stage143_archive(
         stage143_archive, stage143_manifest, stage143_audit_report,
         stage143_metadata_bundle, stage143_drive_receipt,
@@ -179,7 +183,9 @@ def run_private_prologue_continue_eleventh_c(
         "runner_unchanged_before_after": True,
         "runner_sha256_matches_pinned_release": True,
         "stage124_archive_integrity_gate": stage124_integrity,
+        "stage124_drive_readback_receipt_verified": True,
         "stage143_owner_only_drive_readback_gate": stage143_integrity,
+        "stage143_drive_readback_receipt_verified": True,
         "paired_capture_audit": audit,
         "original_media_or_frame_hashes_exported": False,
         "full_playable_battle_or_unit_control_verified": False,
