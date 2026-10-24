@@ -153,7 +153,7 @@ class EleventhCPairedCaptureAuditTests(unittest.TestCase):
     def test_mismatched_frame_dimensions_fail_closed(self):
         with tempfile.TemporaryDirectory() as td:
             control, enabled = _make_pair(Path(td), enabled_width=80)
-            with self.assertRaisesRegex(ValueError, "Stage144 PNG geometry changed"):
+            with self.assertRaisesRegex(ValueError, "Stage144 checkpoint count/dimensions mismatch"):
                 audit.audit_private_prologue_continue_eleventh_c(control, enabled)
 
     def test_noncanonical_fad_log_fails_closed(self):
