@@ -1,0 +1,31 @@
+name: Stage149 private replay coordinator (ROM-free tests)
+
+on:
+  push:
+    branches:
+      - 'stage149/verified-private-replay-coordinator'
+  pull_request:
+    paths:
+      - '.github/workflows/stage149-replay-coordinator-contracts.yml'
+      - 'tools/saturn_private_stage149_private_replay_coordinator.py'
+      - 'tests/test_saturn_private_stage149_private_replay_coordinator.py'
+      - 'tools/saturn_private_stage147_replay_matrix.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage149-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned ROM-free Pillow
+        run: python3 -m pip install --disable-pip-version-check --no-input Pillow==11.3.0
+      - name: Stage147 full-capture contracts
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage147_replay_matrix.py' -v
+      - name: Stage148 spatial-drift contracts
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage148_spatial_drift.py' -v
+      - name: Stage149 private-runner sequencing contracts with synthetic mocks only
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage149_private_replay_coordinator.py' -v
