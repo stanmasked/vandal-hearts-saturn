@@ -29,7 +29,7 @@ jobs:
           test -f stage143-tools-export/tools/saturn_private_prologue_continue_tenth_c.py
           test -f stage143-tools-export/tools/saturn_private_capture_archive_gate.py
           test -f stage143-tools-export/tools/saturn_private_archived_pair_audit.py
-          find stage143-tools-export -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > stage143-tools-export/SHA256SUMS
+          ( cd stage143-tools-export && find tools -type f -name '*.py' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS )
           test "$(find stage143-tools-export/tools -type f -name '*.py' | wc -l)" -gt 100
       - name: Upload source-only tooling artifact
         uses: actions/upload-artifact@v4
