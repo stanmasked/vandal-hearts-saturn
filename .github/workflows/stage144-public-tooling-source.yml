@@ -1,4 +1,4 @@
-name: Stage144 public private-runner tooling source bundle
+name: Stage145 public private-runner tooling source bundle
 
 on:
   push:
@@ -34,12 +34,16 @@ jobs:
           test -f stage144-tools-export/tools/saturn_private_prologue_continue_eleventh_c_audit.py
           test -f stage144-tools-export/tools/saturn_private_stage143_archive_gate.py
           test -f stage144-tools-export/tools/saturn_private_stage144_archive_gate.py
+          test -f stage144-tools-export/tools/patch_yabause_private_twelfth_confirm.py
+          test -f stage144-tools-export/tools/saturn_private_prologue_continue_twelfth_c.py
+          test -f stage144-tools-export/tools/saturn_private_prologue_continue_twelfth_c_audit.py
+          test -f stage144-tools-export/tools/saturn_private_stage145_archive_gate.py
           ( cd stage144-tools-export && find tools -type f -name '*.py' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS )
           test "$(find stage144-tools-export/tools -type f -name '*.py' | wc -l)" -gt 100
       - name: Upload source-only tooling artifact
         uses: actions/upload-artifact@v4
         with:
-          name: stage144-public-tooling-source
+          name: stage145-public-tooling-source
           path: stage144-tools-export/
           retention-days: 1
           if-no-files-found: error
