@@ -1,0 +1,20 @@
+name: Stage142 ROM-free partial PAD receipt gate
+on:
+  pull_request:
+    paths:
+      - 'tools/saturn_stage142_partial_receipts.py'
+      - 'tests/test_saturn_stage142_partial_receipts.py'
+      - '.github/workflows/stage142-partial-pad-receipts.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  partial-pad-receipts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run invented-only Stage142 regressions
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_saturn_stage142_partial_receipts.py' -v
