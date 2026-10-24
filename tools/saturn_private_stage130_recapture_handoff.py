@@ -54,3 +54,27 @@ def recapture_with_durable_handoff(cue: Path, track1: Path, track2: Path,
             "owner_only_drive_acl_verified": False,
             "stage125_receipt_issued": False,
             "original_tactical_gameplay_verified": False}
+
+def main() -> int:
+    import argparse
+    import json
+    import sys
+    parser = argparse.ArgumentParser(description=__doc__)
+    for name in ("cue", "track1", "track2", "runner", "control", "enabled",
+                 "archive", "readback"):
+        parser.add_argument("--" + name, required=True, type=Path)
+    parser.add_argument("--runner-sha256", required=True)
+    parser.add_argument("--remote-object", required=True)
+    p = parser.parse_args()
+    try:
+        result = recapture_with_durable_handoff(
+            p.cue, p.track1, p.track2, p.runner, p.runner_sha256,
+            p.control, p.enabled, p.archive, p.remote_object, p.readback)
+    except (ValueError, TypeError, OSError):
+        print("STAGE130_PRIVATE_HANDOFF_REJECTED", file=sys.stderr)
+        return 1
+    print(json.dumps(result, sort_keys=True))
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())
