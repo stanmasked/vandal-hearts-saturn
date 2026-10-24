@@ -1,0 +1,23 @@
+name: Stage131 private recapture CLI (synthetic only)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/saturn_private_stage130_recapture_handoff.py'
+      - 'tests/test_saturn_stage131_private_cli.py'
+      - '.github/workflows/stage131-private-cli.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  private-cli-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check safe CLI parsing, success and redacted failure
+        run: python3 -m unittest discover -s tests -p 'test_saturn_stage131_private_cli.py' -v
+      - name: Repeat Stage130 storage and preservation checks
+        run: python3 -m unittest discover -s tests -p 'test_saturn_stage130_private_handoff.py' -v
