@@ -1,0 +1,27 @@
+name: Stage132 private remote canary (synthetic only)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/saturn_private_stage132_remote_canary.py'
+      - 'tools/saturn_private_stage130_recapture_handoff.py'
+      - 'tests/test_saturn_stage132_remote_canary.py'
+      - 'tests/test_saturn_stage130_private_handoff.py'
+      - '.github/workflows/stage132-private-remote-canary.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canary-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Synthetic remote canary write-read-cleanup contract
+        run: python3 -m unittest discover -s tests -p 'test_saturn_stage132_remote_canary.py' -v
+      - name: Recheck private recapture handoff and blocking behaviour
+        run: python3 -m unittest discover -s tests -p 'test_saturn_stage130_private_handoff.py' -v
+      - name: Recheck private CLI error handling
+        run: python3 -m unittest discover -s tests -p 'test_saturn_stage131_private_cli.py' -v

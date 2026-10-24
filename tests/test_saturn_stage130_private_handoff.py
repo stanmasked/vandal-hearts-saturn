@@ -60,10 +60,14 @@ class Stage130PrivateHandoffTests(unittest.TestCase):
                 run.assert_not_called()
 
     def run_pair(self, a, b, archive, readback):
-        return recapture_with_durable_handoff(
-            a.parent / "missing.cue", a.parent / "missing1.bin", a.parent / "missing2.bin",
-            a.parent / "runner", "a"*64, a, b, archive, "private:captures/new.tar.gz",
-            readback)
+        with patch(
+            "tools.saturn_private_stage130_recapture_handoff.verify_private_remote_canary",
+            return_value={"synthetic_private_remote_write_read_delete_verified":True}
+        ):
+            return recapture_with_durable_handoff(
+                a.parent / "missing.cue", a.parent / "missing1.bin", a.parent / "missing2.bin",
+                a.parent / "runner", "a"*64, a, b, archive, "private:captures/new.tar.gz",
+                readback)
 
     def test_complete_mocked_chain_never_claims_drive_acl(self):
         with tempfile.TemporaryDirectory() as t:

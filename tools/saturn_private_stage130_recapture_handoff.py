@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 
 from tools.saturn_private_stage130_storage_preflight import verify_new_capture_storage
+from tools.saturn_private_stage132_remote_canary import verify_private_remote_canary
 from tools.saturn_private_capture_archive_gate import _private_fingerprint
 from tools.saturn_private_capture_packager import package_stage124_style_pair
 from tools.saturn_private_archived_pair_audit import audit_archived_stage124_pair
@@ -22,6 +23,9 @@ def recapture_with_durable_handoff(cue: Path, track1: Path, track2: Path,
     verify_new_capture_storage(control, enabled, archive, readback, remote_object)
     if not shutil.which("rclone"):
         raise ValueError("private rclone installation required before original run")
+    probe = verify_private_remote_canary(remote_object)
+    if probe.get("synthetic_private_remote_write_read_delete_verified") is not True:
+        raise ValueError("private remote probe did not establish write/read/cleanup")
     run = run_private_prologue_continue_ninth_c(
         cue, track1, track2, runner, expected_runner_sha256, control, enabled)
     if (run.get("checkpoint_png_count_per_process") != 900
