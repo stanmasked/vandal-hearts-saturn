@@ -1,0 +1,32 @@
+name: Stage150 private durable-host gate (ROM-free tests)
+
+on:
+  push:
+    branches:
+      - 'stage150/persistent-private-replay-host'
+  pull_request:
+    paths:
+      - '.github/workflows/stage150-private-host-storage-contracts.yml'
+      - 'tools/saturn_private_stage150_storage_guard.py'
+      - 'tests/test_saturn_private_stage150_storage_guard.py'
+      - 'tools/saturn_private_stage149_private_replay_coordinator.py'
+      - 'tests/test_saturn_private_stage149_private_replay_coordinator.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage150-persistent-private-storage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned ROM-free PNG decoder
+        run: python3 -m pip install --disable-pip-version-check --no-input Pillow==11.3.0
+      - name: Test Stage149 coordinator only with synthetic stubbed private-host gate
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage149_private_replay_coordinator.py' -v
+      - name: Test Stage150 actual persistent-storage guards on synthetic filesystem inputs
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage150_storage_guard.py' -v
+      - name: Enforce Stage147 full-capture comparator regressions
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage147_replay_matrix.py' -v
