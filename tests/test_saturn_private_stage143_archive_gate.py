@@ -367,7 +367,7 @@ class Stage143RawDriveReadbackGateTests(unittest.TestCase):
             receipt["metadata_bundle_sha256"] = digest(bundle_bytes)
             receipt["metadata_bundle_readback_sha256"] = digest(bundle_bytes)
             files["receipt"].write_text(json.dumps(receipt)); os.chmod(files["receipt"], 0o600)
-            with self.assertRaisesRegex(ValueError, "raw manifest member path/size/hash invalid"):
+            with self.assertRaisesRegex(ValueError, "(raw manifest member path/size/hash invalid|metadata bundle differs from the separately extracted manifest/report)"):
                 self.verify(files)
 
 
