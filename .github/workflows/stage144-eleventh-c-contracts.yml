@@ -1,6 +1,9 @@
 name: Stage144 eleventh-C source and receipt contracts
 
 on:
+  push:
+    branches:
+      - 'stage144/eleventh-c-prologue'
   pull_request:
     paths:
       - '.github/workflows/stage144-eleventh-c-contracts.yml'
