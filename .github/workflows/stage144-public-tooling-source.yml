@@ -1,6 +1,9 @@
 name: Stage144 public private-runner tooling source bundle
 
 on:
+  push:
+    branches:
+      - 'stage144/eleventh-c-prologue'
   pull_request:
     paths:
       - '.github/workflows/stage144-public-tooling-source.yml'
