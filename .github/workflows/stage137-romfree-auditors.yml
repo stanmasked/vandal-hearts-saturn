@@ -1,0 +1,42 @@
+name: Stage137 export public synthetic-only private-auditor Python sources
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/stage137-romfree-auditors.yml'
+      - 'tools/saturn_private_capture_archive_gate.py'
+      - 'tools/saturn_private_archived_pair_audit.py'
+      - 'tools/saturn_private_prologue_continue_ninth_c.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export-public-auditors:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Python tools compile without original game files
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q tools
+          python3 -m unittest discover -s tests -p 'test_saturn_private_archived_pair_audit.py' -v
+          python3 -m unittest discover -s tests -p 'test_saturn_stage128_archive_admission.py' -v
+      - name: Export ONLY versioned public Python tool source
+        run: |
+          set -euo pipefail
+          mkdir -p stage137-export
+          mapfile -t names < <(find tools -maxdepth 1 -type f -name '*.py' -print | LC_ALL=C sort)
+          test "${#names[@]}" -ge 15
+          tar --format=ustar -czf stage137-export/stage137-public-auditors.tar.gz "${names[@]}"
+          tar -tzf stage137-export/stage137-public-auditors.tar.gz | head -n 150
+          sha256sum stage137-export/stage137-public-auditors.tar.gz
+      - name: Publish ROM-free audit source artifact only
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage137-public-saturn-audit-python-source
+          path: stage137-export/stage137-public-auditors.tar.gz
+          retention-days: 1
+          if-no-files-found: error
