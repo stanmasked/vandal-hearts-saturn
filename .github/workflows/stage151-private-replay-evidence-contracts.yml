@@ -1,0 +1,32 @@
+name: Stage151 private replay evidence contracts (ROM-free)
+
+on:
+  push:
+    branches:
+      - 'stage151/full-pair-replay-evidence'
+  pull_request:
+    paths:
+      - '.github/workflows/stage151-private-replay-evidence-contracts.yml'
+      - 'tools/saturn_private_stage151_evidence_contract.py'
+      - 'tests/test_saturn_private_stage151_evidence_contract.py'
+      - 'tools/saturn_private_stage149_private_replay_coordinator.py'
+      - 'tests/test_saturn_private_stage149_private_replay_coordinator.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage151-private-evidence-synthetic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Pillow decoder for synthetic checks
+        run: python3 -m pip install --disable-pip-version-check --no-input Pillow==11.3.0
+      - name: Inherited Stage149 private-run coordinator tests
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage149_private_replay_coordinator.py' -v
+      - name: Inherited Stage150 durable private host tests
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage150_storage_guard.py' -v
+      - name: Stage151 full private pair evidence integrity and replay matrix contracts
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage151_evidence_contract.py' -v

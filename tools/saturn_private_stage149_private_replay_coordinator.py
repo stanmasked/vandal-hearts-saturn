@@ -27,6 +27,9 @@ from tools.saturn_private_prologue_continue_twelfth_c import (
     run_private_prologue_continue_twelfth_c as _run145, MAX_SECONDS as SECONDS145,
 )
 from tools.saturn_private_stage147_replay_matrix import audit_private_stage147_replay_matrix as _matrix
+from tools.saturn_private_stage151_evidence_contract import (
+    validate_private_pair_report, validate_private_replay_matrix,
+)
 
 SCHEDULE = (("stage144_a", 144), ("stage145_a", 145),
             ("stage144_b", 144), ("stage145_b", 145))
@@ -106,26 +109,10 @@ def _verify_report(path: Path, stage: int) -> None:
         report = json.loads(raw.decode("utf-8"))
     except (UnicodeError, json.JSONDecodeError) as exc:
         raise ValueError("Stage149 pair report unreadable") from exc
-    if (not isinstance(report, dict) or
-            report.get("schema") != f"vh-saturn-stage{stage}-private-pair-run-1" or
-            report.get("stage") != stage or report.get("run_exit_status") != 0 or
-            report.get("both_private_processes_returned_zero_status") is not True or
-            report.get("runner_sha256_matches_pinned_release") is not True or
-            report.get("original_media_unchanged_before_after") is not True or
-            report.get("runner_unchanged_before_after") is not True or
-            report.get("original_media_or_frame_hashes_exported") is not False or
-            report.get("full_playable_battle_or_unit_control_verified") is not False or
-            not isinstance(report.get("paired_capture_audit"), dict)):
-        raise ValueError("Stage149 Stage144/145 pair runner report failed integrity contract")
-    if stage == 144:
-        valid = (report.get("stage124_drive_readback_receipt_verified") is True and
-                 report.get("stage143_drive_readback_receipt_verified") is True and
-                 isinstance(report.get("stage143_owner_only_drive_readback_gate"), dict))
-    else:
-        valid = (report.get("stage144_drive_readback_receipt_verified") is True and
-                 isinstance(report.get("stage144_owner_only_drive_readback_gate"), dict))
-    if not valid:
-        raise ValueError("Stage149 owner-only predecessor readback gate missing")
+    try:
+        validate_private_pair_report(report, stage)
+    except ValueError as exc:
+        raise ValueError("Stage149 pair report failed integrity contract") from exc
 
 
 def run_private_stage149(args, *, run144=_run144, run145=_run145, matrix=_matrix) -> dict:
@@ -176,12 +163,10 @@ def run_private_stage149(args, *, run144=_run144, run145=_run145, matrix=_matrix
 
     summary = matrix(tuple(controls[label] for label in
                            ("stage144_a", "stage144_b", "stage145_a", "stage145_b")))
-    if (not isinstance(summary, dict) or
-            summary.get("schema") != "vh-saturn-stage147-four-control-replay-matrix-1" or
-            summary.get("checkpoint_count") != 800 or
-            summary.get("original_media_or_frame_hashes_exported") is not False or
-            summary.get("battle_or_tactical_player_control_verified") is not False):
-        raise ValueError("Stage149 four-control comparator did not satisfy privacy contract")
+    try:
+        validate_private_replay_matrix(summary)
+    except ValueError as exc:
+        raise ValueError("Stage149 four-control comparator violated privacy contract") from exc
     _recheck(args, initial)
     output = {
         "schema": "vh-saturn-stage149-private-four-pair-replay-sequence-1",
