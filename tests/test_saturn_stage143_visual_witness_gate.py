@@ -25,6 +25,20 @@ def gray1_png(value=0, width=352, height=240) -> bytes:
     raw = (b"\0" + packed) * height
     return SIG + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 1, 0, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND")
 
+def palette_png(index=0, width=352, height=240, palette=b"\0\0\0\xff\0\0") -> bytes:
+    raw = (b"\0" + bytes([index]) * width) * height
+    return (SIG + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 3, 0, 0, 0))
+            + chunk(b"PLTE", palette) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND"))
+
+
+def rgb_png_with_invalid_late_filter() -> bytes:
+    width, height = 352, 240
+    row_bytes = width * 3
+    raw = bytearray((b"\0" + bytes((30, 40, 50)) * width) * height)
+    raw[row_bytes + 1] = 5  # Invalid filter on row 2, after a visibly non-black row.
+    return (SIG + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND"))
+
 
 class VisualWitnessTests(unittest.TestCase):
     def make_pair(self, root, control_black=(), enabled_black=(), *, count=4):
@@ -87,6 +101,18 @@ class VisualWitnessTests(unittest.TestCase):
     def test_realistic_one_bit_all_black_png_is_detected(self):
         self.assertTrue(_decode_is_black(gray1_png(0)))
         self.assertFalse(_decode_is_black(gray1_png(1)))
+
+    def test_palette_pixels_use_palette_rgb_not_palette_indices(self):
+        self.assertTrue(_decode_is_black(palette_png(0)))
+        self.assertFalse(_decode_is_black(palette_png(1)))
+
+    def test_invalid_later_filter_fails_even_if_first_row_is_nonblack(self):
+        with self.assertRaisesRegex(ValueError, "scanline filter invalid"):
+            _decode_is_black(rgb_png_with_invalid_late_filter())
+
+    def test_out_of_range_palette_index_fails_closed(self):
+        with self.assertRaisesRegex(ValueError, "pixel decode failed"):
+            _decode_is_black(palette_png(2))
 
     def test_crc_corruption_fails_closed(self):
         blob = bytearray(rgb_png())
