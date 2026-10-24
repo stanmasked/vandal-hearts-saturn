@@ -10,6 +10,9 @@ on:
       - 'tests/test_yabause_private_eleventh_confirm.py'
       - 'tools/saturn_private_stage143_archive_gate.py'
       - 'tests/test_saturn_private_stage143_archive_gate.py'
+      - 'tools/saturn_private_prologue_continue_eleventh_c.py'
+      - 'tools/saturn_private_prologue_continue_eleventh_c_audit.py'
+      - 'tests/test_saturn_private_prologue_continue_eleventh_c_audit.py'
       - 'tests/test_yabause_private_durable_pad_receipts.py'
       - 'tests/test_yabause_private_tenth_confirm.py'
       - 'tests/test_yabause_private_ninth_confirm.py'
@@ -40,5 +43,7 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_yabause_private_durable_pad_receipts.py' -v
       - name: Run Stage144 prior-archive readback gate regressions
         run: python3 -m unittest discover -s tests -p 'test_saturn_private_stage143_archive_gate.py' -v
+      - name: Run Stage144 eleventh-C schedule and audit contracts
+        run: python3 -m unittest discover -s tests -p 'test_saturn_private_prologue_continue_eleventh_c_audit.py' -v
       - name: Run Stage144 eleventh-C patch regressions
         run: python3 -m unittest discover -s tests -p 'test_yabause_private_eleventh_confirm.py' -v
