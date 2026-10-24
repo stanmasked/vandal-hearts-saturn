@@ -112,8 +112,10 @@ def run_private_prologue_continue_eleventh_c(
     _fresh_private_directory(enabled)
     if control.resolve() == enabled.resolve() or control.parent.resolve() != enabled.parent.resolve():
         raise ValueError("Stage144 cohorts must be distinct sibling directories")
-    if report_path.resolve() in {control.resolve(), enabled.resolve()}:
-        raise ValueError("Stage144 report cannot overlap output directories")
+    for output in (control, enabled):
+        if (output.resolve() in report_path.resolve().parents or
+                report_path.resolve() in output.resolve().parents):
+            raise ValueError("Stage144 report cannot be inside or contain an output directory")
     for output in (control, enabled):
         for source in input_paths:
             if output.resolve() == source.resolve() or output.resolve() in source.resolve().parents or source.resolve() in output.resolve().parents:
