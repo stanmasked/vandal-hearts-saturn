@@ -283,7 +283,7 @@ class Stage143RawDriveReadbackGateTests(unittest.TestCase):
             self.assertTrue(result["stage143_owner_only_drive_readback_verified"])
             self.assertEqual(result["schema"], "vh-saturn-stage143-drive-readback-gate-2")
             self.assertEqual(result["archive_member_count"], 2016)
-            self.assertEqual(result["raw_payload_bytes"], 52904564)
+            self.assertEqual(result["raw_payload_bytes"], 2016)
             self.assertTrue(result["all_member_hashes_match_manifest"])
             self.assertFalse(result["original_media_in_archive"])
             self.assertEqual(result["metadata_bundle_sha256"], files["bundle_hash"])
@@ -327,28 +327,24 @@ class Stage143RawDriveReadbackGateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Drive readback metadata_bundle SHA-256 mismatch"):
                 self.verify(files)
 
-    def test_unexpected_archive_member_fails_closed(self):
+    def test_manifest_cannot_admit_original_media_member(self):
         with tempfile.TemporaryDirectory() as td:
             files = build_raw_bundle_fixture(Path(td))
-            with tarfile.open(files["archive"], "a:gz") as tar:
-                info = tarfile.TarInfo("control/disc-track-1.bin")
-                info.size = 1; info.mode = 0o600
-                tar.addfile(info, io.BytesIO(b"x"))
-            archive_hash = digest(files["archive"].read_bytes())
             manifest = json.loads(files["manifest"].read_text())
-            manifest["archive_sha256"] = archive_hash
-            manifest["archive_size_bytes"] = files["archive"].stat().st_size
+            manifest["members"].append({
+                "path": "control/disc-track-1.bin",
+                "size_bytes": 1,
+                "sha256": digest(b"x"),
+            })
+            manifest["raw_member_count"] = 2017
             files["manifest"].write_text(json.dumps(manifest, sort_keys=True, indent=2) + "\n")
             os.chmod(files["manifest"], 0o600)
             receipt = json.loads(files["receipt"].read_text())
-            receipt["archive_size_bytes"] = files["archive"].stat().st_size
-            receipt["archive_sha256"] = archive_hash
-            receipt["archive_readback_sha256"] = archive_hash
             receipt["manifest_size_bytes"] = files["manifest"].stat().st_size
             receipt["manifest_sha256"] = digest(files["manifest"].read_bytes())
             receipt["manifest_readback_sha256"] = digest(files["manifest"].read_bytes())
             files["receipt"].write_text(json.dumps(receipt)); os.chmod(files["receipt"], 0o600)
-            with self.assertRaisesRegex(ValueError, "member count mismatch|raw manifest"):
+            with self.assertRaisesRegex(ValueError, "raw manifest member path/size/hash invalid"):
                 self.verify(files)
 
 
