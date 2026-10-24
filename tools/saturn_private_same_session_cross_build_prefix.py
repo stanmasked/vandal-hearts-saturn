@@ -67,12 +67,28 @@ def _read_frame_diagnostics(directory: Path, filename: str, pattern: re.Pattern[
     if not raw.endswith(b"\n") or b"\r" in raw or b"\0" in raw:
         raise ValueError("same-session cross-build diagnostic text is noncanonical")
     result: dict[int, str] = {}
+    duplicate_terminal_seen = False
+    frame_files = [
+        int(match.group(1))
+        for item in directory.iterdir()
+        if (match := FRAME_NAME.fullmatch(item.name)) is not None
+    ]
+    if not frame_files:
+        raise ValueError("same-session cross-build has no checkpoint files")
+    terminal_frame = max(frame_files)
     for line in raw.decode("ascii").splitlines():
         match = pattern.fullmatch(line)
         if not match:
             raise ValueError("same-session cross-build diagnostic record malformed")
         frame = int(match.group(1))
         if frame in result:
+            # Yabause records the final checkpoint once in the loop and once
+            # during shutdown. Permit exactly one identical duplicate only
+            # for the terminal frame beyond the compared prefix.
+            if (frame == terminal_frame and frame > FRAME_END and
+                    line == result[frame] and not duplicate_terminal_seen):
+                duplicate_terminal_seen = True
+                continue
             raise ValueError("same-session cross-build diagnostic frame duplicated")
         result[frame] = line
     if not set(DIAGNOSTIC_FRAMES).issubset(result):
